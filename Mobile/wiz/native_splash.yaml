@@ -1,0 +1,10 @@
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/logo/logo.png
+  branding: assets/logo/logo_wiz.png
+  android: true
+  ios: true
+  web: false
+  android_12: 
+    image: assets/logo/logo.png
+    branding: assets/logo/logo_wiz.png
