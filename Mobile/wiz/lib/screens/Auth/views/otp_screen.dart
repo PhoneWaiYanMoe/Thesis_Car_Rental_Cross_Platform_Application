@@ -36,23 +36,23 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(color: Colors.black),
-        backgroundColor: AppStyles.background,
+        leading: BackButton(color: Color(0xFF6C5CE7)),
+        backgroundColor: AppStyles.background(context),
         elevation: 0,
       ),
       body: Container(
-        color: AppStyles.background,
+        color: AppStyles.background(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              Text('Enter Verification Code', style: AppStyles.h1),
+              Text('Enter Verification Code', style: AppStyles.h1(context)),
               const SizedBox(height: 12),
               Text(
                 'Please enter the code we sent to your email.',
-                style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54),
+                style: AppStyles.body(context),
               ),
               const SizedBox(height: 48),
               Row(
@@ -60,15 +60,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 children: List.generate(
                   6,
                   (i) => SizedBox(
-                    width: 50,
-                    height: 56,
+                    width: 55,
+                    height: 60,
                     child: TextField(
                       controller: _controllers[i],
                       focusNode: _focusNodes[i],
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       maxLength: 1,
-                      style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
                         counterText: '',
                         filled: true,

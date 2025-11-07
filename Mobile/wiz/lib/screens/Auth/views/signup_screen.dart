@@ -59,7 +59,6 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: SafeArea(
           child: Padding(
@@ -70,15 +69,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 30),
-                  Image.asset('assets/logo/Logo_Wiz.png', height: 150),
+                  AppStyles.logo(context, height: 150, width: 100),
 
                   const SizedBox(height: 20),
-                  Text('Welcome!', style: AppStyles.h1),
+                  Text('Welcome!', style: AppStyles.h1(context)),
                   const SizedBox(height: 12),
                   Text(
                     'Sign up your account using email,\nfull name and password',
                     textAlign: TextAlign.center,
-                    style: AppStyles.body.copyWith( color: Colors.black54),
+                    style: AppStyles.body(context),
                   ),
                   const SizedBox(height: 48),
 
@@ -126,7 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Expanded(
                         child: Text(
                           'I have read and agreed to terms and conditions.',
-                          style: AppStyles.caption,
+                          style: AppStyles.caption(context),
                         ),
                       ),
                     ],
@@ -146,7 +145,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Already have account? ", style: GoogleFonts.poppins(color: Colors.black54)),
+                      Text("Already have account? ", style: AppStyles.body(context)),
                       GestureDetector(
                         onTap: () {
                           AppRoutes.navigateTo(context, AppRoutes.login);

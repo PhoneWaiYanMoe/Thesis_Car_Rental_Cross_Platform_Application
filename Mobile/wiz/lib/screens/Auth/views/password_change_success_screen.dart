@@ -11,7 +11,7 @@ class PasswordChangeSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppStyles.background(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -25,7 +25,7 @@ class PasswordChangeSuccessScreen extends StatelessWidget {
 
               Text(
                 'Congratulations!',
-                style: AppStyles.h1,
+                style: AppStyles.h1(context),
                 textAlign: TextAlign.center,
               ),
 
@@ -33,7 +33,7 @@ class PasswordChangeSuccessScreen extends StatelessWidget {
 
               Text(
                 'your password has changed',
-                style: GoogleFonts.poppins(fontSize: 18, color: Colors.black87),
+                style: AppStyles.h3(context),
                 textAlign: TextAlign.center,
               ),
 
@@ -43,7 +43,7 @@ class PasswordChangeSuccessScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   'Please make sure that you can remember your password this time! And don’t worry,\nWe’ve got your back!',
-                  style: GoogleFonts.poppins(fontSize: 15, color: Colors.black54, height: 1.5),
+                  style: AppStyles.body(context),
                   textAlign: TextAlign.center,
                 ),
               ),

@@ -41,12 +41,12 @@ class _PasswordChangeScreenState extends State<PasswordChangeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(color: Colors.black),
-        backgroundColor: Colors.white,
+        leading: const BackButton(color: Color(0xFF6C5CE7)),
+        backgroundColor: AppStyles.background(context),
         elevation: 0,
       ),
       body: Container(
-        color: Colors.white,
+        color: AppStyles.background(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Form(
@@ -58,14 +58,14 @@ class _PasswordChangeScreenState extends State<PasswordChangeScreen> {
         
                 Text(
                   'Create New Password',
-                  style: AppStyles.h1,
+                  style: AppStyles.h1(context),
                 ),
         
                 const SizedBox(height: 12),
         
                 Text(
                   'Your new password must be different from previous ones.',
-                  style: AppStyles.h1,
+                  style: AppStyles.body(context),
                 ),
         
                 const SizedBox(height: 48),

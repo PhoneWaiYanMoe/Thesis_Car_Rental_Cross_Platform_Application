@@ -18,6 +18,7 @@ class AppRoutes {
   static const String otp = '/otp';
   static const String passwordChange = '/password-change';
   static const String passwordChangeSuccess = '/password-change-success';
+  static const String home = '/home';
 
   // Generate routes - central routing logic
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -39,6 +40,9 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => PasswordChangeScreen(), settings: settings);
       case passwordChangeSuccess:
         return MaterialPageRoute(builder: (_) => PasswordChangeSuccessScreen(), settings: settings);
+
+      case home:
+        return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Home Screen'))), settings: settings);
 
       // 404 - Route not found
       default:

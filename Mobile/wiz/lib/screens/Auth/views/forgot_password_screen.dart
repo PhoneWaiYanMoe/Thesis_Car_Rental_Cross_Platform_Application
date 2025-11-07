@@ -25,12 +25,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(color: Colors.black),
-        backgroundColor: AppStyles.background,
+        leading: BackButton(color: Color(0xFF6C5CE7)),
+        backgroundColor: AppStyles.background(context),
         elevation: 0,
       ),
       body: Container(
-        color: AppStyles.background,
+        color: AppStyles.background(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Form(
@@ -39,11 +39,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                Text('Forgot password', style: AppStyles.h1),
+                Text('Forgot password', style: AppStyles.h1(context)),
                 const SizedBox(height: 12),
                 Text(
                   'Please enter your email address. We will send you a verification code.',
-                  style: AppStyles.body,
+                  style: AppStyles.body(context),
                 ),
                 const SizedBox(height: 48),
                 TextFieldAuth(

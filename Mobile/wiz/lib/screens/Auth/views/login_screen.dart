@@ -43,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppStyles.background,
+      backgroundColor: AppStyles.background(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -54,18 +54,18 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 30),
 
-                Image.asset('assets/logo/Logo_Wiz.png', height: 150),
+                AppStyles.logo(context, height: 150, width: 100),
 
                 const SizedBox(height: 20),
 
-                Text('Welcome Back', style: AppStyles.h1),
+                Text('Welcome Back', style: AppStyles.h1(context)),
 
                 const SizedBox(height: 12),
 
                 Text(
                   'Log in to your account using email\nor social networks',
                   textAlign: TextAlign.center,
-                  style: AppStyles.body.copyWith( color: Colors.black54),
+                  style: AppStyles.body(context),
                 ),
 
                 const SizedBox(height: 48),
@@ -98,10 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       AppRoutes.navigateTo(context, AppRoutes.forgotPassword);
                     },
-                    child: Text(
-                      'Forgot password?',
-                      style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.w500),
-                    ),
+                    child: Text('Forgot password?', style: AppStyles.body(context)),
                   ),
                 ),
 
@@ -125,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("First time here? ", style: GoogleFonts.poppins(color: Colors.black54)),
+                    Text("First time here? ", style: AppStyles.body(context)),
                     GestureDetector(
                       onTap: () {
                         AppRoutes.navigateTo(context, AppRoutes.signup);
@@ -140,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
-                Text('Or sign in with', style: GoogleFonts.poppins(color: Colors.black54)),
+                Text('Or sign in with', style: AppStyles.body(context)),
 
                 const SizedBox(height: 20),
 
