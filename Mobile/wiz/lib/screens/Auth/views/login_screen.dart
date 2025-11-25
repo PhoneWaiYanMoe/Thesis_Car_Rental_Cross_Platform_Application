@@ -5,7 +5,7 @@ import 'package:wiz/screens/Auth/views/widgets/button_widget.dart';
 import 'package:wiz/screens/Auth/views/widgets/social_media_widget.dart';
 import 'package:wiz/screens/Auth/views/widgets/textField_widget.dart';
 import 'package:wiz/utils/app_routes.dart';
-
+import '../services/auth_service.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +17,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    setState(() => _isInitialized = true);
+  }
 
   // Validation
   String? _emailValidator(String? value) {
@@ -32,9 +46,30 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.loginWithCredentials(_emailController.text.trim(), _passwordController.text);
+
+      if (mounted) {
+        AppRoutes.navigateAndRemoveUntil(context, AppRoutes.login);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   void dispose() {
-    _formKey.currentState?.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -42,6 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return Scaffold(
+        backgroundColor: AppStyles.background(context),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       body: SafeArea(
@@ -53,22 +95,55 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 30),
-
                 AppStyles.logo(context, height: 150, width: 100),
-
                 const SizedBox(height: 20),
-
                 Text('Welcome Back', style: AppStyles.h1(context)),
-
                 const SizedBox(height: 12),
-
                 Text(
                   'Log in to your account using email\nor social networks',
                   textAlign: TextAlign.center,
                   style: AppStyles.body(context),
                 ),
+          //      const SizedBox(height: 48),
 
-                const SizedBox(height: 48),
+                // // Mock credentials hint (for development only)
+                // Container(
+                //   padding: const EdgeInsets.all(12),
+                //   decoration: BoxDecoration(
+                //     color: AppStyles.primary.withOpacity(0.1),
+                //     borderRadius: BorderRadius.circular(8),
+                //     border: Border.all(color: AppStyles.primary.withOpacity(0.3)),
+                //   ),
+                //   child: Column(
+                //     crossAxisAlignment: CrossAxisAlignment.start,
+                //     children: [
+                //       Row(
+                //         children: [
+                //           Icon(Icons.info_outline, size: 16, color: AppStyles.primary),
+                //           const SizedBox(width: 8),
+                //           Text(
+                //             'Test Credentials',
+                //             style: AppStyles.caption(
+                //               context,
+                //             ).copyWith(fontWeight: FontWeight.bold, color: AppStyles.primary),
+                //           ),
+                //         ],
+                //       ),
+                //       const SizedBox(height: 8),
+                //       Text(
+                //         'Email: jass@wiz.com\nPassword: Password1',
+                //         style: AppStyles.caption(context).copyWith(fontSize: 12),
+                //       ),
+                //       const SizedBox(height: 4),
+                //       Text(
+                //         'or use: test@example.com / password123',
+                //         style: AppStyles.caption(context).copyWith(fontSize: 12),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+
+                const SizedBox(height: 24),
 
                 // Email
                 TextFieldAuth(
@@ -77,7 +152,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   validator: _emailValidator,
                 ),
-
                 const SizedBox(height: 16),
 
                 // Password
@@ -88,10 +162,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   validator: _passwordValidator,
                 ),
-
                 const SizedBox(height: 12),
 
-                // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -101,22 +173,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text('Forgot password?', style: AppStyles.body(context)),
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
                 // Log In Button
-                Button(
-                  text: 'Log In',
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final email = _emailController.text;
-                      final password = _passwordController.text;
-                      print('Login: $email');
-                      // TODO: Call login API
-                    }
-                  },
-                ),
-
+                Button(text: _isLoading ? 'Logging in...' : 'Log In', enabled: !_isLoading, onPressed: _handleLogin),
                 const SizedBox(height: 24),
 
                 Row(
@@ -134,11 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 40),
-
                 Text('Or sign in with', style: AppStyles.body(context)),
-
                 const SizedBox(height: 20),
 
                 Row(
@@ -159,7 +216,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-
                 const Spacer(),
               ],
             ),

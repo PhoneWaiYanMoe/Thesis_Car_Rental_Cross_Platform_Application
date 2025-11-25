@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
-import 'package:wiz/screens/Home/views/location_screen.dart';
 import 'package:wiz/screens/Home/views/widgets/articles_section.dart';
 import 'package:wiz/screens/Home/views/widgets/call_to_action.dart';
 import 'package:wiz/screens/Home/views/widgets/clickable_field.dart';
@@ -12,6 +9,7 @@ import 'package:wiz/screens/Home/views/widgets/header.dart';
 import 'package:wiz/screens/Home/views/widgets/search_button.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
+import 'package:wiz/screens/Auth/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +20,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTab = 0;
+  final _authService = AuthService();
+
+  // User info
+  String _userName = '';
+  String _userAvatar = 'assets/images/article_2.png';
 
   // Form data
   String? _location;
@@ -33,12 +36,27 @@ class _HomeScreenState extends State<HomeScreen> {
     {'title': 'Terms and\nConditions', 'image': 'assets/images/article.png'},
     {'title': 'Cancellation\nrules', 'image': 'assets/images/article_2.png'},
   ];
+
   bool get _canSearch {
     if (_selectedTab == 0) {
       return _location != null && _dateTime != null;
     } else {
       return _pickup != null && _destination != null && _dateTime != null;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final userInfo = await _authService.getUserInfo();
+    setState(() {
+      _userName = userInfo['userName'] ?? 'Guest';
+      _userAvatar = userInfo['userAvatar'] ?? 'assets/images/article_2.png';
+    });
   }
 
   @override
@@ -51,9 +69,18 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Header(),
+              Header(userName: _userName, userAvatar: _userAvatar),
               const SizedBox(height: 24),
-              DriveToggle(),
+              DriveToggle(
+                selectedTab: _selectedTab,
+                onTabChanged: (index) {
+                  setState(() {
+                    _selectedTab = index;
+                    _location = _pickup = _destination = null;
+                    _dateTime = null;
+                  });
+                },
+              ),
               const SizedBox(height: 24),
 
               // DYNAMIC FIELDS
@@ -70,21 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
 
               const SizedBox(height: 24),
-              SearchButton(
-                canSearch: _canSearch,
-                onPressed: _canSearch
-                    ? () {
-                        final data = {
-                          'mode': _selectedTab == 0 ? 'Self Drive' : 'With Driver',
-                          'location': _location,
-                          'pickup': _pickup,
-                          'destination': _destination,
-                          'datetime': '${_dateTime!['start']} - ${_dateTime!['end']}',
-                        };
-                        AppRoutes.navigateTo(context, AppRoutes.cars, arguments: data);
-                      }
-                    : null,
-              ),
+              SearchButton(canSearch: _canSearch, onPressed: _canSearch ? _handleSearch : null),
 
               const SizedBox(height: 32),
               ArticlesSection(articles: _articles),
@@ -97,6 +110,18 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: ButtonNavBar(),
     );
+  }
+
+  void _handleSearch() {
+    final data = {
+      'mode': _selectedTab == 0 ? 'Self Drive' : 'With Driver',
+      'withDriver': _selectedTab == 1,
+      'location': _location,
+      'pickup': _pickup,
+      'destination': _destination,
+      'datetime': '${_dateTime!['start']} - ${_dateTime!['end']}',
+    };
+    AppRoutes.navigateTo(context, AppRoutes.cars, arguments: data);
   }
 
   Widget _buildLocationField() {

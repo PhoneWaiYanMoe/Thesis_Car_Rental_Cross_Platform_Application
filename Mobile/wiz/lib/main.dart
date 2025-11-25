@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wiz/screens/Auth/views/login_screen.dart';
 import 'package:wiz/screens/Auth/views/splash_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
@@ -12,12 +13,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      home: SplashScreen(),
       debugShowCheckedModeBanner: false,
-      onGenerateRoute: AppRoutes.generateRoute,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
       theme: AppStyles.lightTheme,
       darkTheme: AppStyles.darkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.dark,
       initialRoute: AppRoutes.splash,
     );
   }

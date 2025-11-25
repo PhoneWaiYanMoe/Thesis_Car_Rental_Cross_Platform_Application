@@ -6,16 +6,15 @@ import 'package:wiz/screens/Auth/views/password_change_screen.dart';
 import 'package:wiz/screens/Auth/views/password_change_success_screen.dart';
 import 'package:wiz/screens/Auth/views/signup_screen.dart';
 import 'package:wiz/screens/Auth/views/splash_screen.dart';
+import 'package:wiz/screens/Booking/views/booking_screen.dart';
 import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
+import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Home/views/location_screen.dart';
 
 class AppRoutes {
-  // Route names as constants
   static const String splash = '/';
-  static const String welcome = '/welcome';
-
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
@@ -23,94 +22,68 @@ class AppRoutes {
   static const String passwordChange = '/password-change';
   static const String passwordChangeSuccess = '/password-change-success';
   static const String home = '/home';
+  static const String location = '/location';
+  static const String dateTime = '/datetime';
   static const String cars = '/cars';
   static const String carDetails = '/car-details';
-  static const String location = '/location';
+  static const String booking = '/booking';
 
-  // Generate routes - central routing logic
-  static Route<dynamic> generateRoute(RouteSettings settings) {
+  static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
-        return MaterialPageRoute(builder: (_) => SplashScreen(), settings: settings);
-
+        return MaterialPageRoute(builder: (_) => SplashScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => LoginScreen(), settings: settings);
-
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
       case signup:
-        return MaterialPageRoute(builder: (_) => SignupScreen(), settings: settings);
+        return MaterialPageRoute(builder: (_) => const SignupScreen());
       case forgotPassword:
-        return MaterialPageRoute(builder: (_) => ForgotPasswordScreen(), settings: settings);
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
       case otp:
-        return MaterialPageRoute(builder: (_) => OtpVerificationScreen(), settings: settings);
-
+        return MaterialPageRoute(builder: (_) => const OtpVerificationScreen());
       case passwordChange:
-        return MaterialPageRoute(builder: (_) => PasswordChangeScreen(), settings: settings);
+        return MaterialPageRoute(builder: (_) => const PasswordChangeScreen());
       case passwordChangeSuccess:
-        return MaterialPageRoute(builder: (_) => PasswordChangeSuccessScreen(), settings: settings);
-
+        return MaterialPageRoute(builder: (_) => const PasswordChangeSuccessScreen());
       case home:
-        return MaterialPageRoute(builder: (_) => HomeScreen(), settings: settings);
-
+        return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case dateTime:
+        return MaterialPageRoute(builder: (_) => const DateTimeScreen());
       case location:
-        final title = settings.arguments as String;
-        return MaterialPageRoute(builder: (_) => LocationScreen(title: title,), settings: settings);
-        
+        final args = settings.arguments as String?;
+        return MaterialPageRoute(builder: (_) => LocationScreen(title: args ?? 'Select Location'));
+
       case cars:
-        final tripData = settings.arguments as Map<String, dynamic>?;
-        if (tripData == null) {
-          return MaterialPageRoute(
-            builder: (_) => const Scaffold(body: Center(child: Text('Error: No trip data'))),
-          );
-        }
-        return MaterialPageRoute(
-          builder: (_) => CarListScreen(tripData: tripData),
-          settings: settings,
-        );
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
 
       case carDetails:
-        final args = settings.arguments as Map<String, dynamic>;
-        final car = args['car'] as Map<String, dynamic>;
-        final tripData = args['tripData'] as Map<String, dynamic>;
-        return _pageRoute(() => CarDetailsScreen(car: car, tripData: tripData), settings);
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('carIndex')) {
+          return MaterialPageRoute(builder: (_) => CarDetailsScreen(arguments: args));
+        }
+        return null;
 
-      // 404 - Route not found
+      case booking:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null) {
+          return MaterialPageRoute(builder: (_) => BookingScreen(arguments: args));
+        }
+        return null;
+
       default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('404')),
-            body: const Center(child: Text('Page not found')),
-          ),
-          settings: settings,
-        );
+        return null;
     }
   }
 
-  static MaterialPageRoute _pageRoute(Widget Function() builder, RouteSettings settings) {
-    return MaterialPageRoute(builder: (_) => builder(), settings: settings);
+  static Future<dynamic> navigateTo(BuildContext context, String routeName, {Object? arguments}) {
+    return Navigator.pushNamed(context, routeName, arguments: arguments);
   }
 
-  // Navigate to a route
-  static Future<T?> navigateTo<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
+  static void navigateAndReplace(BuildContext context, String routeName, {Object? arguments}) {
+    Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
   }
 
-  // Navigate and replace current route
-  static Future<T?> navigateAndReplace<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return Navigator.pushReplacementNamed<T, Object?>(context, routeName, arguments: arguments);
-  }
-
-  // Navigate and remove all previous routes
-  static Future<T?> navigateAndRemoveUntil<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return Navigator.pushNamedAndRemoveUntil<T>(context, routeName, (route) => false, arguments: arguments);
-  }
-
-  // Go back
-  static void goBack(BuildContext context, {Object? result}) {
-    Navigator.pop(context, result);
-  }
-
-  // Navigate to splash (useful for logout or restart)
-  static Future<void> navigateToSplashAndClear(BuildContext context) {
-    return navigateAndRemoveUntil(context, splash);
+  static void navigateAndRemoveUntil(BuildContext context, String routeName, {Object? arguments}) {
+    Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
   }
 }

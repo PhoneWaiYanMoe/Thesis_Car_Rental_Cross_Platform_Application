@@ -1,13 +1,11 @@
-// screens/Cars/views/car_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
 import 'package:wiz/screens/Cars/services/car_filter_service.dart';
 import 'package:wiz/screens/Cars/widgets/filter_widget.dart';
-
 import 'widgets/_buildCarCard.dart';
 import 'widgets/_buildTripSummary.dart';
-
+import 'package:wiz/screens/Booking/models/booking_data.dart';
 class CarListScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   const CarListScreen({super.key, required this.tripData});
@@ -47,6 +45,11 @@ class _CarListScreenState extends State<CarListScreen> {
 
   @override
   Widget build(BuildContext context) {
+   
+    final displayData = Map<String, dynamic>.from(widget.tripData);
+    displayData['carIndex'] = 0; 
+    final bookingData = BookingData.fromMap(displayData);
+
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
@@ -57,15 +60,27 @@ class _CarListScreenState extends State<CarListScreen> {
       ),
       body: Column(
         children: [
-          BuildTripSummary(tripData: widget.tripData),
+          // Display trip summary
+          BuildTripSummary(bookingData: bookingData),
           const SizedBox(height: 16),
+
+          // Car list or empty state
           Expanded(
             child: _filteredCars.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _filteredCars.length,
-                    itemBuilder: (context, i) => BuildCarCard(car: _filteredCars[i].toMap(), tripData: widget.tripData),
+                    itemBuilder: (context, i) {
+                      // Find the index of this car in the original list
+                      final carIndex = _allCars.indexOf(_filteredCars[i]);
+
+                      return BuildCarCard(
+                        carIndex: carIndex,
+                        allCars: _allCars, // Pass original list
+                        tripData: widget.tripData,
+                      );
+                    },
                   ),
           ),
         ],
@@ -142,8 +157,11 @@ class _CarListScreenState extends State<CarListScreen> {
       controller: controller,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
+        // Price Range Filter
         PriceRangeFilter(values: _priceRange, onChanged: (v) => _update(setSheetState, () => _priceRange = v)),
         const SizedBox(height: 24),
+
+        // Seats Filter
         ChipFilter<int>(
           title: 'Seats',
           items: [4, 5, 7, 9],
@@ -152,6 +170,8 @@ class _CarListScreenState extends State<CarListScreen> {
           onSelected: (v) => _update(setSheetState, () => _selectedSeats = v),
         ),
         const SizedBox(height: 24),
+
+        // Fuel Type Filter
         ChipFilter<String>(
           title: 'Fuel Type',
           items: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Other'],
@@ -160,6 +180,8 @@ class _CarListScreenState extends State<CarListScreen> {
           onSelected: (v) => _update(setSheetState, () => _selectedFuel = v),
         ),
         const SizedBox(height: 24),
+
+        // Vehicle Type Filter
         ChipFilter<String>(
           title: 'Vehicle Type',
           items: ['Sedan', 'SUV', 'Hatchback', 'Van', 'Other'],
@@ -168,6 +190,8 @@ class _CarListScreenState extends State<CarListScreen> {
           onSelected: (v) => _update(setSheetState, () => _selectedType = v),
         ),
         const SizedBox(height: 24),
+
+        // Transmission Filter
         ChipFilter<String>(
           title: 'Transmission',
           items: ['Automatic', 'Manual', 'Semi-auto'],
@@ -176,18 +200,24 @@ class _CarListScreenState extends State<CarListScreen> {
           onSelected: (v) => _update(setSheetState, () => _selectedTransmission = v),
         ),
         const SizedBox(height: 24),
+
+        // Instant Booking Switch
         SwitchFilter(
           title: 'Instant Booking',
           value: _instantBooking,
           onChanged: (v) => _update(setSheetState, () => _instantBooking = v),
         ),
         const SizedBox(height: 24),
+
+        // Driver Support Switch
         SwitchFilter(
           title: 'Driver Supported',
           value: _driverSupport,
           onChanged: (v) => _update(setSheetState, () => _driverSupport = v),
         ),
         const SizedBox(height: 24),
+
+        // Discount Switch
         SwitchFilter(
           title: 'Discount Available',
           value: _discount,
@@ -198,21 +228,25 @@ class _CarListScreenState extends State<CarListScreen> {
     );
   }
 
+  // Update both sheet state and main widget state
   void _update(StateSetter setSheetState, VoidCallback update) {
     setSheetState(update);
     setState(() {});
   }
 
+  // Reset all filters
   void _resetAndUpdate(StateSetter setSheetState) {
     setSheetState(_resetFilters);
     setState(_resetFilters);
   }
 
+  // Apply filters and close sheet
   void _applyAndClose(StateSetter setSheetState) {
     setState(() {});
     Navigator.pop(context);
   }
 
+  // Reset filter values
   void _resetFilters() {
     _priceRange = const RangeValues(500000, 2000000);
     _selectedSeats = null;
@@ -223,18 +257,4 @@ class _CarListScreenState extends State<CarListScreen> {
     _driverSupport = false;
     _discount = false;
   }
-}
-
-// Extension to convert Car → Map for BuildCarCard
-extension CarX on Car {
-  Map<String, dynamic> toMap() => {
-    'image': image,
-    'name': name,
-    'rating': rating,
-    'reviews': reviews,
-    'price': price,
-    'owner': owner,
-    'ownerAvatar': ownerAvatar,
-    'location': location,
-  };
 }

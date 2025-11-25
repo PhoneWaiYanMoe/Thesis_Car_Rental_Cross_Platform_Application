@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/utils/app_routes.dart';
+import '../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -11,6 +12,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  final _authService = AuthService();
 
   @override
   void initState() {
@@ -30,9 +32,34 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), () {
-      AppRoutes.navigateTo(context, AppRoutes.login);
-    });
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Wait for animation to complete
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    try {
+      // Check if user is already logged in
+      final isLoggedIn = await _authService.isLoggedIn();
+
+      if (!mounted) return;
+
+      if (isLoggedIn) {
+        // User is logged in, go to home
+        AppRoutes.navigateAndReplace(context, AppRoutes.home);
+      } else {
+        // User is not logged in, go to login
+        AppRoutes.navigateAndReplace(context, AppRoutes.login);
+      }
+    } catch (e) {
+      // On error, go to login
+      if (mounted) {
+        AppRoutes.navigateAndReplace(context, AppRoutes.login);
+      }
+    }
   }
 
   @override
