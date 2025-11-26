@@ -9,6 +9,14 @@ class AuthService {
   static const String _userAvatarKey = 'user_avatar';
   static const String _licenseKey = 'license_number';
 
+  // License data keys
+  static const String _licenseVerifiedKey = 'license_verified';
+  static const String _licenseFullNameKey = 'license_full_name';
+  static const String _licenseNumberKey = 'license_number_full';
+  static const String _licenseExpireDateKey = 'license_expire_date';
+  static const String _licenseFrontImageKey = 'license_front_image';
+  static const String _licenseBackImageKey = 'license_back_image';
+
   // Sample token for testing
   static const String sampleToken = 'sample_jwt_token_12345';
 
@@ -23,7 +31,6 @@ class AuthService {
   Future<bool> validateCredentials(String email, String password) async {
     // Simulate network delay
     await Future.delayed(const Duration(seconds: 1));
-
     return mockUsers.containsKey(email) && mockUsers[email] == password;
   }
 
@@ -69,6 +76,48 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
+  // Check if license is verified
+  Future<bool> isLicenseVerified() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_licenseVerifiedKey) ?? false;
+  }
+
+  // Save license data
+  Future<void> saveLicenseData({
+    required String fullName,
+    required String licenseNumber,
+    required String expireDate,
+    required String frontImagePath,
+    required String backImagePath,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_licenseVerifiedKey, true);
+    await prefs.setString(_licenseFullNameKey, fullName);
+    await prefs.setString(_licenseNumberKey, licenseNumber);
+    await prefs.setString(_licenseExpireDateKey, expireDate);
+    await prefs.setString(_licenseFrontImageKey, frontImagePath);
+    await prefs.setString(_licenseBackImageKey, backImagePath);
+
+    // Also update the short license number for display
+    await prefs.setString(_licenseKey, '****${licenseNumber.substring(licenseNumber.length - 2)}');
+  }
+
+  // Get license data
+  Future<Map<String, String>?> getLicenseData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isVerified = prefs.getBool(_licenseVerifiedKey) ?? false;
+
+    if (!isVerified) return null;
+
+    return {
+      'fullName': prefs.getString(_licenseFullNameKey) ?? '',
+      'licenseNumber': prefs.getString(_licenseNumberKey) ?? '',
+      'expireDate': prefs.getString(_licenseExpireDateKey) ?? '',
+      'frontImagePath': prefs.getString(_licenseFrontImageKey) ?? '',
+      'backImagePath': prefs.getString(_licenseBackImageKey) ?? '',
+    };
+  }
+
   // Clear auth data (logout)
   Future<void> clearAuthData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -80,16 +129,25 @@ class AuthService {
     await prefs.remove(_licenseKey);
   }
 
+  // Clear license data
+  Future<void> clearLicenseData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_licenseVerifiedKey);
+    await prefs.remove(_licenseFullNameKey);
+    await prefs.remove(_licenseNumberKey);
+    await prefs.remove(_licenseExpireDateKey);
+    await prefs.remove(_licenseFrontImageKey);
+    await prefs.remove(_licenseBackImageKey);
+  }
+
   // Sample login for testing
   Future<Map<String, dynamic>> loginWithCredentials(String email, String password) async {
-    // Validate credentials
     final isValid = await validateCredentials(email, password);
 
     if (!isValid) {
       throw Exception('Invalid email or password');
     }
 
-    // Mock user data based on email
     final userData = {
       'token': sampleToken,
       'userId': 'user_001',

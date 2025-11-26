@@ -5,6 +5,7 @@ import 'package:wiz/screens/Booking/views/widgets/_buildRenterInfo.dart';
 import 'package:wiz/screens/Auth/services/auth_service.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
+import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 class BookingScreen extends StatefulWidget {
   final Map<String, dynamic> arguments;
@@ -28,10 +29,23 @@ class _BookingScreenState extends State<BookingScreen> {
   void initState() {
     super.initState();
     _bookingData = BookingData.fromMap(widget.arguments);
-    _loadUserInfo();
+    _checkLicenseAndLoadInfo();
   }
 
-  Future<void> _loadUserInfo() async {
+  Future<void> _checkLicenseAndLoadInfo() async {
+    final isLicenseVerified = await _authService.isLicenseVerified();
+
+    if (!isLicenseVerified) {
+      // Navigate to license upload screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => LicenseUploadScreen(fromBooking: true, bookingArguments: widget.arguments)),
+        );
+      });
+      return;
+    }
+
     final userInfo = await _authService.getUserInfo();
     setState(() {
       _userName = userInfo['userName'] ?? 'Guest';

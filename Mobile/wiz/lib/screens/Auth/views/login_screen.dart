@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.loginWithCredentials(_emailController.text.trim(), _passwordController.text);
 
       if (mounted) {
-        AppRoutes.navigateAndRemoveUntil(context, AppRoutes.login);
+        AppRoutes.navigateAndRemoveUntil(context, AppRoutes.home);
       }
     } catch (e) {
       if (mounted) {
@@ -89,135 +89,138 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 30),
-                AppStyles.logo(context, height: 150, width: 100),
-                const SizedBox(height: 20),
-                Text('Welcome Back', style: AppStyles.h1(context)),
-                const SizedBox(height: 12),
-                Text(
-                  'Log in to your account using email\nor social networks',
-                  textAlign: TextAlign.center,
-                  style: AppStyles.body(context),
-                ),
-          //      const SizedBox(height: 48),
-
-                // // Mock credentials hint (for development only)
-                // Container(
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //     color: AppStyles.primary.withOpacity(0.1),
-                //     borderRadius: BorderRadius.circular(8),
-                //     border: Border.all(color: AppStyles.primary.withOpacity(0.3)),
-                //   ),
-                //   child: Column(
-                //     crossAxisAlignment: CrossAxisAlignment.start,
-                //     children: [
-                //       Row(
-                //         children: [
-                //           Icon(Icons.info_outline, size: 16, color: AppStyles.primary),
-                //           const SizedBox(width: 8),
-                //           Text(
-                //             'Test Credentials',
-                //             style: AppStyles.caption(
-                //               context,
-                //             ).copyWith(fontWeight: FontWeight.bold, color: AppStyles.primary),
-                //           ),
-                //         ],
-                //       ),
-                //       const SizedBox(height: 8),
-                //       Text(
-                //         'Email: jass@wiz.com\nPassword: Password1',
-                //         style: AppStyles.caption(context).copyWith(fontSize: 12),
-                //       ),
-                //       const SizedBox(height: 4),
-                //       Text(
-                //         'or use: test@example.com / password123',
-                //         style: AppStyles.caption(context).copyWith(fontSize: 12),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-
-                const SizedBox(height: 24),
-
-                // Email
-                TextFieldAuth(
-                  hintText: 'Email',
-                  icon: Icons.email_outlined,
-                  controller: _emailController,
-                  validator: _emailValidator,
-                ),
-                const SizedBox(height: 16),
-
-                // Password
-                TextFieldAuth(
-                  hintText: 'Password',
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                  controller: _passwordController,
-                  validator: _passwordValidator,
-                ),
-                const SizedBox(height: 12),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      AppRoutes.navigateTo(context, AppRoutes.forgotPassword);
-                    },
-                    child: Text('Forgot password?', style: AppStyles.body(context)),
+          child: SingleChildScrollView(
+            scrollDirection:  Axis.vertical,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 30),
+                  AppStyles.logo(context, height: 150, width: 100),
+                  const SizedBox(height: 20),
+                  Text('Welcome Back', style: AppStyles.h1(context)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Log in to your account using email\nor social networks',
+                    textAlign: TextAlign.center,
+                    style: AppStyles.body(context),
                   ),
-                ),
-                const SizedBox(height: 24),
-
-                // Log In Button
-                Button(text: _isLoading ? 'Logging in...' : 'Log In', enabled: !_isLoading, onPressed: _handleLogin),
-                const SizedBox(height: 24),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("First time here? ", style: AppStyles.body(context)),
-                    GestureDetector(
-                      onTap: () {
-                        AppRoutes.navigateTo(context, AppRoutes.signup);
+                //  const SizedBox(height: 48),
+            
+                //   // Mock credentials hint (for development only)
+                //   Container(
+                //     padding: const EdgeInsets.all(12),
+                //     decoration: BoxDecoration(
+                //       color: AppStyles.primary.withOpacity(0.1),
+                //       borderRadius: BorderRadius.circular(8),
+                //       border: Border.all(color: AppStyles.primary.withOpacity(0.3)),
+                //     ),
+                //     child: Column(
+                //       crossAxisAlignment: CrossAxisAlignment.start,
+                //       children: [
+                //         Row(
+                //           children: [
+                //             Icon(Icons.info_outline, size: 16, color: AppStyles.primary),
+                //             const SizedBox(width: 8),
+                //             Text(
+                //               'Test Credentials',
+                //               style: AppStyles.caption(
+                //                 context,
+                //               ).copyWith(fontWeight: FontWeight.bold, color: AppStyles.primary),
+                //             ),
+                //           ],
+                //         ),
+                //         const SizedBox(height: 8),
+                //         Text(
+                //           'Email: jass@wiz.com\nPassword: Password1',
+                //           style: AppStyles.caption(context).copyWith(fontSize: 12),
+                //         ),
+                //         const SizedBox(height: 4),
+                //         Text(
+                //           'or use: test@example.com / password123',
+                //           style: AppStyles.caption(context).copyWith(fontSize: 12),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+            
+                  const SizedBox(height: 24),
+            
+                  // Email
+                  TextFieldAuth(
+                    hintText: 'Email',
+                    icon: Icons.email_outlined,
+                    controller: _emailController,
+                    validator: _emailValidator,
+                  ),
+                  const SizedBox(height: 16),
+            
+                  // Password
+                  TextFieldAuth(
+                    hintText: 'Password',
+                    icon: Icons.lock_outline,
+                    isPassword: true,
+                    controller: _passwordController,
+                    validator: _passwordValidator,
+                  ),
+                  const SizedBox(height: 12),
+            
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        AppRoutes.navigateTo(context, AppRoutes.forgotPassword);
                       },
-                      child: Text(
-                        'Sign up',
-                        style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.bold),
+                      child: Text('Forgot password?', style: AppStyles.body(context)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+            
+                  // Log In Button
+                  Button(text: _isLoading ? 'Logging in...' : 'Log In', enabled: !_isLoading, onPressed: _handleLogin),
+                  const SizedBox(height: 24),
+            
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("First time here? ", style: AppStyles.body(context)),
+                      GestureDetector(
+                        onTap: () {
+                          AppRoutes.navigateTo(context, AppRoutes.signup);
+                        },
+                        child: Text(
+                          'Sign up',
+                          style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-                Text('Or sign in with', style: AppStyles.body(context)),
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SocialMediaWidget(
-                      imagePath: 'assets/logo/google.png',
-                      onPressed: () {
-                        print('Google login');
-                      },
-                    ),
-                    const SizedBox(width: 16),
-                    SocialMediaWidget(
-                      imagePath: 'assets/logo/facebook.png',
-                      onPressed: () {
-                        print('Facebook login');
-                      },
-                    ),
-                  ],
-                ),
-                const Spacer(),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  Text('Or sign in with', style: AppStyles.body(context)),
+                  const SizedBox(height: 20),
+            
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SocialMediaWidget(
+                        imagePath: 'assets/logo/google.png',
+                        onPressed: () {
+                          print('Google login');
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      SocialMediaWidget(
+                        imagePath: 'assets/logo/facebook.png',
+                        onPressed: () {
+                          print('Facebook login');
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),

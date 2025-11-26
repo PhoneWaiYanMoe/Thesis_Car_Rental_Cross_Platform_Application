@@ -1,3 +1,4 @@
+// lib/utils/app_routes.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/screens/Auth/views/forgot_password_screen.dart';
 import 'package:wiz/screens/Auth/views/login_screen.dart';
@@ -12,6 +13,7 @@ import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Home/views/location_screen.dart';
+import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -27,6 +29,7 @@ class AppRoutes {
   static const String cars = '/cars';
   static const String carDetails = '/car-details';
   static const String booking = '/booking';
+  static const String licenseUpload = '/license-upload';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -69,6 +72,15 @@ class AppRoutes {
           return MaterialPageRoute(builder: (_) => BookingScreen(arguments: args));
         }
         return null;
+
+      case licenseUpload:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => LicenseUploadScreen(
+            fromBooking: args?['fromBooking'] ?? false,
+            bookingArguments: args?['bookingArguments'],
+          ),
+        );
 
       default:
         return null;

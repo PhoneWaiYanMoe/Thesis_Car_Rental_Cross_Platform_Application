@@ -38,6 +38,9 @@ dependencies:
   flutter_native_splash: ^2.4.7
   google_fonts: ^6.3.2
   table_calendar: ^3.0.9
+  smooth_page_indicator: ^1.1.0
+  shared_preferences: ^2.5.3
+  image_picker: ^1.2.1
 
 
 
@@ -67,6 +70,9 @@ flutter:
   assets:
    - assets/images/
    - assets/logo/
+   - assets/logo/zalo.png 
+   - assets/logo/momo.png
+   - assets/logo/bank.png
    
 
   
