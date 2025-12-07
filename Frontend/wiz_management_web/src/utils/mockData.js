@@ -1,5 +1,3 @@
-// src/utils/mockData.js
-
 export const generateMockRequests = () => {
   const titles = [
     'Request to delete my account',

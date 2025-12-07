@@ -1,4 +1,3 @@
-// src/pages/support/RequestList.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Eye, Clock, CheckCircle, XCircle, ChevronDown, ImageIcon } from 'lucide-react';
@@ -35,7 +34,7 @@ export default function RequestList({ requests, currentUser }) {
     return matchesSearch && matchesCategory && matchesStatus && matchesHandler;
   });
 
-  // Sort
+  // sorting
   filteredRequests = [...filteredRequests].sort((a, b) => {
     switch (sortBy) {
       case 'newest':
@@ -80,13 +79,13 @@ export default function RequestList({ requests, currentUser }) {
 
   return (
     <div>
-      {/* Header */}
+      {/* header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#131A34] mb-2">All Requests</h1>
         <p className="text-[#717685]">Manage and review customer requests</p>
       </div>
 
-      {/* Status Tabs */}
+      {/* status tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: 'all', label: 'All Requests' },
@@ -115,10 +114,10 @@ export default function RequestList({ requests, currentUser }) {
         ))}
       </div>
 
-      {/* Search and Filters */}
+      {/* search and filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
+          {/* search */}
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
             <input
@@ -130,7 +129,7 @@ export default function RequestList({ requests, currentUser }) {
             />
           </div>
 
-          {/* Filter Button */}
+          {/* filter button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-6 py-3 border border-gray-200 rounded-xl hover:bg-[#F8F9FF] transition-all font-semibold text-[#131A34]"
@@ -140,7 +139,7 @@ export default function RequestList({ requests, currentUser }) {
             <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Sort */}
+          {/* sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -152,7 +151,7 @@ export default function RequestList({ requests, currentUser }) {
           </select>
         </div>
 
-        {/* Advanced Filters */}
+        {/* advanced filters */}
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -188,7 +187,7 @@ export default function RequestList({ requests, currentUser }) {
         )}
       </div>
 
-      {/* Results Count */}
+      {/* results count */}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[#717685]">
           Showing <span className="font-semibold text-[#131A34]">{filteredRequests.length}</span> results
@@ -208,7 +207,7 @@ export default function RequestList({ requests, currentUser }) {
         )}
       </div>
 
-      {/* Request List */}
+      {/* request list */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {filteredRequests.length === 0 ? (
           <div className="p-12 text-center">
@@ -230,12 +229,12 @@ export default function RequestList({ requests, currentUser }) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
-                      {/* Status Icon */}
+                      {/* status icon */}
                       {/* <div className="mt-1">
                         {getStatusIcon(req.status)}
                       </div> */}
 
-                      {/* Content */}
+                      {/* content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
@@ -270,7 +269,7 @@ export default function RequestList({ requests, currentUser }) {
                       </div>
                     </div>
 
-                    {/* View Button */}
+                    {/* view button */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-[#717685]">{new Date(req.createdAt).toLocaleDateString()}</span>
                       <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />

@@ -1,4 +1,3 @@
-// src/pages/support/Dashboard.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, TrendingUp, Eye, ChevronRight } from 'lucide-react';
@@ -14,7 +13,7 @@ export default function Dashboard({ requests, currentUser }) {
   const myDenied = myRequests.filter(r => r.status === 'denied').length;
   const totalHandled = myApproved + myDenied;
 
-  // Daily activity data
+  // daily activity data
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
@@ -32,7 +31,7 @@ export default function Dashboard({ requests, currentUser }) {
     };
   });
 
-  // Category distribution
+  // category distribution
   const categoryData = {};
   myRequests.forEach(req => {
     categoryData[req.category] = (categoryData[req.category] || 0) + 1;
@@ -55,13 +54,13 @@ export default function Dashboard({ requests, currentUser }) {
 
   return (
     <div>
-      {/* Header */}
+      {/* header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#131A34] mb-2">Dashboard</h1>
         <p className="text-[#717685]">Welcome back! Here's your overview</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           icon={Clock}
@@ -91,9 +90,9 @@ export default function Dashboard({ requests, currentUser }) {
         />
       </div>
 
-      {/* Charts */}
+      {/* charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Daily Activity Chart */}
+        {/* daily activity chart */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100">
           <h3 className="text-lg font-bold text-[#131A34] mb-6">My Activity (Last 7 Days)</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -124,7 +123,7 @@ export default function Dashboard({ requests, currentUser }) {
           </ResponsiveContainer>
         </div>
 
-        {/* Category Distribution */}
+        {/* category distribution */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100">
           <h3 className="text-lg font-bold text-[#131A34] mb-6">Requests by Category</h3>
           {pieData.length > 0 ? (
@@ -155,7 +154,7 @@ export default function Dashboard({ requests, currentUser }) {
         </div>
       </div>
 
-      {/* Recent Pending Requests */}
+      {/* recent pending requests */}
       <div className="bg-white rounded-2xl border border-gray-100">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <div>

@@ -1,4 +1,3 @@
-// src/pages/support/RequestDetail.jsx
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, Clock, Calendar, User, Mail, Phone, Image as ImageIcon, AlertCircle } from 'lucide-react';
@@ -73,7 +72,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
 
   return (
     <div>
-      {/* Header */}
+      {/* header */}
       <div className="mb-8">
         <button
           onClick={() => navigate('/support/requests')}
@@ -92,9 +91,9 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
+        {/* main content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Request Details */}
+          {/* request details */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">Request Details</h2>
             <div className="bg-[#F8F9FF] rounded-xl p-6">
@@ -102,7 +101,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
             </div>
           </div>
 
-          {/* Attached Photos */}
+          {/* attached photos */}
           {request.photos.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
@@ -123,7 +122,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
             </div>
           )}
 
-          {/* Handler Info */}
+          {/* handler info */}
           {request.status !== 'pending' && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">Handling Information</h2>
@@ -151,7 +150,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
             </div>
           )}
 
-          {/* Denial Input */}
+          {/* denial input */}
           {showDenialInput && request.status === 'pending' && (
             <div className="bg-white rounded-2xl border border-red-200 p-6">
               <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
@@ -169,9 +168,9 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* sidebar */}
         <div className="space-y-6">
-          {/* Customer Info */}
+          {/* customer info */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">Customer Information</h2>
             <div className="space-y-4">
@@ -205,7 +204,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
             </div>
           </div>
 
-          {/* Request Info */}
+          {/* request info */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">Request Information</h2>
             <div className="space-y-4">
@@ -233,7 +232,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
             </div>
           </div>
 
-          {/* Actions */}
+          {/* actions */}
           {request.status === 'pending' && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">Actions</h2>
@@ -261,7 +260,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
         </div>
       </div>
 
-      {/* Image Preview Modal */}
+      {/* image preview modal */}
       {selectedImage && (
         <div 
           className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -279,7 +278,7 @@ export default function RequestDetail({ requests, onApprove, onDeny, currentUser
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* confirmation dialog */}
       <ConfirmDialog
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}

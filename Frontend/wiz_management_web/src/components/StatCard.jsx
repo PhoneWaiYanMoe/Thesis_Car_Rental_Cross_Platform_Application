@@ -1,4 +1,3 @@
-// src/components/StatCard.jsx
 import React from 'react';
 
 export default function StatCard({ icon: Icon, label, value, trend, bgColor = '#F8F9FF' }) {

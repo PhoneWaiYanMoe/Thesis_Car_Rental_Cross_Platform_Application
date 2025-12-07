@@ -1,15 +1,17 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, FileText, BarChart3, LogOut, User } from 'lucide-react';
+import { Home, Users, Car, UserCog, LogOut, Shield } from 'lucide-react';
 
-export default function Layout({ children, user, onLogout }) {
+export default function AdminLayout({ children, user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/support/dashboard' },
-    { icon: FileText, label: 'All Requests', path: '/support/requests' },
-    { icon: BarChart3, label: 'My Statistics', path: '/support/stats' },
+    { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: Shield, label: 'As Support', path: '/admin/support-view' },
+    { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: Car, label: 'Cars', path: '/admin/cars' },
+    { icon: UserCog, label: 'Support Staff', path: '/admin/staff' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -26,7 +28,7 @@ export default function Layout({ children, user, onLogout }) {
             </div>
             <div>
               <h2 className="text-[#131A34] font-bold text-lg">Wiz</h2>
-              <p className="text-[#717685] text-sm">Support Portal</p>
+              <p className="text-[#717685] text-sm">Admin Portal</p>
             </div>
           </div>
         </div>
@@ -54,11 +56,11 @@ export default function Layout({ children, user, onLogout }) {
           <div className="bg-[#F8F9FF] rounded-xl p-4 mb-3">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-[#6679C0] rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#131A34]">{user?.username || 'Support User'}</p>
-                <p className="text-xs text-[#717685]">Customer Support</p>
+                <p className="text-sm font-semibold text-[#131A34]">{user?.username || 'Admin'}</p>
+                <p className="text-xs text-[#717685]">Administrator</p>
               </div>
             </div>
           </div>

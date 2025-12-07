@@ -1,5 +1,3 @@
-// src/utils/predefinedUsers.js
-
 export const predefinedUsers = [
   {
     username: 'admin',

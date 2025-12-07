@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { predefinedUsers } from '../utils/predefinedUsers';
@@ -15,23 +14,23 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    // Find user in predefined users
+    // find user in predefined users
     const user = predefinedUsers.find(
       u => u.username === username && u.password === password
     );
 
     if (user) {
-      // Login successful
+      // login successful
       onLogin(username, password, user.role);
       
-      // Navigate based on role
+      // navigate based on role
       if (user.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/support/dashboard');
       }
     } else {
-      // Login failed
+      // login failed
       setError('Invalid username or password');
     }
   };
@@ -57,7 +56,7 @@ export default function Login({ onLogin }) {
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
-                setError(''); // Clear error when typing
+                setError(''); // clear error when typing
               }}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
               className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
@@ -74,7 +73,7 @@ export default function Login({ onLogin }) {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(''); // Clear error when typing
+                setError(''); // clear error when typing
               }}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
               className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
@@ -82,7 +81,7 @@ export default function Login({ onLogin }) {
             />
           </div>
 
-          {/* Error Message */}
+          {/* error message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
               {error}
