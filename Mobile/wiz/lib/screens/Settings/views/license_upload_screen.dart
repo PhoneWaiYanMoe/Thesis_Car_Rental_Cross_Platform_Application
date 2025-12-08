@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/screens/Auth/services/auth_service.dart';
+import 'package:wiz/screens/Auth/services/auth_api_service.dart';
+import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -20,7 +21,7 @@ class _LicenseUploadScreenState extends State<LicenseUploadScreen> {
   final _fullNameController = TextEditingController();
   final _licenseNumberController = TextEditingController();
   final _expireDateController = TextEditingController();
-  final _authService = AuthService();
+  final _localStorageService = LocalStorageService();
   final _imagePicker = ImagePicker();
 
   File? _frontImage;
@@ -34,7 +35,7 @@ class _LicenseUploadScreenState extends State<LicenseUploadScreen> {
   }
 
   Future<void> _loadExistingData() async {
-    final licenseData = await _authService.getLicenseData();
+    final licenseData = await _localStorageService.getLicenseData();
     if (licenseData != null) {
       setState(() {
         _fullNameController.text = licenseData['fullName'] ?? '';
@@ -87,7 +88,7 @@ class _LicenseUploadScreenState extends State<LicenseUploadScreen> {
 
     try {
       // Save license data
-      await _authService.saveLicenseData(
+      await _localStorageService.saveLicenseData(
         fullName: _fullNameController.text,
         licenseNumber: _licenseNumberController.text,
         expireDate: _expireDateController.text,

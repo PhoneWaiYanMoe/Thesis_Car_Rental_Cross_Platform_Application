@@ -7,9 +7,10 @@ import 'package:wiz/screens/Home/views/widgets/clickable_field.dart';
 import 'package:wiz/screens/Home/views/widgets/drive_toggle.dart';
 import 'package:wiz/screens/Home/views/widgets/header.dart';
 import 'package:wiz/screens/Home/views/widgets/search_button.dart';
+import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
-import 'package:wiz/screens/Auth/services/auth_service.dart';
+import 'package:wiz/screens/Auth/services/auth_api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTab = 0;
-  final _authService = AuthService();
+  final _localStorageService = LocalStorageService();
 
   // User info
   String _userName = '';
@@ -52,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserInfo() async {
-    final userInfo = await _authService.getUserInfo();
+    final userInfo = await _localStorageService.getUserInfo();
     setState(() {
       _userName = userInfo['userName'] ?? 'Guest';
       _userAvatar = userInfo['userAvatar'] ?? 'assets/images/article_2.png';

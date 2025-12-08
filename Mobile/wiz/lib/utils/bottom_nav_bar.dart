@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
+import 'package:wiz/utils/app_routes.dart';
 
 class ButtonNavBar extends StatelessWidget {
   const ButtonNavBar({super.key});
@@ -18,11 +19,16 @@ class ButtonNavBar extends StatelessWidget {
         backgroundColor: AppStyles.surface(context),
         selectedItemColor: AppStyles.primary,
         unselectedItemColor: AppStyles.textSecondary(context),
+          onTap: (index) {
+          if (index == 3) {
+            AppRoutes.navigateTo(context, AppRoutes.profile);
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile', ),
         ],
       ),
     );

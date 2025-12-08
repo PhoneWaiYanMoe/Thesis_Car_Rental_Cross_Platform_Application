@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildCarHeader.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildRenterInfo.dart';
-import 'package:wiz/screens/Auth/services/auth_service.dart';
+import 'package:wiz/screens/Auth/services/auth_api_service.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
+import 'package:wiz/services/local_storage_service.dart';
+
 class BookingScreen extends StatefulWidget {
   final Map<String, dynamic> arguments;
 
@@ -19,7 +21,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   bool _agreedToTerms = false;
   final TextEditingController _messageController = TextEditingController();
-  final _authService = AuthService();
+  final _localStorageService = LocalStorageService();
   String _userName = '';
   String _licenseNumber = '';
 
@@ -33,7 +35,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _checkLicenseAndLoadInfo() async {
-    final isLicenseVerified = await _authService.isLicenseVerified();
+     final isLicenseVerified = await _localStorageService.isLicenseVerified();
 
     if (!isLicenseVerified) {
       // Navigate to license upload screen
@@ -46,7 +48,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
-    final userInfo = await _authService.getUserInfo();
+    final userInfo = await _localStorageService.getUserInfo();
     setState(() {
       _userName = userInfo['userName'] ?? 'Guest';
       _licenseNumber = userInfo['licenseNumber'] ?? '****00';

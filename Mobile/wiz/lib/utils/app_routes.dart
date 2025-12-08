@@ -13,6 +13,7 @@ import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Home/views/location_screen.dart';
+import 'package:wiz/screens/Profile/profile_screen.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 
 class AppRoutes {
@@ -30,21 +31,24 @@ class AppRoutes {
   static const String carDetails = '/car-details';
   static const String booking = '/booking';
   static const String licenseUpload = '/license-upload';
+  static const String profile = '/profile';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
         return MaterialPageRoute(builder: (_) => SplashScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
+        return MaterialPageRoute(builder: (_) => const LoginScreenBloc());
       case signup:
-        return MaterialPageRoute(builder: (_) => const SignupScreen());
+        return MaterialPageRoute(builder: (_) => const SignupScreenBloc());
       case forgotPassword:
-        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreenBloc());
       case otp:
-        return MaterialPageRoute(builder: (_) => const OtpVerificationScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(builder: (_) => OtpVerificationScreenBloc(arguments: args));
       case passwordChange:
-        return MaterialPageRoute(builder: (_) => const PasswordChangeScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(builder: (_) => PasswordChangeScreenBloc(arguments: args));
       case passwordChangeSuccess:
         return MaterialPageRoute(builder: (_) => const PasswordChangeSuccessScreen());
       case home:
@@ -81,6 +85,8 @@ class AppRoutes {
             bookingArguments: args?['bookingArguments'],
           ),
         );
+      case profile:
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
 
       default:
         return null;

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
+import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
-import '../services/auth_service.dart';
+import '../services/auth_api_service.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -12,7 +13,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  final _authService = AuthService();
+  final _localStorageService = LocalStorageService();
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     try {
       // Check if user is already logged in
-      final isLoggedIn = await _authService.isLoggedIn();
+      final isLoggedIn = await _localStorageService.isLoggedIn();
 
       if (!mounted) return;
 

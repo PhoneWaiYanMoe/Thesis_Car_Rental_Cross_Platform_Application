@@ -1,18 +1,24 @@
+// lib/screens/Auth/views/signup_screen_bloc.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Auth/views/widgets/button_widget.dart';
 import 'package:wiz/screens/Auth/views/widgets/textField_widget.dart';
 import 'package:wiz/utils/app_routes.dart';
+import '../controllers/auth_bloc.dart';
+import '../controllers/auth_event.dart';
+import '../controllers/auth_state.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+
+class SignupScreenBloc extends StatefulWidget {
+  const SignupScreenBloc({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  State<SignupScreenBloc> createState() => _SignupScreenBlocState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenBlocState extends State<SignupScreenBloc> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _nameController = TextEditingController();
@@ -47,6 +53,19 @@ class _SignupScreenState extends State<SignupScreen> {
     return _passwordValidator(value);
   }
 
+  void _handleSignup() {
+    if (!_formKey.currentState!.validate() || !_agreedToTerms) return;
+
+    context.read<AuthBloc>().add(
+      RegisterRequested(
+        email: _emailController.text.trim(),
+        fullName: _nameController.text.trim(),
+        password: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -59,106 +78,119 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 30),
-                  AppStyles.logo(context, height: 150, width: 100),
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is RegisterSuccess) {
+            // Navigate to OTP screen with email
+            AppRoutes.navigateTo(context, AppRoutes.otp, arguments: {'email': state.email, 'type': 'register'});
+          } else if (state is AuthError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+          }
+        },
+        child: SingleChildScrollView(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 30),
+                    AppStyles.logo(context, height: 150, width: 100),
 
-                  const SizedBox(height: 20),
-                  Text('Welcome!', style: AppStyles.h1(context)),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Sign up your account using email,\nfull name and password',
-                    textAlign: TextAlign.center,
-                    style: AppStyles.body(context),
-                  ),
-                  const SizedBox(height: 48),
+                    const SizedBox(height: 20),
+                    Text('Welcome!', style: AppStyles.h1(context)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Sign up your account using email,\nfull name and password',
+                      textAlign: TextAlign.center,
+                      style: AppStyles.body(context),
+                    ),
+                    const SizedBox(height: 48),
 
-                  TextFieldAuth(
-                    hintText: 'Email',
-                    icon: Icons.email_outlined,
-                    controller: _emailController,
-                    validator: _emailValidator,
-                  ),
-                  const SizedBox(height: 16),
+                    TextFieldAuth(
+                      hintText: 'Email',
+                      icon: Icons.email_outlined,
+                      controller: _emailController,
+                      validator: _emailValidator,
+                    ),
+                    const SizedBox(height: 16),
 
-                  TextFieldAuth(
-                    hintText: 'Full Name',
-                    icon: Icons.person_outline,
-                    controller: _nameController,
-                    validator: _nameValidator,
-                  ),
-                  const SizedBox(height: 16),
+                    TextFieldAuth(
+                      hintText: 'Full Name',
+                      icon: Icons.person_outline,
+                      controller: _nameController,
+                      validator: _nameValidator,
+                    ),
+                    const SizedBox(height: 16),
 
-                  TextFieldAuth(
-                    hintText: 'Password',
-                    icon: Icons.lock_outline,
-                    isPassword: true,
-                    controller: _passwordController,
-                    validator: _passwordValidator,
-                  ),
-                  const SizedBox(height: 16),
+                    TextFieldAuth(
+                      hintText: 'Password',
+                      icon: Icons.lock_outline,
+                      isPassword: true,
+                      controller: _passwordController,
+                      validator: _passwordValidator,
+                    ),
+                    const SizedBox(height: 16),
 
-                  TextFieldAuth(
-                    hintText: 'Confirm Password',
-                    icon: Icons.lock_outline,
-                    isPassword: true,
-                    controller: _confirmPasswordController,
-                    validator: _confirmPasswordValidator,
-                  ),
-                  const SizedBox(height: 20),
+                    TextFieldAuth(
+                      hintText: 'Confirm Password',
+                      icon: Icons.lock_outline,
+                      isPassword: true,
+                      controller: _confirmPasswordController,
+                      validator: _confirmPasswordValidator,
+                    ),
+                    const SizedBox(height: 20),
 
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _agreedToTerms,
-                        onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                        activeColor: const Color(0xFF6C5CE7),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'I have read and agreed to terms and conditions.',
-                          style: AppStyles.caption(context),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _agreedToTerms,
+                          onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+                          activeColor: const Color(0xFF6C5CE7),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  Button(
-                    text: 'Sign Up',
-                    enabled: _agreedToTerms,
-                    onPressed: () {
-                      if (_formKey.currentState!.validate() && _agreedToTerms) {
-                        AppRoutes.navigateTo(context, AppRoutes.otp);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Already have account? ", style: AppStyles.body(context)),
-                      GestureDetector(
-                        onTap: () {
-                          AppRoutes.navigateTo(context, AppRoutes.login);
-                        },
-                        child: Text(
-                          'Sign in',
-                          style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.bold),
+                        Expanded(
+                          child: Text(
+                            'I have read and agreed to terms and conditions.',
+                            style: AppStyles.caption(context),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, state) {
+                        final isLoading = state is AuthLoading;
+                        return Button(
+                          text: isLoading ? 'Signing up...' : 'Sign Up',
+                          enabled: _agreedToTerms && !isLoading,
+                          onPressed: _handleSignup,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Already have account? ", style: AppStyles.body(context)),
+                        GestureDetector(
+                          onTap: () {
+                            AppRoutes.navigateTo(context, AppRoutes.login);
+                          },
+                          child: Text(
+                            'Sign in',
+                            style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
