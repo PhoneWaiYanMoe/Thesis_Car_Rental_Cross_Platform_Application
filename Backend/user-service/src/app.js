@@ -33,11 +33,10 @@ try {
   console.warn("wiz-auth.yaml not found — Swagger UI disabled");
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
+app.use("/auth", authRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/", (req, res) => res.redirect("/api-docs")); 
-
-app.use("/auth", authRoutes);
 
 app.use(errorHandler);
 

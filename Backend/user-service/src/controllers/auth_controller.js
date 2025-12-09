@@ -10,7 +10,9 @@ class AuthController {
     try {
       const { email, fullName, password } = req.body;
 
-      //Check if user exists
+      console.log("📝 Registering user:", email);
+
+      // Check if user exists
       const userExists = await pool.query(
         "SELECT * FROM users WHERE email = $1",
         [email]
@@ -22,36 +24,46 @@ class AuthController {
         });
       }
 
-      //Hash password
+      // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
-
-      //Generate user ID
       const userId = uuidv4();
 
-      //Insert user (unverified)
+      // Insert user (unverified)
       const result = await pool.query(
         `INSERT INTO users (user_id, email, password_hash, full_name, role, is_verified) 
-         VALUES ($1, $2, $3, $4, $5, $6) 
-         RETURNING user_id, email, full_name`,
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING user_id, email, full_name`,
         [userId, email, passwordHash, fullName, "customer", false]
       );
 
-      //Generate and store OTP
+      console.log("✅ User created:", result.rows[0]);
+
+      // Generate and store OTP
       const otp = otpService.generateOTP();
       await otpService.storeOTP(email, otp, "email_verification");
 
-      //Send OTP email
-      await emailService.sendOTPEmail(email, otp, "Email Verification");
+      console.log("📧 OTP Code:", otp);
+
+      // Try to send email (don't fail in development)
+      try {
+        await emailService.sendOTPEmail(email, otp, "Email Verification");
+        console.log("✅ Email sent");
+      } catch (emailError) {
+        console.error("❌ Email failed:", emailError.message);
+        console.log("⚠️  Using mock email mode - OTP:", otp);
+      }
 
       res.status(201).json({
         message: "OTP sent to email",
         userId: result.rows[0].user_id,
+        // Include OTP in development for testing
+        ...(process.env.NODE_ENV === "development" && { otp }),
       });
     } catch (error) {
+      console.error("❌ Registration error:", error);
       next(error);
     }
   }
-
   //Verify email OTP
   async verifyEmailOTP(req, res, next) {
     try {
@@ -189,29 +201,42 @@ class AuthController {
     try {
       const { email } = req.body;
 
-      //Check if user exists
+      console.log("🔑 Forgot password request for:", email);
+
+      // Check if user exists
       const result = await pool.query("SELECT * FROM users WHERE email = $1", [
         email,
       ]);
 
       if (result.rows.length === 0) {
-        //Don't reveal if user exists or not (security)
+        // Don't reveal if user exists or not (security)
         return res.json({
           message: "If the email exists, a reset code has been sent",
         });
       }
 
-      //Generate and store OTP
+      // Generate and store OTP
       const otp = otpService.generateOTP();
       await otpService.storeOTP(email, otp, "password_reset");
 
-      //Send OTP email
-      await emailService.sendOTPEmail(email, otp, "Password Reset");
+      console.log("📧 Reset OTP Code:", otp);
+
+      // Try to send email (don't fail in development)
+      try {
+        await emailService.sendOTPEmail(email, otp, "Password Reset");
+        console.log("✅ Email sent");
+      } catch (emailError) {
+        console.error("❌ Email failed:", emailError.message);
+        console.log("⚠️  Using mock email mode - OTP:", otp);
+      }
 
       res.json({
         message: "Reset code sent",
+        // Include OTP in development for testing
+        ...(process.env.NODE_ENV === "development" && { otp }),
       });
     } catch (error) {
+      console.error("❌ Forgot password error:", error);
       next(error);
     }
   }
@@ -323,7 +348,6 @@ class AuthController {
 
   async logout(req, res, next) {
     try {
-     
       res.json({
         message: "Session ended",
       });

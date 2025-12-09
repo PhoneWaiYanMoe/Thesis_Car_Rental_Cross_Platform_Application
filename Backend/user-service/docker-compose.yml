@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_PASSWORD: phonewai1234s
       POSTGRES_DB: wiz_car_rental
     ports:
       - "5432:5432"
@@ -27,8 +27,19 @@ services:
       - DB_PASSWORD=phonewai1234s
       - DB_NAME=wiz_car_rental
       - PORT=3001
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-this-in-production
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - OTP_EXPIRY_MINUTES=10
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - NODE_ENV=development
     depends_on:
       - db
-
+    volumes:
+      - ./src:/app/src
 volumes:
   postgres_data:
