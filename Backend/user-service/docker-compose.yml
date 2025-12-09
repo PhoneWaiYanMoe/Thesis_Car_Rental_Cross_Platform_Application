@@ -6,9 +6,9 @@ services:
     container_name: wiz-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: phonewai1234s
-      POSTGRES_DB: wiz_car_rental
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
@@ -22,10 +22,10 @@ services:
       - "3001:3001"
     environment:
       - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=phonewai1234s
-      - DB_NAME=wiz_car_rental
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
       - PORT=3001
       - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
       - JWT_EXPIRES_IN=24h

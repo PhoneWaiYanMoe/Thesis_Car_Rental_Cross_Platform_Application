@@ -1,4 +1,3 @@
-// lib/screens/Auth/views/otp_screen_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,19 +48,9 @@ class _OtpVerificationScreenBlocState extends State<OtpVerificationScreenBloc> {
     final code = _controllers.map((c) => c.text).join();
 
     if (_type == 'register') {
-      context.read<AuthBloc>().add(
-        VerifyEmailOTPRequested(
-          email: _email,
-          code: code,
-        ),
-      );
+      context.read<AuthBloc>().add(VerifyEmailOTPRequested(email: _email, code: code));
     } else {
-      context.read<AuthBloc>().add(
-        VerifyResetOTPRequested(
-          email: _email,
-          code: code,
-        ),
-      );
+      context.read<AuthBloc>().add(VerifyResetOTPRequested(email: _email, code: code));
     }
   }
 
@@ -83,22 +72,15 @@ class _OtpVerificationScreenBlocState extends State<OtpVerificationScreenBloc> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is OTPVerificationSuccess) {
-            // Email verification successful - navigate to home
-            AppRoutes.navigateAndRemoveUntil(context, AppRoutes.home);
+            //Email verification successful - navigate to login
+            AppRoutes.navigateAndRemoveUntil(context, AppRoutes.login);
           } else if (state is ResetOTPVerified) {
-            // Password reset OTP verified - navigate to password change
-            AppRoutes.navigateTo(
-              context,
-              AppRoutes.passwordChange,
-              arguments: {'email': _email},
-            );
+            //Password reset OTP verified - navigate to password change
+            AppRoutes.navigateTo(context, AppRoutes.passwordChange, arguments: {'email': _email});
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
           }
         },
         child: Container(
@@ -111,10 +93,7 @@ class _OtpVerificationScreenBlocState extends State<OtpVerificationScreenBloc> {
                 const SizedBox(height: 20),
                 Text('Enter Verification Code', style: AppStyles.h1(context)),
                 const SizedBox(height: 12),
-                Text(
-                  'Please enter the code we sent to $_email',
-                  style: AppStyles.body(context),
-                ),
+                Text('Please enter the code we sent to $_email', style: AppStyles.body(context)),
                 const SizedBox(height: 48),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

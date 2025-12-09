@@ -3,10 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthApiService {
-  // Update this with your actual backend URL
   static const String baseUrl = 'http://10.0.2.2:3001';
 
-  // Register new user
   Future<Map<String, dynamic>> register({
     required String email,
     required String fullName,
