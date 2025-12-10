@@ -13,6 +13,8 @@ import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Home/views/location_screen.dart';
+import 'package:wiz/screens/Location/views/location_search_screen.dart';
+import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/screens/Profile/profile_screen.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 
@@ -25,7 +27,8 @@ class AppRoutes {
   static const String passwordChange = '/password-change';
   static const String passwordChangeSuccess = '/password-change-success';
   static const String home = '/home';
-  static const String location = '/location';
+  static const String map = '/map';
+  static const String locationSearch = '/location-search';
   static const String dateTime = '/datetime';
   static const String cars = '/cars';
   static const String carDetails = '/car-details';
@@ -55,10 +58,15 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case dateTime:
         return MaterialPageRoute(builder: (_) => const DateTimeScreen());
-      case location:
+      case map:
         final args = settings.arguments as String?;
-        return MaterialPageRoute(builder: (_) => LocationScreen(title: args ?? 'Select Location'));
+        return MaterialPageRoute(builder: (_) => MapScreen(title: args ?? 'Select Location'));
 
+      case locationSearch:
+        final args = settings.arguments as String?;
+        return MaterialPageRoute(builder: (_) => LocationSearchScreen(title: args ?? 'Search Location'));
+
+  
       case cars:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));

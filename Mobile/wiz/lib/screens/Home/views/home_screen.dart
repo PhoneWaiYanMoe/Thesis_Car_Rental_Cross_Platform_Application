@@ -10,7 +10,6 @@ import 'package:wiz/screens/Home/views/widgets/search_button.dart';
 import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
-import 'package:wiz/screens/Auth/services/auth_api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -129,8 +128,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.location_on_outlined,
       hint: _location ?? 'Select Location',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.location, arguments: 'Select Location').then((v) {
-        if (v != null) setState(() => _location = v);
+      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Select Location').then((result) {
+        if (result != null && result is Map<String, dynamic>) {
+          setState(() => _location = result['address']);
+        }
       }),
     );
   }
@@ -139,8 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.pin_drop_outlined,
       hint: _pickup ?? 'Pickup Location',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.location, arguments: 'Pickup Location').then((v) {
-        if (v != null) setState(() => _pickup = v);
+      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Pickup Location').then((result) {
+        if (result != null && result is Map<String, dynamic>) {
+          setState(() => _pickup = result['address']);
+        }
       }),
     );
   }
@@ -149,8 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.flag_outlined,
       hint: _destination ?? 'Destination',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.location, arguments: 'Destination').then((v) {
-        if (v != null) setState(() => _destination = v);
+      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Destination').then((result) {
+        if (result != null && result is Map<String, dynamic>) {
+          setState(() => _destination = result['address']);
+        }
       }),
     );
   }

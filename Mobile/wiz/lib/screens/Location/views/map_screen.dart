@@ -1,0 +1,336 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:wiz/constants/app_styles.dart';
+import 'package:wiz/services/location_service.dart';
+import 'package:wiz/services/nominatim_service.dart';
+import 'package:wiz/services/location_history_service.dart';
+import 'location_search_screen.dart';
+
+class MapScreen extends StatefulWidget {
+  final String title;
+
+  const MapScreen({super.key, this.title = 'Select Location'});
+
+  @override
+  State<MapScreen> createState() => _MapScreenState();
+}
+
+class _MapScreenState extends State<MapScreen> {
+  final MapController _mapController = MapController();
+  final LocationService _locationService = LocationService();
+  final NominatimService _nominatimService = NominatimService();
+  final LocationHistoryService _historyService = LocationHistoryService();
+
+  LatLng _currentPosition = const LatLng(10.8231, 106.6297); // Default: Ho Chi Minh City
+  LatLng? _selectedPosition;
+  String? _selectedAddress;
+  bool _isLoadingLocation = false;
+  bool _hasLocationPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLocation();
+  }
+
+  Future<void> _initializeLocation() async {
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      // Try to get last known position first (faster)
+      final lastKnown = await _locationService.getLastKnownPosition();
+      if (lastKnown != null && mounted) {
+        setState(() {
+          _currentPosition = lastKnown;
+          _hasLocationPermission = true;
+        });
+        _mapController.move(_currentPosition, 15);
+      }
+
+      // Then get current position (more accurate)
+      final current = await _locationService.getCurrentPosition();
+      if (current != null && mounted) {
+        setState(() {
+          _currentPosition = current;
+          _hasLocationPermission = true;
+        });
+        _mapController.move(_currentPosition, 15);
+      }
+    } catch (e) {
+      print('Error initializing location: $e');
+      setState(() => _hasLocationPermission = false);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingLocation = false);
+      }
+    }
+  }
+
+  Future<void> _moveToCurrentLocation() async {
+    setState(() => _isLoadingLocation = true);
+
+    final position = await _locationService.getCurrentPosition();
+    
+    if (position != null && mounted) {
+      setState(() {
+        _currentPosition = position;
+        _hasLocationPermission = true;
+      });
+      _mapController.move(_currentPosition, 15);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to get current location'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingLocation = false);
+    }
+  }
+
+  Future<void> _handleMapTap(LatLng position) async {
+    setState(() {
+      _selectedPosition = position;
+      _selectedAddress = null;
+    });
+
+    // Get address for selected position
+    final address = await _nominatimService.reverseGeocode(position);
+    if (address != null && mounted) {
+      setState(() => _selectedAddress = address);
+    }
+  }
+
+  Future<void> _handleSearchResult(SearchResult result) async {
+    setState(() {
+      _selectedPosition = result.position;
+      _selectedAddress = result.displayName;
+    });
+    _mapController.move(result.position, 15);
+
+    // Save to history
+    await _historyService.saveToHistory(
+      LocationHistoryItem(
+        displayName: result.displayName,
+        shortName: result.shortName,
+        subtitle: result.subtitle,
+        position: result.position,
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
+
+  void _confirmSelection() {
+    if (_selectedPosition != null && _selectedAddress != null) {
+      Navigator.pop(context, {
+        'address': _selectedAddress,
+        'latitude': _selectedPosition!.latitude,
+        'longitude': _selectedPosition!.longitude,
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppStyles.background(context),
+      body: Stack(
+        children: [
+          // Map
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentPosition,
+              initialZoom: 15,
+              onTap: (_, position) => _handleMapTap(position),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.wiz.carRental',
+                maxZoom: 19,
+              ),
+              
+              // Current location marker
+              if (_hasLocationPermission)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _currentPosition,
+                      width: 40,
+                      height: 40,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.blue, width: 2),
+                        ),
+                        child: const Icon(Icons.my_location, color: Colors.blue, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+
+              // Selected location marker
+              if (_selectedPosition != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedPosition!,
+                      width: 50,
+                      height: 50,
+                      child: const Icon(Icons.location_on, color: Colors.red, size: 50),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+
+          // Top bar
+          SafeArea(
+            child: Column(
+              children: [
+                // Search bar
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LocationSearchScreen(title: widget.title),
+                        ),
+                      );
+
+                      if (result != null && result is SearchResult) {
+                        _handleSearchResult(result);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppStyles.surface(context),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Search location...',
+                              style: AppStyles.body(context).copyWith(
+                                color: AppStyles.textSecondary(context),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // My location button
+          Positioned(
+            right: 16,
+            bottom: 200,
+            child: FloatingActionButton(
+              backgroundColor: AppStyles.surface(context),
+              onPressed: _isLoadingLocation ? null : _moveToCurrentLocation,
+              child: _isLoadingLocation
+                  ? const CircularProgressIndicator()
+                  : Icon(Icons.my_location, color: AppStyles.primary),
+            ),
+          ),
+
+          // Selected location info
+          if (_selectedPosition != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppStyles.surface(context),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: AppStyles.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Selected Location', style: AppStyles.caption(context)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _selectedAddress ?? 'Loading address...',
+                                  style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: AppStyles.primaryButtonStyle(context),
+                          onPressed: _selectedAddress != null ? _confirmSelection : null,
+                          child: Text('Confirm Location', style: AppStyles.button),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+}
