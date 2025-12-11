@@ -12,7 +12,6 @@ import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
-import 'package:wiz/screens/Home/views/location_screen.dart';
 import 'package:wiz/screens/Location/views/location_search_screen.dart';
 import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/screens/Profile/profile_screen.dart';
