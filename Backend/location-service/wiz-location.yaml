@@ -1,0 +1,255 @@
+openapi: 3.0.0
+info:
+  title: Wiz Location API
+  description: Location and geocoding service for Wiz Car Rental
+  version: 1.0.0
+servers:
+  - url: http://localhost:3003
+    description: Development server
+paths:
+  /location/search:
+    get:
+      summary: Search for locations
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "District 1, Ho Chi Minh City"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+  
+  /location/reverse:
+    get:
+      summary: Reverse geocoding (coordinates to address)
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 10.8231
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 106.6297
+      responses:
+        '200':
+          description: Address found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReverseResult'
+  
+  /location/history:
+    get:
+      summary: Get user's search history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Search history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryItem'
+    
+    post:
+      summary: Save location to history
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  example: "District 1, Ho Chi Minh City, Vietnam"
+                shortName:
+                  type: string
+                  example: "District 1"
+                subtitle:
+                  type: string
+                  example: "Ho Chi Minh City, Vietnam"
+                latitude:
+                  type: number
+                  example: 10.8231
+                longitude:
+                  type: number
+                  example: 106.6297
+      responses:
+        '201':
+          description: Location saved
+    
+    delete:
+      summary: Clear all history
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: History cleared
+  
+  /location/history/{id}:
+    delete:
+      summary: Delete location from history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Location deleted
+  
+  /location/check-service-area:
+    post:
+      summary: Check if location is within service area
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+      responses:
+        '200':
+          description: Service area check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inServiceArea:
+                    type: boolean
+                  distance:
+                    type: number
+                  message:
+                    type: string
+  
+  /location/calculate-distance:
+    post:
+      summary: Calculate distance between two points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lat1:
+                  type: number
+                lon1:
+                  type: number
+                lat2:
+                  type: number
+                lon2:
+                  type: number
+      responses:
+        '200':
+          description: Distance calculated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  distance:
+                    type: number
+                  unit:
+                    type: string
+                    example: "km"
+
+components:
+  schemas:
+    SearchResult:
+      type: object
+      properties:
+        placeId:
+          type: string
+        displayName:
+          type: string
+        shortName:
+          type: string
+        subtitle:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        type:
+          type: string
+        address:
+          type: object
+    
+    ReverseResult:
+      type: object
+      properties:
+        placeId:
+          type: string
+        displayName:
+          type: string
+        shortName:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: object
+    
+    HistoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        display_name:
+          type: string
+        short_name:
+          type: string
+        subtitle:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
