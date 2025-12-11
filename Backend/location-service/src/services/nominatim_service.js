@@ -3,19 +3,32 @@ const axios = require("axios");
 class NominatimService {
   constructor() {
     this.baseUrl = "https://nominatim.openstreetmap.org";
-    this.userAgent = "WizCarRental/1.0";
+    this.userAgent = "WizCarRental/1.0 (contact@yourapp.com)"; // Add contact email
+    this.lastRequestTime = 0;
+    this.minRequestInterval = 1000; // 1 second between requests (Nominatim requires this)
+
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
         "User-Agent": this.userAgent,
+        Referer: "http://localhost:3003", // Add referer
       },
       timeout: 10000,
-      // Optional: Add proxy if behind one (uncomment and configure if needed)
-      // proxy: {
-      //   host: 'your.proxy.host',
-      //   port: 8080,
-      // },
     });
+  }
+
+  // Add rate limiting
+  async _waitForRateLimit() {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const waitTime = this.minRequestInterval - timeSinceLastRequest;
+      console.log(`⏱️  Rate limiting: waiting ${waitTime}ms`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+
+    this.lastRequestTime = Date.now();
   }
 
   // Search for locations
@@ -24,13 +37,10 @@ class NominatimService {
       throw new Error("Invalid or empty query parameter");
     }
 
+    // Wait to respect rate limit
+    await this._waitForRateLimit();
+
     console.log("Making request with query:", query);
-    console.log(
-      "Full URL:",
-      `${this.baseUrl}/search?q=${encodeURIComponent(
-        query
-      )}&format=json&limit=${limit}&addressdetails=1`
-    );
 
     try {
       const response = await this.client.get("/search", {
@@ -39,27 +49,39 @@ class NominatimService {
           format: "json",
           limit,
           addressdetails: 1,
+          "accept-language": "en", // Request English results
         },
       });
 
-      return response.data.map(this._formatSearchResult);
+      // Fix: Use arrow function to preserve 'this' context
+      return response.data.map((item) => this._formatSearchResult(item));
     } catch (error) {
-      console.error("Nominatim search error:", error); // Log full error object
+      console.error("Nominatim search error:", error.message);
+
       if (error.response) {
         console.error("HTTP Status:", error.response.status);
         console.error("Response Data:", error.response.data);
-        console.error("Response Headers:", error.response.headers);
+
+        if (error.response.status === 418) {
+          throw new Error(
+            "Rate limit exceeded. Please wait a moment and try again."
+          );
+        } else if (error.response.status === 429) {
+          throw new Error("Too many requests. Please try again later.");
+        }
       } else if (error.request) {
-        console.error("No response received. Request details:", error.request);
-      } else {
-        console.error("Error setting up request:", error.message);
+        console.error("No response received");
+        throw new Error("Network error: Unable to reach location service");
       }
+
       throw new Error("Failed to search location");
     }
   }
 
   // Reverse geocoding
   async reverse(lat, lon) {
+    await this._waitForRateLimit();
+
     try {
       const response = await this.client.get("/reverse", {
         params: {
@@ -67,18 +89,26 @@ class NominatimService {
           lon,
           format: "json",
           addressdetails: 1,
+          "accept-language": "en",
         },
       });
 
       return this._formatReverseResult(response.data);
     } catch (error) {
       console.error("Nominatim reverse error:", error.message);
+
+      if (error.response?.status === 418 || error.response?.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait and try again.");
+      }
+
       throw new Error("Failed to reverse geocode");
     }
   }
 
   // Get place details
   async getDetails(placeId) {
+    await this._waitForRateLimit();
+
     try {
       const response = await this.client.get("/details", {
         params: {
