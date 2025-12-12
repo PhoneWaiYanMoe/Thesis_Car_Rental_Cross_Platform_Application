@@ -7,6 +7,7 @@ const path = require("path");
 
 const locationRoutes = require("./routes/location_routes");
 const errorHandler = require("./middleware/errorHandler");
+const LocationGrpcServer = require("./grpc/location_grpc_server");
 
 const app = express();
 
@@ -46,8 +47,27 @@ app.use("/", (req, res) => res.redirect("/api-docs"));
 // Error handler
 app.use(errorHandler);
 
+// Start HTTP server
 const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => {
-  console.log(`Location Service running on port ${PORT}`);
+  console.log(`Location Service HTTP running on port ${PORT}`);
   console.log(`Open: http://localhost:${PORT}/api-docs`);
+});
+
+// Start gRPC server
+const GRPC_PORT = process.env.GRPC_PORT || 50051;
+const grpcServer = new LocationGrpcServer();
+grpcServer.start(GRPC_PORT);
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  grpcServer.stop();
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully...");
+  grpcServer.stop();
+  process.exit(0);
 });

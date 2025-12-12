@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package location;
+
+service LocationService {
+  // Search for locations
+  rpc SearchLocation(SearchLocationRequest) returns (SearchLocationResponse);
+  
+  // Reverse geocoding
+  rpc ReverseGeocode(ReverseGeocodeRequest) returns (ReverseGeocodeResponse);
+  
+  // Get place details
+  rpc GetPlaceDetails(GetPlaceDetailsRequest) returns (GetPlaceDetailsResponse);
+  
+  // Calculate distance
+  rpc CalculateDistance(CalculateDistanceRequest) returns (CalculateDistanceResponse);
+  
+  // Check service area
+  rpc CheckServiceArea(CheckServiceAreaRequest) returns (CheckServiceAreaResponse);
+}
+
+// Search Location
+message SearchLocationRequest {
+  string query = 1;
+  int32 limit = 2;
+}
+
+message SearchLocationResponse {
+  repeated SearchResult results = 1;
+}
+
+message SearchResult {
+  string place_id = 1;
+  string display_name = 2;
+  string short_name = 3;
+  string subtitle = 4;
+  double latitude = 5;
+  double longitude = 6;
+  string type = 7;
+  Address address = 8;
+}
+
+message Address {
+  string road = 1;
+  string suburb = 2;
+  string city = 3;
+  string country = 4;
+  string postcode = 5;
+}
+
+// Reverse Geocoding
+message ReverseGeocodeRequest {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message ReverseGeocodeResponse {
+  string place_id = 1;
+  string display_name = 2;
+  string short_name = 3;
+  double latitude = 4;
+  double longitude = 5;
+  Address address = 6;
+}
+
+// Place Details
+message GetPlaceDetailsRequest {
+  string place_id = 1;
+}
+
+message GetPlaceDetailsResponse {
+  string place_id = 1;
+  string display_name = 2;
+  double latitude = 3;
+  double longitude = 4;
+  Address address = 5;
+  string type = 6;
+}
+
+// Calculate Distance
+message CalculateDistanceRequest {
+  double lat1 = 1;
+  double lon1 = 2;
+  double lat2 = 3;
+  double lon2 = 4;
+}
+
+message CalculateDistanceResponse {
+  double distance = 1;
+  string unit = 2;
+}
+
+// Check Service Area
+message CheckServiceAreaRequest {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message CheckServiceAreaResponse {
+  bool in_service_area = 1;
+  double distance = 2;
+  string message = 3;
+}

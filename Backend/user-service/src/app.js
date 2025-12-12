@@ -6,6 +6,7 @@ const YAML = require("yamljs");
 const path = require("path");
 
 const authRoutes = require("./routes/auth_routes");
+const locationRoutes = require("./routes/location_routes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -33,10 +34,13 @@ try {
   console.warn("wiz-auth.yaml not found — Swagger UI disabled");
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
+
+// Routes
 app.use("/auth", authRoutes);
+app.use("/location", locationRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use("/", (req, res) => res.redirect("/api-docs")); 
+app.use("/", (req, res) => res.redirect("/api-docs"));
 
 app.use(errorHandler);
 
