@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: wiz-location-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - location_postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: wiz-location-service
+    restart: always
+    ports:
+      - "3003:3003"
+      - "50051:50051"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - PORT=3003
+      - GRPC_PORT=50051
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3003
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+
+volumes:
+  location_postgres_data:
