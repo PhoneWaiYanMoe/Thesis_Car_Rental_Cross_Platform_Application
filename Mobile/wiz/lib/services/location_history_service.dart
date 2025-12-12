@@ -11,22 +11,28 @@ class LocationHistoryService {
       final prefs = await SharedPreferences.getInstance();
       final history = await getHistory();
 
-      history.removeWhere((h) => 
-        h.displayName == item.displayName || 
-        (h.position.latitude == item.position.latitude && 
-         h.position.longitude == item.position.longitude)
+      // Remove duplicates (same display name OR same coordinates)
+      history.removeWhere(
+        (h) =>
+            h.displayName == item.displayName ||
+            (h.position.latitude == item.position.latitude && h.position.longitude == item.position.longitude),
       );
 
+      // Add new item at the beginning
       history.insert(0, item);
 
+      // Keep only last 10 items
       if (history.length > _maxHistoryItems) {
         history.removeRange(_maxHistoryItems, history.length);
       }
 
+      // Save to SharedPreferences
       final jsonList = history.map((h) => h.toJson()).toList();
       await prefs.setString(_historyKey, jsonEncode(jsonList));
+
+      print('✅ Saved to history: ${item.shortName} (Total: ${history.length})');
     } catch (e) {
-      print('Error saving location history: $e');
+      print('❌ Error saving location history: $e');
     }
   }
 
@@ -40,9 +46,12 @@ class LocationHistoryService {
       }
 
       final List<dynamic> jsonList = jsonDecode(historyJson);
-      return jsonList.map((json) => LocationHistoryItem.fromJson(json)).toList();
+      final history = jsonList.map((json) => LocationHistoryItem.fromJson(json)).toList();
+
+      print('📚 Loaded history: ${history.length} items');
+      return history;
     } catch (e) {
-      print('Error getting location history: $e');
+      print('❌ Error getting location history: $e');
       return [];
     }
   }
@@ -51,25 +60,29 @@ class LocationHistoryService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_historyKey);
+      print('🗑️ History cleared');
     } catch (e) {
-      print('Error clearing location history: $e');
+      print('❌ Error clearing location history: $e');
     }
   }
 
   Future<void> removeFromHistory(LocationHistoryItem item) async {
     try {
       final history = await getHistory();
-      history.removeWhere((h) => 
-        h.displayName == item.displayName && 
-        h.position.latitude == item.position.latitude &&
-        h.position.longitude == item.position.longitude
+      history.removeWhere(
+        (h) =>
+            h.displayName == item.displayName &&
+            h.position.latitude == item.position.latitude &&
+            h.position.longitude == item.position.longitude,
       );
 
       final prefs = await SharedPreferences.getInstance();
       final jsonList = history.map((h) => h.toJson()).toList();
       await prefs.setString(_historyKey, jsonEncode(jsonList));
+
+      print('🗑️ Removed from history: ${item.shortName}');
     } catch (e) {
-      print('Error removing from history: $e');
+      print('❌ Error removing from history: $e');
     }
   }
 }
@@ -105,10 +118,7 @@ class LocationHistoryItem {
       displayName: json['displayName'] ?? '',
       shortName: json['shortName'] ?? '',
       subtitle: json['subtitle'] ?? '',
-      position: LatLng(
-        json['latitude'] ?? 0.0,
-        json['longitude'] ?? 0.0,
-      ),
+      position: LatLng(json['latitude'] ?? 0.0, json['longitude'] ?? 0.0),
       timestamp: DateTime.parse(json['timestamp']),
     );
   }

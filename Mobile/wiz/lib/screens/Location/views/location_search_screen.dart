@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/services/nominatim_service.dart';
-import 'package:wiz/services/location_history_service.dart';
+import 'package:wiz/screens/Location/services/location_api_service.dart';
 import 'package:wiz/services/location_service.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -16,12 +15,11 @@ class LocationSearchScreen extends StatefulWidget {
 
 class _LocationSearchScreenState extends State<LocationSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final NominatimService _nominatimService = NominatimService();
-  final LocationHistoryService _historyService = LocationHistoryService();
+  final LocationApiService _locationApiService = LocationApiService();
   final LocationService _locationService = LocationService();
 
   List<SearchResult> _searchResults = [];
-  List<LocationHistoryItem> _searchHistory = [];
+  List<HistoryItem> _searchHistory = [];
   bool _isSearching = false;
   bool _showHistory = true;
 
@@ -33,15 +31,16 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
   }
 
   Future<void> _loadSearchHistory() async {
-    final history = await _historyService.getHistory();
+    final history = await _locationApiService.getSearchHistory(limit: 10);
     if (mounted) {
       setState(() => _searchHistory = history);
+      print('📚 Loaded ${history.length} items from backend');
     }
   }
 
   void _onSearchChanged() {
     final query = _searchController.text.trim();
-    
+
     if (query.isEmpty) {
       setState(() {
         _showHistory = true;
@@ -56,7 +55,6 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
       _isSearching = true;
     });
 
-    // Debounce search
     Future.delayed(const Duration(milliseconds: 500), () {
       if (_searchController.text.trim() == query && mounted) {
         _performSearch(query);
@@ -66,7 +64,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
 
   Future<void> _performSearch(String query) async {
     try {
-      final results = await _nominatimService.searchLocation(query);
+      final results = await _locationApiService.searchLocation(query);
       if (mounted) {
         setState(() {
           _searchResults = results;
@@ -76,12 +74,9 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSearching = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Search failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Search failed: ${e.toString()}'), backgroundColor: Colors.red));
       }
     }
   }
@@ -91,7 +86,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
 
     try {
       final position = await _locationService.getCurrentPosition();
-      
+
       if (position == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -101,14 +96,13 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
             ),
           );
         }
+        setState(() => _isSearching = false);
         return;
       }
 
-      // Get address for current location
-      final address = await _nominatimService.reverseGeocode(position);
-      
+      final address = await _locationApiService.reverseGeocode(position);
+
       if (address != null && mounted) {
-        // Create a SearchResult from current location
         final result = SearchResult(
           placeId: 'current_location',
           displayName: address,
@@ -116,27 +110,22 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
           type: 'current_location',
         );
 
-        // Save to history
-        await _historyService.saveToHistory(
-          LocationHistoryItem(
-            displayName: address,
-            shortName: 'Current Location',
-            subtitle: address.split(',').skip(1).join(',').trim(),
-            position: position,
-            timestamp: DateTime.now(),
-          ),
+        // Save to backend history
+        await _locationApiService.saveToHistory(
+          displayName: address,
+          shortName: 'Current Location',
+          subtitle: address.split(',').skip(1).join(',').trim(),
+          latitude: position.latitude,
+          longitude: position.longitude,
         );
 
         Navigator.pop(context, result);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) {
@@ -146,40 +135,31 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
   }
 
   Future<void> _handleResultTap(SearchResult result) async {
-    // Save to history
-    await _historyService.saveToHistory(
-      LocationHistoryItem(
-        displayName: result.displayName,
-        shortName: result.shortName,
-        subtitle: result.subtitle,
-        position: result.position,
-        timestamp: DateTime.now(),
-      ),
+    // Save to backend history
+    await _locationApiService.saveToHistory(
+      displayName: result.displayName,
+      shortName: result.shortName,
+      subtitle: result.subtitle,
+      latitude: result.position.latitude,
+      longitude: result.position.longitude,
     );
 
-    // Return result
     if (mounted) {
       Navigator.pop(context, result);
     }
   }
 
-  Future<void> _handleHistoryTap(LocationHistoryItem item) async {
-    final result = SearchResult(
-      placeId: '',
-      displayName: item.displayName,
-      position: item.position,
-      type: 'history',
-    );
+  Future<void> _handleHistoryTap(HistoryItem item) async {
+    // Convert to SearchResult and return
+    final result = item.toSearchResult();
 
-    // Update timestamp
-    await _historyService.saveToHistory(
-      LocationHistoryItem(
-        displayName: item.displayName,
-        shortName: item.shortName,
-        subtitle: item.subtitle,
-        position: item.position,
-        timestamp: DateTime.now(),
-      ),
+    // Update timestamp by saving again
+    await _locationApiService.saveToHistory(
+      displayName: item.displayName,
+      shortName: item.shortName,
+      subtitle: item.subtitle,
+      latitude: item.position.latitude,
+      longitude: item.position.longitude,
     );
 
     if (mounted) {
@@ -188,8 +168,17 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
   }
 
   Future<void> _clearHistory() async {
-    await _historyService.clearHistory();
-    setState(() => _searchHistory = []);
+    final success = await _locationApiService.clearHistory();
+    if (success) {
+      setState(() => _searchHistory = []);
+    }
+  }
+
+  Future<void> _deleteHistoryItem(HistoryItem item) async {
+    final success = await _locationApiService.deleteFromHistory(item.id);
+    if (success) {
+      _loadSearchHistory();
+    }
   }
 
   @override
@@ -205,45 +194,31 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
       appBar: AppBar(
         backgroundColor: AppStyles.background(context),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
         title: Text(widget.title, style: AppStyles.h2(context)),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          // Search field
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
               autofocus: true,
-              decoration: AppStyles.inputDecoration(
-                hint: 'Search location...',
-                icon: Icons.search,
-                context: context,
-              ).copyWith(
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      )
-                    : null,
-              ),
+              decoration: AppStyles.inputDecoration(hint: 'Search location...', icon: Icons.search, context: context)
+                  .copyWith(
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(icon: const Icon(Icons.clear), onPressed: () => _searchController.clear())
+                        : null,
+                  ),
             ),
           ),
-
-          // Current location button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton.icon(
-              style: AppStyles.primaryButtonStyle(context).copyWith(
-                padding: WidgetStateProperty.all(const EdgeInsets.all(16)),
-              ),
+              style: AppStyles.primaryButtonStyle(
+                context,
+              ).copyWith(padding: WidgetStateProperty.all(const EdgeInsets.all(16))),
               onPressed: _isSearching ? null : _handleCurrentLocation,
               icon: _isSearching
                   ? const SizedBox(
@@ -255,13 +230,8 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
               label: Text('Use Current Location', style: AppStyles.button),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Results or History
-          Expanded(
-            child: _buildContent(),
-          ),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
@@ -337,10 +307,10 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Recent Searches', style: AppStyles.h3(context)),
+              Text('Recent Searches (${_searchHistory.length})', style: AppStyles.h3(context)),
               TextButton(
                 onPressed: _clearHistory,
-                child: Text('Clear All', style: TextStyle(color: Colors.red)),
+                child: const Text('Clear All', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -362,10 +332,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
                   subtitle: Text(item.subtitle, style: AppStyles.caption(context)),
                   trailing: IconButton(
                     icon: const Icon(Icons.close, size: 20),
-                    onPressed: () async {
-                      await _historyService.removeFromHistory(item);
-                      _loadSearchHistory();
-                    },
+                    onPressed: () => _deleteHistoryItem(item),
                   ),
                   onTap: () => _handleHistoryTap(item),
                 ),

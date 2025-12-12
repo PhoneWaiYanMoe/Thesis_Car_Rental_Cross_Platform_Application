@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/location_service.dart';
-import 'package:wiz/services/nominatim_service.dart';
+import 'package:wiz/screens/Location/services/location_api_service.dart';
 import 'package:wiz/services/location_history_service.dart';
 import 'location_search_screen.dart';
 
@@ -19,13 +19,14 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   final LocationService _locationService = LocationService();
-  final NominatimService _nominatimService = NominatimService();
+  final LocationApiService _locationApiService = LocationApiService();
   final LocationHistoryService _historyService = LocationHistoryService();
 
-  LatLng _currentPosition = const LatLng(10.8231, 106.6297); // Default: Ho Chi Minh City
+  LatLng _currentPosition = const LatLng(10.8231, 106.6297);
   LatLng? _selectedPosition;
   String? _selectedAddress;
   bool _isLoadingLocation = false;
+  bool _isLoadingAddress = false;
   bool _hasLocationPermission = false;
 
   @override
@@ -38,7 +39,6 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      // Try to get last known position first (faster)
       final lastKnown = await _locationService.getLastKnownPosition();
       if (lastKnown != null && mounted) {
         setState(() {
@@ -48,7 +48,6 @@ class _MapScreenState extends State<MapScreen> {
         _mapController.move(_currentPosition, 15);
       }
 
-      // Then get current position (more accurate)
       final current = await _locationService.getCurrentPosition();
       if (current != null && mounted) {
         setState(() {
@@ -71,7 +70,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _isLoadingLocation = true);
 
     final position = await _locationService.getCurrentPosition();
-    
+
     if (position != null && mounted) {
       setState(() {
         _currentPosition = position;
@@ -79,12 +78,9 @@ class _MapScreenState extends State<MapScreen> {
       });
       _mapController.move(_currentPosition, 15);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to get current location'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unable to get current location'), backgroundColor: Colors.red));
     }
 
     if (mounted) {
@@ -96,12 +92,17 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _selectedPosition = position;
       _selectedAddress = null;
+      _isLoadingAddress = true;
     });
 
-    // Get address for selected position
-    final address = await _nominatimService.reverseGeocode(position);
+    final address = await _locationApiService.reverseGeocode(position);
     if (address != null && mounted) {
-      setState(() => _selectedAddress = address);
+      setState(() {
+        _selectedAddress = address;
+        _isLoadingAddress = false;
+      });
+    } else if (mounted) {
+      setState(() => _isLoadingAddress = false);
     }
   }
 
@@ -109,10 +110,10 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _selectedPosition = result.position;
       _selectedAddress = result.displayName;
+      _isLoadingAddress = false;
     });
     _mapController.move(result.position, 15);
 
-    // Save to history
     await _historyService.saveToHistory(
       LocationHistoryItem(
         displayName: result.displayName,
@@ -140,16 +141,13 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: AppStyles.background(context),
       body: Stack(
         children: [
-          // Map
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentPosition,
               initialZoom: 15,
               onTap: (_, position) => _handleMapTap(position),
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all,
-              ),
+              interactionOptions: const InteractionOptions(flags: InteractiveFlag.all),
             ),
             children: [
               TileLayer(
@@ -157,8 +155,6 @@ class _MapScreenState extends State<MapScreen> {
                 userAgentPackageName: 'com.wiz.carRental',
                 maxZoom: 19,
               ),
-              
-              // Current location marker
               if (_hasLocationPermission)
                 MarkerLayer(
                   markers: [
@@ -177,8 +173,6 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ],
                 ),
-
-              // Selected location marker
               if (_selectedPosition != null)
                 MarkerLayer(
                   markers: [
@@ -192,21 +186,16 @@ class _MapScreenState extends State<MapScreen> {
                 ),
             ],
           ),
-
-          // Top bar
           SafeArea(
             child: Column(
               children: [
-                // Search bar
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: GestureDetector(
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => LocationSearchScreen(title: widget.title),
-                        ),
+                        MaterialPageRoute(builder: (_) => LocationSearchScreen(title: widget.title)),
                       );
 
                       if (result != null && result is SearchResult) {
@@ -219,11 +208,7 @@ class _MapScreenState extends State<MapScreen> {
                         color: AppStyles.surface(context),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 2)),
                         ],
                       ),
                       child: Row(
@@ -232,16 +217,17 @@ class _MapScreenState extends State<MapScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Search location...',
+                              _selectedAddress ?? 'Search location...',
                               style: AppStyles.body(context).copyWith(
-                                color: AppStyles.textSecondary(context),
+                                color: _selectedAddress != null
+                                    ? AppStyles.textPrimary(context)
+                                    : AppStyles.textSecondary(context),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
+                          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                         ],
                       ),
                     ),
@@ -250,8 +236,6 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
           ),
-
-          // My location button
           Positioned(
             right: 16,
             bottom: 200,
@@ -263,8 +247,6 @@ class _MapScreenState extends State<MapScreen> {
                   : Icon(Icons.my_location, color: AppStyles.primary),
             ),
           ),
-
-          // Selected location info
           if (_selectedPosition != null)
             Positioned(
               left: 0,
@@ -276,11 +258,7 @@ class _MapScreenState extends State<MapScreen> {
                   color: AppStyles.surface(context),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2)),
                   ],
                 ),
                 child: SafeArea(
@@ -298,12 +276,19 @@ class _MapScreenState extends State<MapScreen> {
                               children: [
                                 Text('Selected Location', style: AppStyles.caption(context)),
                                 const SizedBox(height: 4),
-                                Text(
-                                  _selectedAddress ?? 'Loading address...',
-                                  style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                if (_isLoadingAddress)
+                                  const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                else
+                                  Text(
+                                    _selectedAddress ?? 'Loading address...',
+                                    style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                               ],
                             ),
                           ),
@@ -314,7 +299,7 @@ class _MapScreenState extends State<MapScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: AppStyles.primaryButtonStyle(context),
-                          onPressed: _selectedAddress != null ? _confirmSelection : null,
+                          onPressed: (_selectedAddress != null && !_isLoadingAddress) ? _confirmSelection : null,
                           child: Text('Confirm Location', style: AppStyles.button),
                         ),
                       ),
