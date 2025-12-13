@@ -13,6 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wiz-network  # Add this
 
   api:
     build: .
@@ -22,7 +24,7 @@ services:
       - "3001:3001"
     environment:
       - DB_HOST=db
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
@@ -37,9 +39,17 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - NODE_ENV=development
+      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051  # Add this
     depends_on:
       - db
     volumes:
       - ./src:/app/src
+    networks:
+      - wiz-network  # Add this
+
 volumes:
   postgres_data:
+
+networks:
+  wiz-network:
+    external: true  # Add this section

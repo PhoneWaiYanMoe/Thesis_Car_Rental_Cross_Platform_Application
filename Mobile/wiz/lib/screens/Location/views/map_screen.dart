@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/location_service.dart';
 import 'package:wiz/screens/Location/services/location_api_service.dart';
-import 'package:wiz/services/location_history_service.dart';
 import 'location_search_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -20,7 +19,6 @@ class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   final LocationService _locationService = LocationService();
   final LocationApiService _locationApiService = LocationApiService();
-  final LocationHistoryService _historyService = LocationHistoryService();
 
   LatLng _currentPosition = const LatLng(10.8231, 106.6297);
   LatLng? _selectedPosition;
@@ -107,31 +105,59 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _handleSearchResult(SearchResult result) async {
+    print('📍 Received search result: displayName=${result.displayName}, shortName=${result.shortName}');
+
+    // Use displayName if available, otherwise fallback to shortName
+    final address = result.displayName.trim().isNotEmpty 
+        ? result.displayName 
+        : result.shortName.trim().isNotEmpty 
+            ? result.shortName 
+            : 'Unknown Location';
+
     setState(() {
       _selectedPosition = result.position;
-      _selectedAddress = result.displayName;
+      _selectedAddress = address;
       _isLoadingAddress = false;
     });
+
     _mapController.move(result.position, 15);
 
-    await _historyService.saveToHistory(
-      LocationHistoryItem(
-        displayName: result.displayName,
-        shortName: result.shortName,
-        subtitle: result.subtitle,
-        position: result.position,
-        timestamp: DateTime.now(),
-      ),
+    // Save to backend history
+    // Ensure displayName is not empty - use shortName as fallback
+    final displayName = result.displayName.trim().isNotEmpty 
+        ? result.displayName 
+        : result.shortName.trim().isNotEmpty 
+            ? result.shortName 
+            : 'Unknown Location';
+    
+    final saved = await _locationApiService.saveToHistory(
+      displayName: displayName,
+      shortName: result.shortName,
+      subtitle: result.subtitle,
+      latitude: result.position.latitude,
+      longitude: result.position.longitude,
     );
+
+    if (saved) {
+      print('✅ Location saved to backend history');
+    } else {
+      print('⚠️ Failed to save location to backend history');
+    }
   }
 
   void _confirmSelection() {
     if (_selectedPosition != null && _selectedAddress != null) {
+      print('✅ Confirming location: $_selectedAddress');
       Navigator.pop(context, {
         'address': _selectedAddress,
         'latitude': _selectedPosition!.latitude,
         'longitude': _selectedPosition!.longitude,
       });
+    } else {
+      print('⚠️ Cannot confirm - missing position or address');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a location first'), backgroundColor: Colors.orange));
     }
   }
 
@@ -197,6 +223,8 @@ class _MapScreenState extends State<MapScreen> {
                         context,
                         MaterialPageRoute(builder: (_) => LocationSearchScreen(title: widget.title)),
                       );
+
+                      print('🔍 Search screen returned: $result');
 
                       if (result != null && result is SearchResult) {
                         _handleSearchResult(result);

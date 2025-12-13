@@ -111,10 +111,14 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
         );
 
         // Save to backend history
+        // Ensure displayName is not empty
+        final displayName = address.trim().isNotEmpty ? address : 'Current Location';
+        final subtitle = address.split(',').skip(1).join(',').trim();
+        
         await _locationApiService.saveToHistory(
-          displayName: address,
+          displayName: displayName,
           shortName: 'Current Location',
-          subtitle: address.split(',').skip(1).join(',').trim(),
+          subtitle: subtitle.isNotEmpty ? subtitle : 'Current Location',
           latitude: position.latitude,
           longitude: position.longitude,
         );
@@ -136,8 +140,15 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
 
   Future<void> _handleResultTap(SearchResult result) async {
     // Save to backend history
+    // Ensure displayName is not empty - use shortName as fallback
+    final displayName = result.displayName.trim().isNotEmpty 
+        ? result.displayName 
+        : result.shortName.trim().isNotEmpty 
+            ? result.shortName 
+            : 'Unknown Location';
+    
     await _locationApiService.saveToHistory(
-      displayName: result.displayName,
+      displayName: displayName,
       shortName: result.shortName,
       subtitle: result.subtitle,
       latitude: result.position.latitude,
@@ -154,8 +165,15 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
     final result = item.toSearchResult();
 
     // Update timestamp by saving again
+    // Ensure displayName is not empty
+    final displayName = item.displayName.trim().isNotEmpty 
+        ? item.displayName 
+        : item.shortName.trim().isNotEmpty 
+            ? item.shortName 
+            : 'Unknown Location';
+    
     await _locationApiService.saveToHistory(
-      displayName: item.displayName,
+      displayName: displayName,
       shortName: item.shortName,
       subtitle: item.subtitle,
       latitude: item.position.latitude,

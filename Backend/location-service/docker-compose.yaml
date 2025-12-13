@@ -13,6 +13,8 @@ services:
       - "5433:5432"
     volumes:
       - location_postgres_data:/var/lib/postgresql/data
+    networks:
+      - wiz-network  # Add this
 
   api:
     build: .
@@ -38,6 +40,12 @@ services:
       - db
     volumes:
       - ./src:/app/src
+    networks:
+      - wiz-network  # Add this
 
 volumes:
   location_postgres_data:
+
+networks:
+  wiz-network:
+    external: true  # Add this section

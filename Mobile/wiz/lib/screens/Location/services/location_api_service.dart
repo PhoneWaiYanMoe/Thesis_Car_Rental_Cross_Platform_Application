@@ -1,15 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:wiz/services/local_storage_service.dart';
 
 class LocationApiService {
   static const String baseUrl = 'http://10.0.2.2:3001';
+  final _localStorageService = LocalStorageService();
 
-  // Get auth token (you'll need to implement this based on your auth system)
+  // Get auth token from local storage
   Future<String?> _getAuthToken() async {
-    // TODO: Get token from your local storage service
-    // For now, returning null (will work for public endpoints)
-    return null;
+    try {
+      final token = await _localStorageService.getToken();
+      return token;
+    } catch (e) {
+      print('Error getting auth token: $e');
+      return null;
+    }
   }
 
   // Search for locations
@@ -23,6 +29,7 @@ class LocationApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => SearchResult.fromJson(json)).toList();
       } else {
+        print('Search failed with status: ${response.statusCode}');
         throw Exception('Failed to search location');
       }
     } catch (e) {
@@ -52,19 +59,25 @@ class LocationApiService {
   Future<List<HistoryItem>> getSearchHistory({int limit = 10}) async {
     try {
       final token = await _getAuthToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
 
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null) {
+        print('⚠️ No auth token - cannot get history');
+        return [];
       }
+
+      final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final response = await http.get(Uri.parse('$baseUrl/location/history?limit=$limit'), headers: headers);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        print('✅ Loaded ${data.length} history items from backend');
         return data.map((json) => HistoryItem.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        print('⚠️ History requires authentication - returning empty list');
+        print('⚠️ History requires authentication');
+        return [];
+      } else {
+        print('⚠️ History fetch failed: ${response.statusCode}');
         return [];
       }
     } catch (e) {
@@ -83,11 +96,13 @@ class LocationApiService {
   }) async {
     try {
       final token = await _getAuthToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
 
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null) {
+        print('⚠️ No auth token - cannot save history');
+        return false;
       }
+
+      final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final response = await http.post(
         Uri.parse('$baseUrl/location/history'),
@@ -107,6 +122,11 @@ class LocationApiService {
       } else if (response.statusCode == 401) {
         print('⚠️ History save requires authentication');
         return false;
+      } else {
+        print('⚠️ History save failed: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        print('Request body: displayName=$displayName, shortName=$shortName, subtitle=$subtitle, lat=$latitude, lon=$longitude');
+        return false;
       }
     } catch (e) {
       print('Error saving to history: $e');
@@ -118,11 +138,13 @@ class LocationApiService {
   Future<bool> deleteFromHistory(int id) async {
     try {
       final token = await _getAuthToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
 
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null) {
+        print('⚠️ No auth token - cannot delete history');
+        return false;
       }
+
+      final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final response = await http.delete(Uri.parse('$baseUrl/location/history/$id'), headers: headers);
 
@@ -137,11 +159,13 @@ class LocationApiService {
   Future<bool> clearHistory() async {
     try {
       final token = await _getAuthToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
 
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null) {
+        print('⚠️ No auth token - cannot clear history');
+        return false;
       }
+
+      final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final response = await http.delete(Uri.parse('$baseUrl/location/history'), headers: headers);
 
@@ -300,7 +324,19 @@ class HistoryItem {
 
   // Convert to SearchResult for navigation
   SearchResult toSearchResult() {
-    return SearchResult(placeId: id.toString(), displayName: displayName, position: position, type: 'history');
+    // Ensure displayName is not empty - use shortName as fallback
+    final displayNameValue = displayName.trim().isNotEmpty 
+        ? displayName 
+        : shortName.trim().isNotEmpty 
+            ? shortName 
+            : 'Unknown Location';
+    
+    return SearchResult(
+      placeId: id.toString(), 
+      displayName: displayNameValue, 
+      position: position, 
+      type: 'history'
+    );
   }
 }
 

@@ -17,9 +17,24 @@ service LocationService {
   
   // Check service area
   rpc CheckServiceArea(CheckServiceAreaRequest) returns (CheckServiceAreaResponse);
+
+  // ==================== HISTORY METHODS ====================
+  
+  // Get search history
+  rpc GetSearchHistory(GetSearchHistoryRequest) returns (GetSearchHistoryResponse);
+  
+  // Save to history
+  rpc SaveToHistory(SaveToHistoryRequest) returns (SaveToHistoryResponse);
+  
+  // Delete from history
+  rpc DeleteFromHistory(DeleteFromHistoryRequest) returns (DeleteFromHistoryResponse);
+  
+  // Clear all history
+  rpc ClearHistory(ClearHistoryRequest) returns (ClearHistoryResponse);
 }
 
-// Search Location
+// ==================== EXISTING MESSAGES ====================
+
 message SearchLocationRequest {
   string query = 1;
   int32 limit = 2;
@@ -48,7 +63,6 @@ message Address {
   string postcode = 5;
 }
 
-// Reverse Geocoding
 message ReverseGeocodeRequest {
   double latitude = 1;
   double longitude = 2;
@@ -63,7 +77,6 @@ message ReverseGeocodeResponse {
   Address address = 6;
 }
 
-// Place Details
 message GetPlaceDetailsRequest {
   string place_id = 1;
 }
@@ -77,7 +90,6 @@ message GetPlaceDetailsResponse {
   string type = 6;
 }
 
-// Calculate Distance
 message CalculateDistanceRequest {
   double lat1 = 1;
   double lon1 = 2;
@@ -90,7 +102,6 @@ message CalculateDistanceResponse {
   string unit = 2;
 }
 
-// Check Service Area
 message CheckServiceAreaRequest {
   double latitude = 1;
   double longitude = 2;
@@ -100,4 +111,59 @@ message CheckServiceAreaResponse {
   bool in_service_area = 1;
   double distance = 2;
   string message = 3;
+}
+
+// ==================== HISTORY MESSAGES ====================
+
+message GetSearchHistoryRequest {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message GetSearchHistoryResponse {
+  repeated HistoryItem items = 1;
+}
+
+message HistoryItem {
+  int32 id = 1;
+  string display_name = 2;
+  string short_name = 3;
+  string subtitle = 4;
+  double latitude = 5;
+  double longitude = 6;
+  string created_at = 7;
+}
+
+message SaveToHistoryRequest {
+  string user_id = 1;
+  string display_name = 2;
+  string short_name = 3;
+  string subtitle = 4;
+  double latitude = 5;
+  double longitude = 6;
+}
+
+message SaveToHistoryResponse {
+  bool success = 1;
+  string message = 2;
+  int32 id = 3;
+}
+
+message DeleteFromHistoryRequest {
+  string user_id = 1;
+  int32 id = 2;
+}
+
+message DeleteFromHistoryResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ClearHistoryRequest {
+  string user_id = 1;
+}
+
+message ClearHistoryResponse {
+  bool success = 1;
+  string message = 2;
 }
