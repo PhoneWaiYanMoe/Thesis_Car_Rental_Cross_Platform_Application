@@ -5,7 +5,7 @@ module.exports = (err, req, res, next) => {
     return res.status(400).json({ error: err.message });
   }
 
-  if (err.code === '23505') { // PostgreSQL unique violation
+  if (err.code === '23505') { 
     return res.status(400).json({ error: 'Duplicate entry' });
   }
 

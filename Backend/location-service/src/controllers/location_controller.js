@@ -3,7 +3,6 @@ const cacheService = require("../services/cache_service");
 const pool = require("../config/database");
 
 class LocationController {
-  // Search for locations
   async searchLocation(req, res, next) {
     try {
       const { q, limit = 10 } = req.query;
@@ -12,7 +11,6 @@ class LocationController {
         return res.status(400).json({ error: "Query parameter 'q' is required" });
       }
 
-      // Check cache first
       const cacheKey = `search:${q}:${limit}`;
       const cached = await cacheService.get(cacheKey);
       
@@ -21,10 +19,8 @@ class LocationController {
         return res.json(JSON.parse(cached));
       }
 
-      // Call Nominatim API
       const results = await nominatimService.search(q, limit);
 
-      // Cache for 1 hour
       await cacheService.set(cacheKey, JSON.stringify(results), 3600);
 
       res.json(results);
@@ -34,7 +30,6 @@ class LocationController {
     }
   }
 
-  // Reverse geocoding (coordinates to address)
   async reverseGeocode(req, res, next) {
     try {
       const { lat, lon } = req.query;
@@ -50,7 +45,6 @@ class LocationController {
         return res.status(400).json({ error: "Invalid coordinates" });
       }
 
-      // Check cache
       const cacheKey = `reverse:${latitude}:${longitude}`;
       const cached = await cacheService.get(cacheKey);
       
@@ -59,10 +53,8 @@ class LocationController {
         return res.json(JSON.parse(cached));
       }
 
-      // Call Nominatim API
       const result = await nominatimService.reverse(latitude, longitude);
 
-      // Cache for 24 hours (addresses don't change often)
       await cacheService.set(cacheKey, JSON.stringify(result), 86400);
 
       res.json(result);
@@ -72,7 +64,6 @@ class LocationController {
     }
   }
 
-  // Get place details
   async getPlaceDetails(req, res, next) {
     try {
       const { placeId } = req.params;
@@ -81,7 +72,6 @@ class LocationController {
         return res.status(400).json({ error: "Place ID is required" });
       }
 
-      // Check cache
       const cacheKey = `details:${placeId}`;
       const cached = await cacheService.get(cacheKey);
       
@@ -89,10 +79,8 @@ class LocationController {
         return res.json(JSON.parse(cached));
       }
 
-      // Call Nominatim API
       const result = await nominatimService.getDetails(placeId);
 
-      // Cache for 24 hours
       await cacheService.set(cacheKey, JSON.stringify(result), 86400);
 
       res.json(result);
@@ -102,7 +90,6 @@ class LocationController {
     }
   }
 
-  // Get user's search history
   async getSearchHistory(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -124,7 +111,6 @@ class LocationController {
     }
   }
 
-  // Save location to history
   async saveToHistory(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -136,7 +122,6 @@ class LocationController {
         });
       }
 
-      // Check if location already exists in history
       const existing = await pool.query(
         `SELECT id FROM location_history 
          WHERE user_id = $1 AND latitude = $2 AND longitude = $3`,
@@ -144,7 +129,6 @@ class LocationController {
       );
 
       if (existing.rows.length > 0) {
-        // Update timestamp
         await pool.query(
           `UPDATE location_history 
            SET created_at = NOW() 
@@ -155,7 +139,6 @@ class LocationController {
         return res.json({ message: "History updated", id: existing.rows[0].id });
       }
 
-      // Insert new history item
       const result = await pool.query(
         `INSERT INTO location_history 
          (user_id, display_name, short_name, subtitle, latitude, longitude) 
@@ -164,7 +147,6 @@ class LocationController {
         [userId, displayName, shortName, subtitle, latitude, longitude]
       );
 
-      // Keep only last 10 items
       await pool.query(
         `DELETE FROM location_history 
          WHERE user_id = $1 
@@ -187,7 +169,6 @@ class LocationController {
     }
   }
 
-  // Delete location from history
   async deleteFromHistory(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -205,7 +186,6 @@ class LocationController {
     }
   }
 
-  // Clear all history
   async clearHistory(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -222,7 +202,6 @@ class LocationController {
     }
   }
 
-  // Check if location is within service area
   async checkServiceArea(req, res, next) {
     try {
       const { latitude, longitude } = req.body;

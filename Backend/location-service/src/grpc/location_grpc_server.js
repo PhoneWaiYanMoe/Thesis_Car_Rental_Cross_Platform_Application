@@ -22,7 +22,6 @@ class LocationGrpcServer {
     this.server = new grpc.Server();
   }
 
-  // ==================== EXISTING METHODS ====================
 
   async searchLocation(call, callback) {
     try {
@@ -189,7 +188,6 @@ class LocationGrpcServer {
     }
   }
 
-  // ==================== HISTORY METHODS ====================
 
   async getSearchHistory(call, callback) {
     try {

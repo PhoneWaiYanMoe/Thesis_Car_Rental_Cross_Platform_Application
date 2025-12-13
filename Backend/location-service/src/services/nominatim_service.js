@@ -3,15 +3,15 @@ const axios = require("axios");
 class NominatimService {
   constructor() {
     this.baseUrl = "https://nominatim.openstreetmap.org";
-    this.userAgent = "WizCarRental/1.0 (contact@yourapp.com)"; // Add contact email
+    this.userAgent = "WizCarRental/1.0 (contact@yourapp.com)"; 
     this.lastRequestTime = 0;
-    this.minRequestInterval = 1000; // 1 second between requests (Nominatim requires this)
+    this.minRequestInterval = 1000; 
 
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
         "User-Agent": this.userAgent,
-        Referer: "http://localhost:3003", // Add referer
+        Referer: "http://localhost:3003", 
       },
       timeout: 10000,
     });
