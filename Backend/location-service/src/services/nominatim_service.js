@@ -3,17 +3,21 @@ const axios = require("axios");
 class NominatimService {
   constructor() {
     this.baseUrl = "https://nominatim.openstreetmap.org";
-    this.userAgent = "WizCarRental/1.0 (contact@yourapp.com)"; 
+    this.userAgent = "WizCarRental/1.0 (contact@wizcar.com)"; 
     this.lastRequestTime = 0;
-    this.minRequestInterval = 1000; 
+    this.minRequestInterval = 1000; // 1 second between requests (Nominatim requirement)
 
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
         "User-Agent": this.userAgent,
-        Referer: "http://localhost:3003", 
+        "Accept": "application/json",
+        "Accept-Language": "en",
       },
-      timeout: 10000,
+      timeout: 15000, // Increased timeout to 15 seconds
+      validateStatus: function (status) {
+        return status >= 200 && status < 500; // Don't throw on 4xx errors
+      },
     });
   }
 
@@ -45,18 +49,47 @@ class NominatimService {
     try {
       const response = await this.client.get("/search", {
         params: {
-          q: query,
+          q: query.trim(),
           format: "json",
           limit,
           addressdetails: 1,
-          "accept-language": "en", // Request English results
+          "accept-language": "en",
+          email: "contact@wizcar.com", // Nominatim requires email for proper usage
         },
       });
+
+      // Check for error responses
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
+      } else if (response.status === 403) {
+        throw new Error("Access forbidden. Please check User-Agent and email configuration.");
+      } else if (response.status >= 400) {
+        throw new Error(`Nominatim API error: ${response.status} ${response.statusText}`);
+      }
+
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error("Unexpected response format:", response.data);
+        throw new Error("Invalid response format from Nominatim");
+      }
 
       // Fix: Use arrow function to preserve 'this' context
       return response.data.map((item) => this._formatSearchResult(item));
     } catch (error) {
       console.error("Nominatim search error:", error.message);
+      console.error("Error code:", error.code);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        } : null,
+        request: error.request ? {
+          path: error.config?.url,
+          method: error.config?.method
+        } : null
+      });
 
       if (error.response) {
         console.error("HTTP Status:", error.response.status);
@@ -68,13 +101,29 @@ class NominatimService {
           );
         } else if (error.response.status === 429) {
           throw new Error("Too many requests. Please try again later.");
+        } else if (error.response.status === 403) {
+          throw new Error("Nominatim API access forbidden. Check User-Agent configuration.");
         }
       } else if (error.request) {
-        console.error("No response received");
-        throw new Error("Network error: Unable to reach location service");
+        console.error("No response received from Nominatim");
+        console.error("Request config:", {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          timeout: error.config?.timeout
+        });
+        
+        if (error.code === 'ECONNREFUSED') {
+          throw new Error("Connection refused. Check network connectivity.");
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+          throw new Error("Request timeout. Nominatim service may be slow or unavailable.");
+        } else if (error.code === 'ENOTFOUND') {
+          throw new Error("DNS resolution failed. Check internet connection.");
+        }
+        
+        throw new Error(`Network error: Unable to reach Nominatim service (${error.code || 'unknown'})`);
       }
 
-      throw new Error("Failed to search location");
+      throw new Error(`Failed to search location: ${error.message}`);
     }
   }
 

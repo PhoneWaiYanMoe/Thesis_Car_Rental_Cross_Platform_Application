@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
+import 'package:wiz/screens/Booking/views/widgets/_buildBillingDetails.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildCarHeader.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildRenterInfo.dart';
 import 'package:wiz/screens/Auth/services/auth_api_service.dart';
@@ -35,7 +36,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _checkLicenseAndLoadInfo() async {
-     final isLicenseVerified = await _localStorageService.isLicenseVerified();
+    final isLicenseVerified = await _localStorageService.isLicenseVerified();
 
     if (!isLicenseVerified) {
       // Navigate to license upload screen
@@ -64,11 +65,11 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     final car = _bookingData.car;
-    final rentalPrice = _bookingData.rentalPrice;
-    final insuranceFee = _bookingData.insuranceFee;
+    final rentalPrice = _bookingData.rentalPrice ?? _bookingData.calculatedRentalPrice;
+    final insuranceFee = _bookingData.insuranceFee ?? _bookingData.calculatedInsuranceFee;
     final total = _bookingData.totalPrice;
-    final depositPayment = _bookingData.depositAmount;
-    final remainingPayment = _bookingData.remainingAmount;
+    final deposit = _bookingData.depositAmount;
+    final remaining = _bookingData.remainingAmount;
 
     return Scaffold(
       backgroundColor: AppStyles.background(context),
@@ -105,7 +106,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   const SizedBox(height: 16),
                   _buildMessageSection(),
                   const SizedBox(height: 24),
-                  _buildBillingDetails(rentalPrice, insuranceFee, total, depositPayment, remainingPayment),
+                  BillingDetailsCard(
+                    rentalPrice: rentalPrice,
+                    insuranceFee: insuranceFee,
+                    total: total,
+                    deposit: deposit,
+                    remaining: remaining, 
+                    days: _bookingData.days,
+                  ),
                   const SizedBox(height: 24),
                   _buildRentalGuidelines(),
                   const SizedBox(height: 16),
@@ -209,50 +217,6 @@ class _BookingScreenState extends State<BookingScreen> {
             fillColor: AppStyles.surface(context),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBillingDetails(int rentalPrice, int insuranceFee, int total, int deposit, int remaining) {
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Billing Details', style: AppStyles.h3(context)),
-            const SizedBox(height: 16),
-            _buildBillingRow('Rental Price (${_bookingData.days} days)', '${_formatPrice(rentalPrice)} ₫'),
-            const SizedBox(height: 8),
-            _buildBillingRow('Insurance Fee', '${_formatPrice(insuranceFee)} ₫'),
-            const Divider(height: 24),
-            _buildBillingRow('Total', '${_formatPrice(total)} ₫', isTotal: true),
-            const SizedBox(height: 16),
-            _buildBillingRow('Deposit Payment (30%)', '${_formatPrice(deposit)} ₫'),
-            const SizedBox(height: 8),
-            _buildBillingRow('Payment after receiving Car', '${_formatPrice(remaining)} ₫'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBillingRow(String label, String value, {bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: isTotal ? AppStyles.body(context).copyWith(fontWeight: FontWeight.bold) : AppStyles.caption(context),
-        ),
-        Text(
-          value,
-          style: isTotal
-              ? AppStyles.h3(context).copyWith(color: AppStyles.primary)
-              : AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );

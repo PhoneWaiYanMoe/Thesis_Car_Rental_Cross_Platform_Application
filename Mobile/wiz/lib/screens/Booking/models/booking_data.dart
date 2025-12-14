@@ -2,6 +2,41 @@
 
 import 'package:wiz/constants/booking_constants.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
+import 'package:flutter/material.dart';
+
+enum BookingStatus { pending, confirmed, onJourney, completed, cancelled }
+
+extension BookingStatusExtension on BookingStatus {
+  String get displayName {
+    switch (this) {
+      case BookingStatus.pending:
+        return 'Pending';
+      case BookingStatus.confirmed:
+        return 'Confirmed';
+      case BookingStatus.onJourney:
+        return 'On Journey';
+      case BookingStatus.completed:
+        return 'Completed';
+      case BookingStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case BookingStatus.pending:
+        return Colors.orange;
+      case BookingStatus.confirmed:
+        return Colors.blue;
+      case BookingStatus.onJourney:
+        return Colors.purple;
+      case BookingStatus.completed:
+        return Colors.green;
+      case BookingStatus.cancelled:
+        return Colors.red;
+    }
+  }
+}
 
 /// Consolidated model for all booking-related data
 /// This eliminates the need to pass tripData and car separately
@@ -26,6 +61,30 @@ class BookingData {
   final InsuranceOption insurance;
   final PaymentMethod paymentMethod;
 
+  // Rental information (combined from RentalBooking)
+  final int? id;
+  final BookingStatus? status;
+  final String? price;
+  final String? date;
+  final String? duration;
+  final bool? rated;
+  final bool? startPhotosSubmitted; // Track if start photos are submitted
+  final bool? endPhotosSubmitted; // Track if end photos are submitted
+
+  // Detailed info
+  final String? renterName;
+  final String? licenseNumber;
+  final String? startTime;
+  final String? endTime;
+  final int? rentalPrice;
+  final int? insuranceFee;
+  final int? depositPayment;
+  final int? remainingPayment;
+  final String? ownerName;
+  final int? ownerTrips;
+  final double? ownerRating;
+  final int? ownerCars;
+
   BookingData({
     required this.mode,
     required this.withDriver,
@@ -41,7 +100,31 @@ class BookingData {
     this.travelScope = TravelScope.inner,
     this.insurance = InsuranceOption.none,
     this.paymentMethod = PaymentMethod.none,
+    this.id,
+    this.status = BookingStatus.pending,
+    this.price,
+    this.date,
+    this.duration,
+    this.rated = false,
+    this.renterName,
+    this.licenseNumber,
+    this.startTime,
+    this.endTime,
+    this.rentalPrice,
+    this.insuranceFee,
+    this.depositPayment,
+    this.remainingPayment,
+    this.ownerName,
+    this.ownerTrips,
+    this.ownerRating,
+    this.ownerCars,
+    this.startPhotosSubmitted = false,
+    this.endPhotosSubmitted = false,
   });
+
+  // Getters for car details (assuming Car model has name and image properties)
+  String get carName => car.name;
+  String get carImage => car.image; // Adjust to match actual Car property (e.g., imagePath)
 
   // Create from Map (for navigation arguments)
   factory BookingData.fromMap(Map<String, dynamic> map) {
@@ -67,6 +150,26 @@ class BookingData {
       travelScope: map['travelScope'] as TravelScope? ?? TravelScope.inner,
       insurance: map['insurance'] as InsuranceOption? ?? InsuranceOption.none,
       paymentMethod: map['paymentMethod'] as PaymentMethod? ?? PaymentMethod.none,
+      id: map['id'] as int?,
+      status: map['status'] as BookingStatus? ?? BookingStatus.pending,
+      price: map['price'] as String?,
+      date: map['date'] as String?,
+      duration: map['duration'] as String?,
+      rated: map['rated'] as bool? ?? false,
+      renterName: map['renterName'] as String?,
+      licenseNumber: map['licenseNumber'] as String?,
+      startTime: map['startTime'] as String?,
+      endTime: map['endTime'] as String?,
+      rentalPrice: map['rentalPrice'] as int?,
+      insuranceFee: map['insuranceFee'] as int?,
+      depositPayment: map['depositPayment'] as int?,
+      remainingPayment: map['remainingPayment'] as int?,
+      ownerName: map['ownerName'] as String?,
+      ownerTrips: map['ownerTrips'] as int?,
+      ownerRating: map['ownerRating'] as double?,
+      ownerCars: map['ownerCars'] as int?,
+      startPhotosSubmitted: map['startPhotosSubmitted'] as bool? ?? false,
+      endPhotosSubmitted: map['endPhotosSubmitted'] as bool? ?? false,
     );
   }
 
@@ -83,11 +186,55 @@ class BookingData {
       'travelScope': travelScope,
       'insurance': insurance,
       'paymentMethod': paymentMethod,
+      'id': id,
+      'status': status,
+      'price': price,
+      'date': date,
+      'duration': duration,
+      'rated': rated,
+      'renterName': renterName,
+      'licenseNumber': licenseNumber,
+      'startTime': startTime,
+      'endTime': endTime,
+      'rentalPrice': rentalPrice,
+      'insuranceFee': insuranceFee,
+      'depositPayment': depositPayment,
+      'remainingPayment': remainingPayment,
+      'ownerName': ownerName,
+      'ownerTrips': ownerTrips,
+      'ownerRating': ownerRating,
+      'ownerCars': ownerCars,
+      'startPhotosSubmitted': startPhotosSubmitted,
+      'endPhotosSubmitted': endPhotosSubmitted,
     };
   }
 
   // Copy with for updating booking options
-  BookingData copyWith({TravelScope? travelScope, InsuranceOption? insurance, PaymentMethod? paymentMethod}) {
+  BookingData copyWith({
+    TravelScope? travelScope,
+    InsuranceOption? insurance,
+    PaymentMethod? paymentMethod,
+    int? id,
+    BookingStatus? status,
+    String? price,
+    String? date,
+    String? duration,
+    bool? rated,
+    String? renterName,
+    String? licenseNumber,
+    String? startTime,
+    String? endTime,
+    int? rentalPrice,
+    int? insuranceFee,
+    int? depositPayment,
+    int? remainingPayment,
+    String? ownerName,
+    int? ownerTrips,
+    double? ownerRating,
+    int? ownerCars,
+    bool? startPhotosSubmitted,
+    bool? endPhotosSubmitted,
+  }) {
     return BookingData(
       mode: mode,
       withDriver: withDriver,
@@ -103,6 +250,26 @@ class BookingData {
       travelScope: travelScope ?? this.travelScope,
       insurance: insurance ?? this.insurance,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      id: id ?? this.id,
+      status: status ?? this.status,
+      price: price ?? this.price,
+      date: date ?? this.date,
+      duration: duration ?? this.duration,
+      rated: rated ?? this.rated,
+      renterName: renterName ?? this.renterName,
+      licenseNumber: licenseNumber ?? this.licenseNumber,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      rentalPrice: rentalPrice ?? this.rentalPrice,
+      insuranceFee: insuranceFee ?? this.insuranceFee,
+      depositPayment: depositPayment ?? this.depositPayment,
+      remainingPayment: remainingPayment ?? this.remainingPayment,
+      ownerName: ownerName ?? this.ownerName,
+      ownerTrips: ownerTrips ?? this.ownerTrips,
+      ownerRating: ownerRating ?? this.ownerRating,
+      ownerCars: ownerCars ?? this.ownerCars,
+      startPhotosSubmitted: startPhotosSubmitted ?? this.startPhotosSubmitted,
+      endPhotosSubmitted: endPhotosSubmitted ?? this.endPhotosSubmitted,
     );
   }
 
@@ -114,27 +281,28 @@ class BookingData {
     return location ?? 'No location';
   }
 
-  // Calculate pricing
-  int get rentalPrice => car.price * days;
+  // Calculate pricing (use stored values if available, else compute)
+  int get calculatedRentalPrice => rentalPrice ?? (car.price * days);
 
-  int get insuranceFee {
+  int get calculatedInsuranceFee {
+    if (insuranceFee != null) return insuranceFee!;
     switch (insurance) {
       case InsuranceOption.p30:
-        return (rentalPrice * 0.30).round();
+        return (calculatedRentalPrice * 0.30).round();
       case InsuranceOption.p50:
-        return (rentalPrice * 0.50).round();
+        return (calculatedRentalPrice * 0.50).round();
       case InsuranceOption.p70:
-        return (rentalPrice * 0.70).round();
+        return (calculatedRentalPrice * 0.70).round();
       case InsuranceOption.p100:
-        return rentalPrice;
+        return calculatedRentalPrice;
       case InsuranceOption.none:
         return 0;
     }
   }
 
-  int get totalPrice => rentalPrice + insuranceFee;
-  int get depositAmount => (totalPrice * 0.30).round();
-  int get remainingAmount => totalPrice - depositAmount;
+  int get totalPrice => calculatedRentalPrice + calculatedInsuranceFee;
+  int get depositAmount => depositPayment ?? (totalPrice * 0.30).round();
+  int get remainingAmount => remainingPayment ?? (totalPrice - depositAmount);
 
   // Helper method to parse datetime string
   static Map<String, dynamic> _parseDateTimeString(String datetime) {
@@ -208,5 +376,120 @@ class BookingData {
     }
 
     return DateTime(year, month, day);
+  }
+
+  static List<BookingData> getSampleBookings() {
+    return [
+      BookingData(
+        id: 1,
+        mode: 'Self Drive', // Assumed; adjust based on actual data
+        withDriver: false,
+        location: 'Hanoi', // Assumed; adjust as needed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[0], // Assumes sampleCars[0] is 'BMW X1 2020'
+        carIndex: 0,
+        status: BookingStatus.completed,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025', // Kept as in original sample (note: doesn't match datetime; update if needed)
+        duration: '2 Days',
+        rated: true,
+        renterName: 'Jaes Myott',
+        licenseNumber: '346654',
+        startTime: '8:50 A.M, 12/Oct/2025',
+        endTime: '8:50 A.M, 14/Oct/2025',
+        rentalPrice: 780000,
+        insuranceFee: 70000,
+        depositPayment: 510000,
+        remainingPayment: 1190000,
+        ownerName: 'Rumbling',
+        ownerTrips: 16,
+        ownerRating: 4.5,
+        ownerCars: 3,
+      ),
+      BookingData(
+        id: 2,
+        mode: 'Self Drive', // Assumed
+        withDriver: false,
+        location: 'Hanoi', // Assumed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[1], // Assumes sampleCars[1] is 'Toyota RAV4 2020'
+        carIndex: 1,
+        status: BookingStatus.completed,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025',
+        duration: '2 Days',
+        rated: false,
+      ),
+      BookingData(
+        id: 3,
+        mode: 'Self Drive', // Assumed
+        withDriver: false,
+        location: 'Hanoi', // Assumed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[2], // Assumes sampleCars[2] is 'Honda HR-V 2020'
+        carIndex: 2,
+        status: BookingStatus.cancelled,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025',
+        duration: '2 Days',
+      ),
+      BookingData(
+        id: 4,
+        mode: 'Self Drive', // Assumed
+        withDriver: false,
+        location: 'Hanoi', // Assumed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[3], // Assumes sampleCars[3] is 'Honda HR-V 2020'
+        carIndex: 3,
+        status: BookingStatus.pending,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025',
+        duration: '2 Days',
+      ),
+      BookingData(
+        id: 5,
+        mode: 'Self Drive', // Assumed
+        withDriver: false,
+        location: 'Hanoi', // Assumed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[4], // Assumes sampleCars[4] is 'Hyundai Tucson'
+        carIndex: 4,
+        status: BookingStatus.confirmed,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025',
+        duration: '2 Days',
+      ),
+      BookingData(
+        id: 6,
+        mode: 'Self Drive', // Assumed
+        withDriver: false,
+        location: 'Hanoi', // Assumed
+        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+        startDate: DateTime(2025, 10, 12),
+        endDate: DateTime(2025, 10, 14),
+        days: 3,
+        car: Car.sampleCars[5], // Assumes sampleCars[5] is 'Mercedes-Benz GLA'
+        carIndex: 5,
+        status: BookingStatus.onJourney,
+        price: '2,000,000 VND',
+        date: 'Oct 25, 2025',
+        duration: '2 Days',
+      ),
+    ];
   }
 }
