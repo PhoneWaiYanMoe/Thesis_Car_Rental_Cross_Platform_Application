@@ -4,3 +4,6 @@ build/
 dist/
 .DS_Store
 *.log**/xcworkspace/
+
+# ingore public files in user-service
+Backend/user-service/src/public/*

@@ -171,9 +171,35 @@ paths:
                 type: object
                 properties:
                   message: { type: string, example: "Session ended" }
+  # /auth/social-login:
+  #   post:
+  #     summary: Social login (Google/FB)
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               provider: { type: string, enum: [google, facebook], example: "google" }
+  #               idToken: { type: string, example: "google-id-token" }
+  #     responses:
+  #       '200':
+  #         description: Social login success
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               properties:
+  #                 token: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
+  #                 user: { $ref: '#/components/schemas/User' }
+
+  # ==================== DEPRECATED ENDPOINT ====================
   /auth/social-login:
     post:
-      summary: Social login (Google/FB)
+      summary: Social login (DEPRECATED)
+      deprecated: true
+      description: This endpoint is deprecated. Use /auth/google or /auth/facebook instead.
       requestBody:
         required: true
         content:
@@ -184,15 +210,175 @@ paths:
                 provider: { type: string, enum: [google, facebook], example: "google" }
                 idToken: { type: string, example: "google-id-token" }
       responses:
-        '200':
-          description: Social login success
+        '410':
+          description: Endpoint deprecated
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
+                  error: { type: string, example: "This endpoint is deprecated" }
+
+
+    # ==================== NEW: GOOGLE OAUTH ENDPOINTS ====================
+  /auth/google:
+    get:
+      summary: Initiate Google OAuth login
+      description: Redirects user to Google authorization page
+      responses:
+        '302':
+          description: Redirects to Google OAuth
+  
+  /auth/google/callback:
+    get:
+      summary: Google OAuth callback
+      description: Handles Google OAuth callback and returns JWT tokens
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+      responses:
+        '302':
+          description: Redirects to frontend with tokens
+          headers:
+            Location:
+              schema:
+                type: string
+                example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
+  
+  # ==================== NEW: FACEBOOK OAUTH ENDPOINTS ====================
+  /auth/facebook:
+    get:
+      summary: Initiate Facebook OAuth login
+      description: Redirects user to Facebook authorization page
+      responses:
+        '302':
+          description: Redirects to Facebook OAuth
+  
+  /auth/facebook/callback:
+    get:
+      summary: Facebook OAuth callback
+      description: Handles Facebook OAuth callback and returns JWT tokens
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Facebook
+      responses:
+        '302':
+          description: Redirects to frontend with tokens
+          headers:
+            Location:
+              schema:
+                type: string
+                example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
+  
+  # ==================== NEW: LINK OAUTH ACCOUNTS (PROTECTED) ====================
+  /auth/link/google:
+    get:
+      summary: Link Google account to logged-in user
+      description: Requires authentication. Links Google account to existing user account.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '302':
+          description: Redirects to Google OAuth, then back to settings page
+  
+  /auth/link/facebook:
+    get:
+      summary: Link Facebook account to logged-in user
+      description: Requires authentication. Links Facebook account to existing user account.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '302':
+          description: Redirects to Facebook OAuth, then back to settings page
+  
+  /auth/linked-accounts:
+    get:
+      summary: Get list of linked OAuth accounts
+      description: Returns list of OAuth providers linked to current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: List of linked accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  linkedAccounts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider:
+                          type: string
+                          enum: [google, facebook]
+                          example: "google"
+                        linkedAt:
+                          type: string
+                          format: date-time
+                          example: "2024-01-15T10:30:00Z"
+  
+  /auth/unlink/{provider}:
+    delete:
+      summary: Unlink OAuth account
+      description: Removes OAuth provider link from user account
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook]
+          description: OAuth provider to unlink
+      responses:
+        '200':
+          description: Account unlinked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "google account unlinked successfully" }
+        '400':
+          description: Cannot unlink only login method
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: "Cannot unlink the only login method" }
+  
+  /auth/me:
+    get:
+      summary: Get current user profile
+      description: Returns current user info and linked accounts
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User profile with linked accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
                   user: { $ref: '#/components/schemas/User' }
+                  linkedAccounts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider: { type: string }
+                        linkedAt: { type: string, format: date-time }
+
+
 components:
   schemas:
     User:

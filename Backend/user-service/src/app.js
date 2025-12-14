@@ -4,6 +4,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const path = require("path");
+const passport = require('./config/passport');
 
 const authRoutes = require("./routes/auth_routes");
 const locationRoutes = require("./routes/location_routes");
@@ -11,9 +12,13 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(passport.initialize());
 
 app.get("/health", (req, res) => {
   res.json({

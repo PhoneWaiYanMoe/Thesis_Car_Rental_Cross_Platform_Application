@@ -368,6 +368,151 @@ class AuthController {
       next(error);
     }
   }
+
+// NEW METHODS FOR OAUTH:
+
+
+  //  Google OAuth callback
+  //  Called by Google after user authorizes
+
+  async googleCallback(req, res) {
+    try {
+      const oauthData = req.user; // Set by Passport
+      
+      console.log('Google callback received:', oauthData.email);
+      
+      // Find or create user
+      const user = await require('../services/oauth_service').findOrCreateOAuthUser(oauthData);
+      
+      // Generate JWT tokens
+      const { accessToken, refreshToken } = require('../services/oauth_service').generateTokens(user);
+      
+      // Redirect to frontend with tokens
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${accessToken}&refreshToken=${refreshToken}`;
+      
+      console.log('Redirecting to frontend:', redirectUrl);
+      res.redirect(redirectUrl);
+      
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      const errorUrl = `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`;
+      res.redirect(errorUrl);
+    }
+  }
+  
+  /**
+   * Facebook OAuth callback
+   * Called by Facebook after user authorizes
+   */
+  async facebookCallback(req, res) {
+    try {
+      const oauthData = req.user;
+      
+      console.log('Facebook callback received:', oauthData.email);
+      
+      const user = await require('../services/oauth_service').findOrCreateOAuthUser(oauthData);
+      const { accessToken, refreshToken } = require('../services/oauth_service').generateTokens(user);
+      
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/facebook/callback?token=${accessToken}&refreshToken=${refreshToken}`;
+      res.redirect(redirectUrl);
+      
+    } catch (error) {
+      console.error('Facebook OAuth callback error:', error);
+      const errorUrl = `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`;
+      res.redirect(errorUrl);
+    }
+  }
+  
+  /**
+   * Link OAuth account to currently logged-in user
+   * User must be authenticated to use this
+   */
+  async linkGoogleCallback(req, res) {
+    try {
+      const oauthData = req.user.oauthData; // Set by middleware
+      const userId = req.user.userId; // From JWT token
+      
+      console.log(`Linking Google account to user: ${userId}`);
+      
+      const result = await require('../services/oauth_service').linkOAuthAccount(userId, oauthData);
+      
+      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=success&provider=google&message=${encodeURIComponent(result.message)}`;
+      res.redirect(redirectUrl);
+      
+    } catch (error) {
+      console.error('Link Google error:', error);
+      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=error&provider=google&message=${encodeURIComponent(error.message)}`;
+      res.redirect(redirectUrl);
+    }
+  }
+  
+  async linkFacebookCallback(req, res) {
+    try {
+      const oauthData = req.user.oauthData;
+      const userId = req.user.userId;
+      
+      console.log(`Linking Facebook account to user: ${userId}`);
+      
+      const result = await require('../services/oauth_service').linkOAuthAccount(userId, oauthData);
+      
+      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=success&provider=facebook&message=${encodeURIComponent(result.message)}`;
+      res.redirect(redirectUrl);
+      
+    } catch (error) {
+      console.error('Link Facebook error:', error);
+      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=error&provider=facebook&message=${encodeURIComponent(error.message)}`;
+      res.redirect(redirectUrl);
+    }
+  }
+  
+  /**
+   * Get linked OAuth accounts for current user
+   */
+  async getLinkedAccounts(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      
+      const providers = await require('../services/oauth_service').getLinkedProviders(userId);
+      
+      res.json({
+        linkedAccounts: providers
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
+   * Unlink OAuth provider from account
+   */
+  async unlinkAccount(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { provider } = req.params;
+      
+      if (!['google', 'facebook'].includes(provider)) {
+        return res.status(400).json({ error: 'Invalid provider' });
+      }
+      
+      const result = await require('../services/oauth_service').unlinkOAuthAccount(userId, provider);
+      
+      res.json(result);
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+
+// Keep existing socialLogin method or replace it:
+  async socialLogin(req, res, next) {
+    // This endpoint is now handled by Passport OAuth flow
+    res.status(410).json({
+      error: 'This endpoint is deprecated. Use /auth/google or /auth/facebook instead'
+    });
+  }
 }
+
+
 
 module.exports = new AuthController();
