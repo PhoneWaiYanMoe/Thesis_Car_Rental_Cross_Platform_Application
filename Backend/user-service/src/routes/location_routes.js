@@ -22,7 +22,7 @@ router.get("/search", async (req, res, next) => {
     );
     res.json(results);
   } catch (error) {
-    console.error("❌ Search error:", error);
+    console.error("Search error:", error);
     next(error);
   }
 });
@@ -48,7 +48,7 @@ router.get("/reverse", async (req, res, next) => {
     const result = await locationGrpcClient.reverseGeocode(latitude, longitude);
     res.json(result);
   } catch (error) {
-    console.error("❌ Reverse geocode error:", error);
+    console.error("Reverse geocode error:", error);
     next(error);
   }
 });
@@ -65,7 +65,7 @@ router.get("/details/:placeId", async (req, res, next) => {
     const result = await locationGrpcClient.getPlaceDetails(placeId);
     res.json(result);
   } catch (error) {
-    console.error("❌ Get details error:", error);
+    console.error("Get details error:", error);
     next(error);
   }
 });
@@ -89,7 +89,7 @@ router.post("/calculate-distance", async (req, res, next) => {
     );
     res.json(result);
   } catch (error) {
-    console.error("❌ Calculate distance error:", error);
+    console.error("Calculate distance error:", error);
     next(error);
   }
 });
@@ -111,7 +111,7 @@ router.post("/check-service-area", async (req, res, next) => {
     );
     res.json(result);
   } catch (error) {
-    console.error("❌ Check service area error:", error);
+    console.error("Check service area error:", error);
     next(error);
   }
 });
@@ -157,7 +157,7 @@ router.get("/history", async (req, res, next) => {
     );
     res.json(items);
   } catch (error) {
-    console.error("❌ Get history error:", error);
+    console.error("Get history error:", error);
     res.json([]);
   }
 });
@@ -168,7 +168,7 @@ router.post("/history", async (req, res, next) => {
     const user = getOptionalUser(req);
 
     if (!user) {
-      console.log("⚠️ History save attempted without auth");
+      console.log("History save attempted without auth");
       return res.status(200).json({
         message: "History not saved (authentication required)",
         saved: false,
@@ -177,7 +177,7 @@ router.post("/history", async (req, res, next) => {
 
     const { displayName, shortName, subtitle, latitude, longitude } = req.body;
 
-    console.log("📥 History save request:", {
+    console.log("History save request:", {
       displayName,
       shortName,
       subtitle,
@@ -188,7 +188,7 @@ router.post("/history", async (req, res, next) => {
     });
 
     if (!displayName || displayName.trim() === "" || latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
-      console.log("❌ Validation failed:", {
+      console.log("Validation failed:", {
         hasDisplayName: !!displayName,
         displayNameEmpty: displayName?.trim() === "",
         hasLatitude: latitude !== undefined && latitude !== null,
@@ -209,7 +209,7 @@ router.post("/history", async (req, res, next) => {
     );
 
     console.log(
-      `✅ Saved location to history via gRPC for user ${user.userId}`
+      `Saved location to history via gRPC for user ${user.userId}`
     );
     res.status(201).json({
       message: response.message,
@@ -217,7 +217,7 @@ router.post("/history", async (req, res, next) => {
       saved: response.success,
     });
   } catch (error) {
-    console.error("❌ Save history error:", error);
+    console.error("Save history error:", error);
     res.status(200).json({
       message: "History not saved (error occurred)",
       saved: false,
@@ -240,7 +240,7 @@ router.delete("/history/:id", async (req, res, next) => {
 
     res.json({ message: "Location deleted from history" });
   } catch (error) {
-    console.error("❌ Delete history error:", error);
+    console.error("Delete history error:", error);
     next(error);
   }
 });
@@ -258,7 +258,7 @@ router.delete("/history", async (req, res, next) => {
 
     res.json({ message: "History cleared" });
   } catch (error) {
-    console.error("❌ Clear history error:", error);
+    console.error("Clear history error:", error);
     next(error);
   }
 });

@@ -10,7 +10,7 @@ class AuthController {
     try {
       const { email, fullName, password } = req.body;
 
-      console.log("📝 Registering user:", email);
+      console.log("Registering user:", email);
 
       // Check if user exists
       const userExists = await pool.query(
@@ -36,21 +36,21 @@ class AuthController {
         [userId, email, passwordHash, fullName, "customer", false]
       );
 
-      console.log("✅ User created:", result.rows[0]);
+      console.log("User created:", result.rows[0]);
 
       // Generate and store OTP
       const otp = otpService.generateOTP();
       await otpService.storeOTP(email, otp, "email_verification");
 
-      console.log("📧 OTP Code:", otp);
+      console.log("OTP Code:", otp);
 
       // Try to send email (don't fail in development)
       try {
         await emailService.sendOTPEmail(email, otp, "Email Verification");
-        console.log("✅ Email sent");
+        console.log("Email sent");
       } catch (emailError) {
-        console.error("❌ Email failed:", emailError.message);
-        console.log("⚠️  Using mock email mode - OTP:", otp);
+        console.error("Email failed:", emailError.message);
+        console.log("Using mock email mode - OTP:", otp);
       }
 
       res.status(201).json({
@@ -60,7 +60,7 @@ class AuthController {
         ...(process.env.NODE_ENV === "development" && { otp }),
       });
     } catch (error) {
-      console.error("❌ Registration error:", error);
+      console.error("Registration error:", error);
       next(error);
     }
   }
@@ -201,7 +201,7 @@ class AuthController {
     try {
       const { email } = req.body;
 
-      console.log("🔑 Forgot password request for:", email);
+      console.log("Forgot password request for:", email);
 
       // Check if user exists
       const result = await pool.query("SELECT * FROM users WHERE email = $1", [
@@ -219,15 +219,15 @@ class AuthController {
       const otp = otpService.generateOTP();
       await otpService.storeOTP(email, otp, "password_reset");
 
-      console.log("📧 Reset OTP Code:", otp);
+      console.log("Reset OTP Code:", otp);
 
       // Try to send email (don't fail in development)
       try {
         await emailService.sendOTPEmail(email, otp, "Password Reset");
-        console.log("✅ Email sent");
+        console.log("Email sent");
       } catch (emailError) {
-        console.error("❌ Email failed:", emailError.message);
-        console.log("⚠️  Using mock email mode - OTP:", otp);
+        console.error("Email failed:", emailError.message);
+        console.log("Using mock email mode - OTP:", otp);
       }
 
       res.json({
@@ -236,7 +236,7 @@ class AuthController {
         ...(process.env.NODE_ENV === "development" && { otp }),
       });
     } catch (error) {
-      console.error("❌ Forgot password error:", error);
+      console.error("Forgot password error:", error);
       next(error);
     }
   }

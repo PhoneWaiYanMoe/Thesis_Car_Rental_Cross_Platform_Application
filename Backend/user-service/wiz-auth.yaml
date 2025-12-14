@@ -18,9 +18,9 @@ paths:
               type: object
               properties:
                 email: { type: string, format: email, example: "user@wiz.com" }
-                fullName: { type: string, example: "John Doe" }
+                fullName: { type: string, example: "Nhuyen Van A" }
                 password: { type: string, format: password, example: "SecurePass123!" }
-                confirm-password: { type: string, format: password, example: "SecurePass123!" }
+                confirmPassword: { type: string, format: password, example: "SecurePass123!" }
       responses:
         '201':
           description: User created, OTP sent
