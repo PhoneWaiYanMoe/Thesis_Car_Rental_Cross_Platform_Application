@@ -5,12 +5,13 @@ class NominatimService {
     this.baseUrl = "https://nominatim.openstreetmap.org";
     this.userAgent = "WizCarRental/1.0 (contact@wizcar.com)"; 
     this.lastRequestTime = 0;
-    this.minRequestInterval = 1000; // 1 second between requests (Nominatim requirement)
+    this.minRequestInterval = 2000; // 2 seconds between requests (safer for Nominatim)
 
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
         "User-Agent": this.userAgent,
+        "Referer": process.env.BASE_URL || "http://localhost:3003",
         "Accept": "application/json",
         "Accept-Language": "en",
       },
@@ -58,17 +59,24 @@ class NominatimService {
         },
       });
 
+      // Check if response is HTML (blocked page)
+      if (typeof response.data === 'string' && response.data.includes('Access blocked')) {
+        console.error("❌ Nominatim blocked access - HTML response received");
+        throw new Error("Access blocked by Nominatim. Please wait before retrying or contact nominatim@openstreetmap.org");
+      }
+
       // Check for error responses
-      if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
-      } else if (response.status === 403) {
-        throw new Error("Access forbidden. Please check User-Agent and email configuration.");
+      if (response.status === 403 || response.status === 429) {
+        throw new Error("Access forbidden or rate limited. Please wait before retrying.");
       } else if (response.status >= 400) {
         throw new Error(`Nominatim API error: ${response.status} ${response.statusText}`);
       }
 
       if (!response.data || !Array.isArray(response.data)) {
-        console.error("Unexpected response format:", response.data);
+        console.error("Unexpected response format:", typeof response.data);
+        if (typeof response.data === 'string') {
+          console.error("Response content:", response.data.substring(0, 200));
+        }
         throw new Error("Invalid response format from Nominatim");
       }
 
@@ -139,15 +147,25 @@ class NominatimService {
           format: "json",
           addressdetails: 1,
           "accept-language": "en",
+          email: "contact@wizcar.com",
         },
       });
+
+      // Check if response is HTML (blocked page)
+      if (typeof response.data === 'string' && response.data.includes('Access blocked')) {
+        throw new Error("Access blocked by Nominatim. Please wait before retrying.");
+      }
+
+      if (response.status === 403 || response.status === 429) {
+        throw new Error("Access forbidden or rate limited. Please wait before retrying.");
+      }
 
       return this._formatReverseResult(response.data);
     } catch (error) {
       console.error("Nominatim reverse error:", error.message);
 
-      if (error.response?.status === 418 || error.response?.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait and try again.");
+      if (error.response?.status === 403 || error.response?.status === 418 || error.response?.status === 429) {
+        throw new Error("Rate limit exceeded or access blocked. Please wait and try again.");
       }
 
       throw new Error("Failed to reverse geocode");
@@ -163,12 +181,27 @@ class NominatimService {
         params: {
           place_id: placeId,
           format: "json",
+          email: "contact@wizcar.com",
         },
       });
+
+      // Check if response is HTML (blocked page)
+      if (typeof response.data === 'string' && response.data.includes('Access blocked')) {
+        throw new Error("Access blocked by Nominatim. Please wait before retrying.");
+      }
+
+      if (response.status === 403 || response.status === 429) {
+        throw new Error("Access forbidden or rate limited. Please wait before retrying.");
+      }
 
       return response.data;
     } catch (error) {
       console.error("Nominatim details error:", error.message);
+      
+      if (error.response?.status === 403 || error.response?.status === 429) {
+        throw new Error("Access blocked or rate limited. Please wait and try again.");
+      }
+
       throw new Error("Failed to get place details");
     }
   }

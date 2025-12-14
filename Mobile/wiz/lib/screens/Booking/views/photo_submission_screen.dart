@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/screens/Booking/views/rate_review_screen.dart';
+import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 
 class PhotoSubmissionScreen extends StatefulWidget {
@@ -70,13 +70,16 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
     );
 
     if (!widget.isStartJourney) {
-      // End journey - navigate to rating
-      Navigator.pushReplacement(
+      // End journey - navigate to rating (replace current screen)
+      final result =  Navigator.pushNamed<BookingData>(
         context,
-        MaterialPageRoute(
-          builder: (_) => RateReviewScreen(booking: updatedBooking),
-        ),
+        AppRoutes.rateReview,
+        arguments: {'booking': updatedBooking},
       );
+      // If rating was submitted, go back to rental history/details with updated booking
+      if (result != null) {
+        Navigator.pop(context, result);
+      }
     } else {
       // Start journey - go back to details screen with updated booking
       Navigator.pop(context, updatedBooking);

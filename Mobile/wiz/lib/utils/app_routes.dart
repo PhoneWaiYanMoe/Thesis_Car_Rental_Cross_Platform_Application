@@ -8,6 +8,11 @@ import 'package:wiz/screens/Auth/views/password_change_success_screen.dart';
 import 'package:wiz/screens/Auth/views/signup_screen.dart';
 import 'package:wiz/screens/Auth/views/splash_screen.dart';
 import 'package:wiz/screens/Booking/views/booking_screen.dart';
+import 'package:wiz/screens/Booking/views/photo_submission_screen.dart';
+import 'package:wiz/screens/Booking/views/rate_review_screen.dart';
+import 'package:wiz/screens/Booking/views/rental_details_screen.dart';
+import 'package:wiz/screens/Booking/views/rental_history_screen.dart';
+import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
@@ -34,6 +39,10 @@ class AppRoutes {
   static const String booking = '/booking';
   static const String licenseUpload = '/license-upload';
   static const String profile = '/profile';
+  static const String rentalHistory = '/rental-history';
+  static const String photoSubmission = '/photo-submission';
+  static const String rentalDetails = '/rental-details';
+  static const String rateReview = '/rate-review';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -94,6 +103,55 @@ class AppRoutes {
         );
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
+      case rentalHistory:
+        return MaterialPageRoute(builder: (_) => const RentalHistoryScreen());
+      case photoSubmission:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('booking') && args.containsKey('isStartJourney')) {
+          final booking = args['booking'] is BookingData
+              ? args['booking'] as BookingData
+              : BookingData.fromMap(args['booking'] as Map<String, dynamic>);
+          final isStartJourney = args['isStartJourney'] as bool;
+          return MaterialPageRoute(
+            builder: (_) => PhotoSubmissionScreen(
+              booking: booking,
+              isStartJourney: isStartJourney,
+            ),
+          );
+        }
+        return null;
+      case rentalDetails:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null) {
+          BookingData booking;
+          if (args['booking'] is BookingData) {
+            booking = args['booking'] as BookingData;
+          } else if (args['booking'] is Map<String, dynamic>) {
+            booking = BookingData.fromMap(args['booking'] as Map<String, dynamic>);
+          } else {
+            booking = BookingData.fromMap(args);
+          }
+          return MaterialPageRoute(
+            builder: (_) => RentalDetailsScreen(booking: booking),
+          );
+        }
+        return null;
+      case rateReview:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null) {
+          BookingData booking;
+          if (args['booking'] is BookingData) {
+            booking = args['booking'] as BookingData;
+          } else if (args['booking'] is Map<String, dynamic>) {
+            booking = BookingData.fromMap(args['booking'] as Map<String, dynamic>);
+          } else {
+            booking = BookingData.fromMap(args);
+          }
+          return MaterialPageRoute(
+            builder: (_) => RateReviewScreen(booking: booking),
+          );
+        }
+        return null;
 
       default:
         return null;
@@ -110,5 +168,37 @@ class AppRoutes {
 
   static void navigateAndRemoveUntil(BuildContext context, String routeName, {Object? arguments}) {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
+  }
+
+  // Helper methods for booking-related navigation
+  static Future<BookingData?> navigateToRentalDetails(BuildContext context, BookingData booking) {
+    return Navigator.pushNamed<BookingData>(
+      context,
+      rentalDetails,
+      arguments: {'booking': booking},
+    );
+  }
+
+  static Future<BookingData?> navigateToPhotoSubmission(
+    BuildContext context,
+    BookingData booking,
+    bool isStartJourney,
+  ) {
+    return Navigator.pushNamed<BookingData>(
+      context,
+      photoSubmission,
+      arguments: {
+        'booking': booking,
+        'isStartJourney': isStartJourney,
+      },
+    );
+  }
+
+  static Future<BookingData?> navigateToRateReview(BuildContext context, BookingData booking) {
+    return Navigator.pushNamed<BookingData>(
+      context,
+      rateReview,
+      arguments: {'booking': booking},
+    );
   }
 }

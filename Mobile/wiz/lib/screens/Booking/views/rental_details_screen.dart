@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
-import 'package:wiz/screens/Booking/views/photo_submission_screen.dart';
-import 'package:wiz/screens/Booking/views/rate_review_screen.dart';
+import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildRenterInfo.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildBillingDetails.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
@@ -240,14 +239,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     } else if (buttonText == 'Submit Photos') {
       // Determine if this is start or end journey photos
       final isStartJourney = booking.startPhotosSubmitted != true;
-      final result = await Navigator.push<BookingData>(
+      final result = await AppRoutes.navigateToPhotoSubmission(
         context,
-        MaterialPageRoute(
-          builder: (_) => PhotoSubmissionScreen(
-            booking: booking,
-            isStartJourney: isStartJourney,
-          ),
-        ),
+        booking,
+        isStartJourney,
       );
       if (result != null) {
         setState(() {
@@ -255,12 +250,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         });
       }
     } else if (buttonText == 'Rate & Review') {
-      final result = await Navigator.push<BookingData>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RateReviewScreen(booking: booking),
-        ),
-      );
+      final result = await AppRoutes.navigateToRateReview(context, booking);
       if (result != null) {
         setState(() {
           booking = result;

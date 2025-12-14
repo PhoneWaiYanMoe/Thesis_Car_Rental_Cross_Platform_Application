@@ -19,8 +19,13 @@ class ButtonNavBar extends StatelessWidget {
         backgroundColor: AppStyles.surface(context),
         selectedItemColor: AppStyles.primary,
         unselectedItemColor: AppStyles.textSecondary(context),
-          onTap: (index) {
-          if (index == 3) {
+        onTap: (index) {
+          if (index == 0) {
+            AppRoutes.navigateTo(context, AppRoutes.home);
+          } else if (index == 1) {
+            AppRoutes.navigateTo(context, AppRoutes.rentalHistory);
+          }
+           else if (index == 3) {
             AppRoutes.navigateTo(context, AppRoutes.profile);
           }
         },
@@ -28,7 +33,7 @@ class ButtonNavBar extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile', ),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
       ),
     );

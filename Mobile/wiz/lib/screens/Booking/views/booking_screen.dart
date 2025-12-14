@@ -9,6 +9,7 @@ import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/services/local_storage_service.dart';
+import 'package:wiz/utils/app_routes.dart';
 
 class BookingScreen extends StatefulWidget {
   final Map<String, dynamic> arguments;
@@ -41,9 +42,13 @@ class _BookingScreenState extends State<BookingScreen> {
     if (!isLicenseVerified) {
       // Navigate to license upload screen
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacement(
+        AppRoutes.navigateAndReplace(
           context,
-          MaterialPageRoute(builder: (_) => LicenseUploadScreen(fromBooking: true, bookingArguments: widget.arguments)),
+          AppRoutes.licenseUpload,
+          arguments: {
+            'fromBooking': true,
+            'bookingArguments': widget.arguments,
+          },
         );
       });
       return;

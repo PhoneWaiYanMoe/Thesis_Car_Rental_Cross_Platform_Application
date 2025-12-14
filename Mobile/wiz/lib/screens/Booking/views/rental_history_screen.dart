@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Booking/views/rental_details_screen.dart';
+import 'package:wiz/utils/app_routes.dart';
 
 class RentalHistoryScreen extends StatefulWidget {
   const RentalHistoryScreen({super.key});
@@ -45,12 +46,7 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
                 final booking = bookings[index];
                 return GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RentalDetailsScreen(booking: booking),
-                      ),
-                    );
+                    AppRoutes.navigateToRentalDetails(context, booking);
                   },
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
