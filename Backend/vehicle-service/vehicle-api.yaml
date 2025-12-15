@@ -1,0 +1,438 @@
+openapi: 3.0.0
+info:
+  title: Wiz Vehicle API
+  description: Vehicle management API for Wiz Car Rental System
+  version: 1.0.0
+servers:
+  - url: http://localhost:3002
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+  schemas:
+    Vehicle:
+      type: object
+      properties:
+        vehicle_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        owner_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "BMW X-1 2020"
+        vehicle_type:
+          type: string
+          enum: [Sedan, SUV, Hatchback, Van, Other]
+          example: "SUV"
+        seater:
+          type: integer
+          enum: [4, 5, 7, 9]
+          example: 5
+        fuel_type:
+          type: string
+          enum: [Gasoline, Diesel, Electric, Hybrid, Other]
+          example: "Gasoline"
+        transmission:
+          type: string
+          enum: [Automatic, Manual, Semi-Auto]
+          example: "Automatic"
+        year:
+          type: integer
+          example: 2020
+        price_per_day:
+          type: number
+          format: float
+          example: 150.00
+        mileage:
+          type: integer
+          example: 30000
+        location:
+          type: string
+          example: "New York, NY"
+        availability:
+          type: string
+          enum: [Instant Booking, Driver Supported, Discount Available]
+          example: "Instant Booking"
+        insurance_type:
+          type: string
+          enum: [Basic, Standard, Premium, Comprehensive]
+          example: "Comprehensive"
+        rating:
+          type: number
+          format: float
+          example: 4.5
+        total_rentals:
+          type: integer
+          example: 25
+        status:
+          type: string
+          enum: [normal, stopped, banned]
+          example: "normal"
+        owner_name:
+          type: string
+          example: "John Doe"
+        features:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+          example: [{"name": "AC"}, {"name": "GPS"}]
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              isPrimary:
+                type: boolean
+          example: [{"url": "https://example.com/car.jpg", "isPrimary": true}]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VehicleInput:
+      type: object
+      required:
+        - name
+        - vehicleType
+        - seater
+        - fuelType
+        - transmission
+        - year
+        - pricePerDay
+      properties:
+        name:
+          type: string
+          example: "BMW X-1 2020"
+        vehicleType:
+          type: string
+          enum: [Sedan, SUV, Hatchback, Van, Other]
+        seater:
+          type: integer
+          enum: [4, 5, 7, 9]
+        fuelType:
+          type: string
+          enum: [Gasoline, Diesel, Electric, Hybrid, Other]
+        transmission:
+          type: string
+          enum: [Automatic, Manual, Semi-Auto]
+        year:
+          type: integer
+        pricePerDay:
+          type: number
+          format: float
+        mileage:
+          type: integer
+        location:
+          type: string
+        availability:
+          type: string
+          enum: [Instant Booking, Driver Supported, Discount Available]
+        insuranceType:
+          type: string
+          enum: [Basic, Standard, Premium, Comprehensive]
+        features:
+          type: array
+          items:
+            type: string
+          example: ["AC", "GPS", "Bluetooth"]
+        images:
+          type: array
+          items:
+            type: string
+          example: ["https://example.com/car1.jpg", "https://example.com/car2.jpg"]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  service:
+                    type: string
+                    example: "vehicle-service"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /vehicles:
+    get:
+      summary: Get all vehicles
+      tags: [Vehicles]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [normal, stopped, banned]
+          description: Filter by status
+        - in: query
+          name: vehicleType
+          schema:
+            type: string
+            enum: [Sedan, SUV, Hatchback, Van, Other]
+          description: Filter by vehicle type
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+            format: uuid
+          description: Filter by owner ID
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search in name and location
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: created_at
+          description: Field to sort by
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+          description: Sort order
+      responses:
+        '200':
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vehicle'
+                  total:
+                    type: integer
+    
+    post:
+      summary: Create new vehicle
+      tags: [Vehicles]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '201':
+          description: Vehicle created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  vehicle:
+                    $ref: '#/components/schemas/Vehicle'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /vehicles/{id}:
+    get:
+      summary: Get vehicle by ID
+      tags: [Vehicles]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Vehicle ID
+      responses:
+        '200':
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update vehicle
+      tags: [Vehicles]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '200':
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  vehicle:
+                    $ref: '#/components/schemas/Vehicle'
+        '403':
+          description: Not authorized
+        '404':
+          description: Vehicle not found
+    
+    delete:
+      summary: Delete vehicle
+      tags: [Vehicles]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle deleted
+        '403':
+          description: Not authorized
+        '404':
+          description: Vehicle not found
+
+  /vehicles/{id}/status:
+    patch:
+      summary: Update vehicle status (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [normal, stopped, banned]
+                  example: "banned"
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  vehicle:
+                    $ref: '#/components/schemas/Vehicle'
+        '403':
+          description: Admin access required
+        '404':
+          description: Vehicle not found
+
+  /vehicles/admin/statistics:
+    get:
+      summary: Get vehicle statistics (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_vehicles:
+                    type: string
+                    example: "50"
+                  active_vehicles:
+                    type: string
+                    example: "45"
+                  stopped_vehicles:
+                    type: string
+                    example: "3"
+                  banned_vehicles:
+                    type: string
+                    example: "2"
+                  average_rating:
+                    type: string
+                    example: "4.5"
+                  total_rentals:
+                    type: string
+                    example: "1250"
+                  vehicle_types:
+                    type: string
+                    example: "4"
+                  total_owners:
+                    type: string
+                    example: "25"
+        '403':
+          description: Admin access required

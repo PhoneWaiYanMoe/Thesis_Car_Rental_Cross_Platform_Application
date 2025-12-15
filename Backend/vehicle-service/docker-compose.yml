@@ -1,0 +1,46 @@
+# version: "3.9"
+
+services:
+  vehicle-api:
+    build: .
+    container_name: wiz-vehicle-service
+    restart: always
+    ports:
+      - "3002:3000"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - PORT=${PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=development
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+    networks:
+      - wiz-network
+
+  db:
+    image: postgres:18-alpine
+    container_name: wiz-postgres-vehicle
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432"  # Different external port to avoid conflict
+    volumes:
+      - vehicle_postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - wiz-network
+
+volumes:
+  vehicle_postgres_data:
+
+networks:
+  wiz-network:
