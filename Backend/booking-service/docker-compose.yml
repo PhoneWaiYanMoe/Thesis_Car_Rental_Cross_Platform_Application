@@ -13,9 +13,13 @@ services:
       - "5434:5432"
     volumes:
       - booking_postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     networks:
       - wiz-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   api:
     build: .
@@ -33,8 +37,10 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=development
       - BASE_URL=http://localhost:3004
+      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./src:/app/src
     networks:

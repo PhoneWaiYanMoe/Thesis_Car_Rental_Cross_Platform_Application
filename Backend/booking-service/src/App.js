@@ -9,6 +9,7 @@ const path = require("path");
 const bookingRoutes = require("./routes/booking_routes");
 const ownerBookingRoutes = require("./routes/owner_booking_routes");
 const errorHandler = require("./middleware/errorHandler");
+const { runMigrations } = require("./utils/migrationRunner");
 
 const app = express();
 
@@ -49,8 +50,34 @@ app.use("/", (req, res) => res.redirect("/api-docs"));
 // Error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3004;
-app.listen(PORT, () => {
-  console.log(`Booking Service running on port ${PORT}`);
-  console.log(`Open: http://localhost:${PORT}/api-docs`);
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Run migrations first
+    console.log("🔄 Running database migrations...");
+    await runMigrations();
+
+    // Start HTTP server
+    const PORT = process.env.PORT || 3004;
+    app.listen(PORT, () => {
+      console.log(`✅ Booking Service HTTP running on port ${PORT}`);
+      console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully...");
+  process.exit(0);
 });
