@@ -1,0 +1,164 @@
+version: "3.9"
+
+services:
+  # ==================== SHARED DATABASE ====================
+  postgres:
+    image: postgres:18-alpine
+    container_name: wiz-postgres-shared
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wiz_password}
+      # Create multiple databases on startup
+      POSTGRES_MULTIPLE_DATABASES: wizdb,wiz_location,wiz_booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_shared_data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==================== REDIS (Shared Cache) ====================
+  redis:
+    image: redis:7-alpine
+    container_name: wiz-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-wiz_redis_password}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==================== USER SERVICE ====================
+  user-service:
+    build: ./user-service
+    container_name: wiz-user-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      # Database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-wiz_password}
+      - DB_NAME=wizdb
+      # Service Config
+      - PORT=3001
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3001
+      # JWT
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_EXPIRES_IN=7d
+      # OTP
+      - OTP_EXPIRY_MINUTES=10
+      # Email
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      # OAuth
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
+      - FACEBOOK_CALLBACK_URL=http://localhost:3001/auth/facebook/callback
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # gRPC
+      - LOCATION_SERVICE_GRPC_URL=location-service:50051
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./user-service/src:/app/src
+    networks:
+      - wiz-network
+
+  # ==================== LOCATION SERVICE ====================
+  location-service:
+    build: ./location-service
+    container_name: wiz-location-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+      - "50051:50051"  # gRPC port
+    environment:
+      # Database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-wiz_password}
+      - DB_NAME=wiz_location
+      # Service Config
+      - PORT=3003
+      - GRPC_PORT=50051
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3003
+      # JWT
+      - JWT_SECRET=${JWT_SECRET}
+      # Rate Limiting
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./location-service/src:/app/src
+    networks:
+      - wiz-network
+
+  # ==================== BOOKING SERVICE ====================
+  booking-service:
+    build: ./booking-service
+    container_name: wiz-booking-service
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      # Database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-wiz_password}
+      - DB_NAME=wiz_booking
+      # Service Config
+      - PORT=3004
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3004
+      # JWT
+      - JWT_SECRET=${JWT_SECRET}
+      # gRPC
+      - LOCATION_SERVICE_GRPC_URL=location-service:50051
+    depends_on:
+      postgres:
+        condition: service_healthy
+      location-service:
+        condition: service_started
+    volumes:
+      - ./booking-service/src:/app/src
+    networks:
+      - wiz-network
+
+volumes:
+  postgres_shared_data:
+  redis_data:
+
+networks:
+  wiz-network:
+    driver: bridge
