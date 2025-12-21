@@ -1,0 +1,1143 @@
+openapi: 3.0.0
+info:
+  title: Booking Service API
+  description: Complete Booking Service APIs for managing vehicle rentals, bookings, and rental workflows
+  version: 1.0.0
+servers:
+  - url: http://localhost:3003
+    description: Local development server
+
+paths:
+  #customer booking endpoints
+  /:
+    post:
+      summary: Create new booking
+      description: Create a new vehicle rental booking (Customer only)
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vehicleId
+                - startDate
+                - endDate
+                - pickupLocation
+                - dropoffLocation
+                - paymentMethodId
+              properties:
+                vehicleId:
+                  type: string
+                  example: "car-123"
+                startDate:
+                  type: string
+                  format: date-time
+                  example: "2025-12-25T21:00:00Z"
+                endDate:
+                  type: string
+                  format: date-time
+                  example: "2025-12-28T20:00:00Z"
+                pickupLocation:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [owner_location, custom_location]
+                      example: "owner_location"
+                    address:
+                      type: string
+                      example: "Ton Duc Thang University, Gate 7"
+                    coordinates:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                          format: float
+                          example: 10.7295
+                        lng:
+                          type: number
+                          format: float
+                          example: 106.7019
+                dropoffLocation:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [same_as_pickup, custom_location]
+                      example: "same_as_pickup"
+                    address:
+                      type: string
+                      nullable: true
+                    coordinates:
+                      type: object
+                      nullable: true
+                      properties:
+                        lat:
+                          type: number
+                          format: float
+                        lng:
+                          type: number
+                          format: float
+                driverRequired:
+                  type: boolean
+                  example: false
+                insuranceCoverage:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  example: 80
+                paymentMethodId:
+                  type: string
+                  example: "pm-123"
+                additionalNotes:
+                  type: string
+                  example: "Please have the car ready by 9 PM"
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking created successfully"
+                  booking:
+                    $ref: '#/components/schemas/BookingCreatedResponse'
+                  nextStep:
+                    type: string
+                    example: "upload_license"
+
+  /my-bookings:
+    get:
+      summary: Get customer's booking history
+      description: Retrieve all bookings for the authenticated customer
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, confirmed, active, completed, cancelled, rejected]
+            default: all
+          description: Filter by booking status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by vehicle name
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+      responses:
+        '200':
+          description: List of customer bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BookingListItem'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 15
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+
+  /{id}:
+    get:
+      summary: Get booking details by ID
+      description: Retrieve detailed information about a specific booking
+      tags:
+        - Customer
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+          example: "booking-789"
+      responses:
+        '200':
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking:
+                    $ref: '#/components/schemas/BookingDetail'
+
+  /{id}/upload-license:
+    post:
+      summary: Upload driving license
+      description: Upload driving license for first-time booking (Customer only)
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - frontPhoto
+                - backPhoto
+                - fullName
+                - licenseNumber
+                - expiryDate
+              properties:
+                frontPhoto:
+                  type: string
+                  format: binary
+                backPhoto:
+                  type: string
+                  format: binary
+                fullName:
+                  type: string
+                  example: "John Doe"
+                licenseNumber:
+                  type: string
+                  example: "DL123456"
+                expiryDate:
+                  type: string
+                  format: date
+                  example: "2027-12-31"
+      responses:
+        '200':
+          description: License uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License uploaded, pending verification"
+                  bookingStatus:
+                    type: string
+                    example: "pending_support_approval"
+
+  /{id}/upload-selfies:
+    post:
+      summary: Upload selfie verification
+      description: Upload selfie photos for KYC verification (Customer only, first-time)
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - frontSelfie
+                - leftSelfie
+                - rightSelfie
+              properties:
+                frontSelfie:
+                  type: string
+                  format: binary
+                leftSelfie:
+                  type: string
+                  format: binary
+                rightSelfie:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Selfies uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Selfies uploaded, pending verification"
+
+  /{id}/confirm-pickup:
+    post:
+      summary: Confirm car pickup
+      description: Confirm vehicle pickup and document condition (Customer only)
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conditionPhotos
+                - odometerReading
+              properties:
+                conditionPhotos:
+                  type: array
+                  items:
+                    type: string
+                  example: ["photo-1", "photo-2"]
+                conditionNotes:
+                  type: string
+                  example: "Car is in excellent condition"
+                odometerReading:
+                  type: integer
+                  example: 109211
+      responses:
+        '200':
+          description: Pickup confirmed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pickup confirmed"
+                  bookingStatus:
+                    type: string
+                    example: "active"
+
+  /{id}/confirm-return:
+    post:
+      summary: Confirm car return
+      description: Confirm vehicle return with proof photos (Customer only)
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - returnPhotos
+                - odometerReading
+              properties:
+                returnPhotos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Return photos (min 3)
+                odometerReading:
+                  type: integer
+                  example: 109461
+                notes:
+                  type: string
+                  example: "Returned in good condition"
+      responses:
+        '200':
+          description: Return confirmed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Return confirmed, awaiting owner confirmation"
+                  bookingStatus:
+                    type: string
+                    example: "pending_owner_confirmation"
+                  finalPaymentDue:
+                    type: number
+                    example: 1190000
+
+  /{id}/cancel:
+    post:
+      summary: Cancel booking
+      description: Cancel a booking and request refund
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  example: "Change of plans"
+                requestRefund:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking cancelled"
+                  refundAmount:
+                    type: number
+                    example: 350000
+                  refundStatus:
+                    type: string
+                    example: "processing"
+
+  /{id}/sign-contract:
+    post:
+      summary: E-sign rental contract
+      description: Digitally sign the rental contract
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - signature
+                - agreedToTerms
+              properties:
+                signature:
+                  type: string
+                  example: "base64-encoded-signature"
+                agreedToTerms:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Contract signed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contract signed"
+                  contractUrl:
+                    type: string
+                    example: "https://cdn.com/contracts/contract-123.pdf"
+
+  #owner booking endpoints
+  /owner/bookings:
+    get:
+      summary: Get owner's rental requests
+      description: Retrieve all booking requests for vehicles owned by authenticated user
+      tags:
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, active, completed, cancelled]
+            default: all
+          description: Filter by booking status
+        - name: vehicleId
+          in: query
+          schema:
+            type: string
+          description: Filter by vehicle ID
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+      responses:
+        '200':
+          description: List of owner's rental requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OwnerBookingListItem'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 8
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+
+  /{id}/accept:
+    post:
+      summary: Accept booking request
+      description: Accept a pending booking request (Owner only)
+      tags:
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      responses:
+        '200':
+          description: Booking accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking accepted"
+                  bookingStatus:
+                    type: string
+                    example: "confirmed"
+
+  /{id}/reject:
+    post:
+      summary: Reject booking request
+      description: Reject a pending booking request (Owner only)
+      tags:
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  example: "Vehicle not available"
+      responses:
+        '200':
+          description: Booking rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking rejected"
+
+  /owner/{id}/confirm-return:
+    post:
+      summary: Confirm vehicle return (Owner)
+      description: Confirm that customer has returned the vehicle (Owner only)
+      tags:
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conditionPhotos
+                - damagesReported
+                - odometerReading
+              properties:
+                conditionPhotos:
+                  type: array
+                  items:
+                    type: string
+                  example: ["photo-1", "photo-2"]
+                conditionNotes:
+                  type: string
+                  example: "Car returned in good condition"
+                damagesReported:
+                  type: boolean
+                  example: false
+                odometerReading:
+                  type: integer
+                  example: 109461
+      responses:
+        '200':
+          description: Return confirmed, booking completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Return confirmed, booking completed"
+                  bookingStatus:
+                    type: string
+                    example: "completed"
+
+#componenets
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BookingCreatedResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "booking-789"
+        rentalId:
+          type: string
+          example: "238927484934"
+        vehicleId:
+          type: string
+          example: "car-123"
+        vehicleName:
+          type: string
+          example: "BMW X1 2020"
+        customerId:
+          type: string
+          example: "user-123"
+        ownerId:
+          type: string
+          example: "owner-456"
+        status:
+          type: string
+          example: "pending_license_verification"
+        startDate:
+          type: string
+          format: date-time
+          example: "2025-12-25T21:00:00Z"
+        endDate:
+          type: string
+          format: date-time
+          example: "2025-12-28T20:00:00Z"
+        duration:
+          type: string
+          example: "3 days"
+        pricing:
+          type: object
+          properties:
+            rentalPrice:
+              type: number
+              example: 780000
+            insuranceFee:
+              type: number
+              example: 70000
+            dailyTotal:
+              type: number
+              example: 850000
+            numberOfDays:
+              type: integer
+              example: 2
+            subtotal:
+              type: number
+              example: 1700000
+            deposit:
+              type: number
+              example: 510000
+            paymentAfterReceiving:
+              type: number
+              example: 1190000
+            total:
+              type: number
+              example: 1700000
+        depositPaid:
+          type: boolean
+          example: true
+        depositTransaction:
+          type: string
+          example: "txn-001"
+        finalPaymentPending:
+          type: boolean
+          example: true
+
+    BookingListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "booking-789"
+        rentalId:
+          type: string
+          example: "238927484934"
+        status:
+          type: string
+          enum: [pending, confirmed, active, completed, cancelled, rejected]
+          example: "completed"
+        vehicle:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "car-123"
+            name:
+              type: string
+              example: "BMW X1 2020"
+            photo:
+              type: string
+              example: "https://cdn.com/car.jpg"
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "owner-456"
+            name:
+              type: string
+              example: "Rumbling"
+            avatar:
+              type: string
+              example: "https://cdn.com/owner.jpg"
+            rating:
+              type: number
+              format: float
+              example: 4.5
+            totalTrips:
+              type: integer
+              example: 10
+            totalCars:
+              type: integer
+              example: 3
+        renterName:
+          type: string
+          example: "Jass Myatt"
+        licenseNumber:
+          type: string
+          example: "****54"
+        startDate:
+          type: string
+          format: date-time
+          example: "2025-10-12T08:50:00Z"
+        endDate:
+          type: string
+          format: date-time
+          example: "2025-10-14T08:50:00Z"
+        duration:
+          type: string
+          example: "2 days"
+        pricing:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 1700000
+            depositPaid:
+              type: number
+              example: 510000
+            remainingPayment:
+              type: number
+              example: 1190000
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-10T00:00:00Z"
+
+    BookingDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "booking-789"
+        rentalId:
+          type: string
+          example: "238927484934"
+        status:
+          type: string
+          enum: [pending, confirmed, active, completed, cancelled, rejected]
+          example: "completed"
+        vehicle:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "car-123"
+            name:
+              type: string
+              example: "BMW X1 2020"
+            photo:
+              type: string
+              example: "https://cdn.com/car.jpg"
+            transmission:
+              type: string
+              example: "automatic"
+            seats:
+              type: integer
+              example: 7
+            fuelType:
+              type: string
+              example: "gasoline"
+            location:
+              type: string
+              example: "Nha Be, HCMC"
+        customer:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "user-123"
+            name:
+              type: string
+              example: "Jass Myatt"
+            licenseNumber:
+              type: string
+              example: "346654"
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "owner-456"
+            name:
+              type: string
+              example: "Rumbling"
+            avatar:
+              type: string
+              example: "https://cdn.com/owner.jpg"
+            joinedDate:
+              type: string
+              format: date
+              example: "2025-05-15"
+            totalTrips:
+              type: integer
+              example: 10
+            rating:
+              type: number
+              format: float
+              example: 4.5
+            totalCars:
+              type: integer
+              example: 3
+        timeline:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date-time
+              example: "2025-10-12T08:50:00Z"
+            endDate:
+              type: string
+              format: date-time
+              example: "2025-10-14T08:50:00Z"
+            duration:
+              type: string
+              example: "2 days"
+        pickup:
+          type: object
+          properties:
+            type:
+              type: string
+              example: "driver_delivery"
+            location:
+              type: string
+              example: "Ton Duc Thang University Gate 7"
+            scheduledTime:
+              type: string
+              format: date-time
+              example: "2025-10-12T08:50:00Z"
+            confirmedAt:
+              type: string
+              format: date-time
+              nullable: true
+        dropoff:
+          type: object
+          properties:
+            type:
+              type: string
+              example: "self_return"
+            location:
+              type: string
+              example: "-"
+            scheduledTime:
+              type: string
+              format: date-time
+              example: "2025-10-14T08:50:00Z"
+            confirmedAt:
+              type: string
+              format: date-time
+              nullable: true
+        billing:
+          type: object
+          properties:
+            rentalPrice:
+              type: number
+              example: 780000
+            insuranceFee:
+              type: number
+              example: 70000
+            dailyRate:
+              type: number
+              example: 850000
+            numberOfDays:
+              type: integer
+              example: 2
+            subtotal:
+              type: number
+              example: 1700000
+            deposit:
+              type: number
+              example: 510000
+            depositStatus:
+              type: string
+              example: "paid"
+            finalPayment:
+              type: number
+              example: 1190000
+            finalPaymentStatus:
+              type: string
+              example: "pending"
+        insurance:
+          type: object
+          properties:
+            coverage:
+              type: integer
+              example: 80
+            provider:
+              type: string
+              example: "Wiz Insurance"
+        additionalMessage:
+          type: string
+          example: "Write message here"
+        rentalGuidelines:
+          type: array
+          items:
+            type: string
+          example:
+            - "Inspect the car carefully before driving."
+            - "Take photos of the car's condition."
+            - "Refill fuel before returning."
+            - "Return the car on time."
+            - "Follow all traffic rules."
+            - "Report any damage or issue immediately."
+            - "Don't smoke inside the car."
+            - "Don't let unauthorized people drive."
+            - "Don't use the car for racing or off-road."
+            - "Don't ignore warning lights."
+        cancellationPolicy:
+          type: object
+          properties:
+            link:
+              type: string
+              example: "https://wiz.com/cancellation-policy"
+            freeCancellationBefore:
+              type: string
+              format: date-time
+              example: "2025-10-11T08:50:00Z"
+        contract:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              example: "contract-123"
+            url:
+              type: string
+              example: "https://cdn.com/contracts/contract-123.pdf"
+            signedByCustomer:
+              type: boolean
+              example: true
+            signedByOwner:
+              type: boolean
+              example: true
+            signedAt:
+              type: string
+              format: date-time
+              example: "2025-10-11T12:00:00Z"
+        canRate:
+          type: boolean
+          example: true
+        canCancel:
+          type: boolean
+          example: false
+
+    OwnerBookingListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "booking-789"
+        rentalId:
+          type: string
+          example: "238927484934"
+        status:
+          type: string
+          enum: [pending, confirmed, active, completed, cancelled]
+          example: "pending_owner_confirmation"
+        vehicle:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "car-123"
+            name:
+              type: string
+              example: "BMW X1 2020"
+        customer:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "user-123"
+            name:
+              type: string
+              example: "Jass Myatt"
+            avatar:
+              type: string
+              example: "https://cdn.com/user.jpg"
+            rating:
+              type: number
+              format: float
+              example: 4.2
+        startDate:
+          type: string
+          format: date-time
+          example: "2025-12-25T21:00:00Z"
+        endDate:
+          type: string
+          format: date-time
+          example: "2025-12-28T20:00:00Z"
+        totalAmount:
+          type: number
+          example: 1700000
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-12-20T00:00:00Z"
+
+tags:
+  - name: Customer
+    description: Customer booking management endpoints
+  - name: Owner
+    description: Owner rental request management endpoints

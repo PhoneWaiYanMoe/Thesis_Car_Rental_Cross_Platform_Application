@@ -130,71 +130,93 @@ class AuthController {
   }
 
   //Login
-  async login(req, res, next) {
-    try {
-      const { email, password } = req.body;
+ 
+async login(req, res, next) {
+  try {
+    const { email, password } = req.body;
 
-      //Find user
-      const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-        email,
-      ]);
+    console.log(`🔐 Login attempt for: ${email}`);
 
-      if (result.rows.length === 0) {
-        return res.status(401).json({
-          error: "Invalid email or password",
-        });
-      }
+    // Find user
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
-      const user = result.rows[0];
-
-      //Check if verified
-      if (!user.is_verified) {
-        return res.status(403).json({
-          error: "Please verify your email first",
-        });
-      }
-
-      //Verify password
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.password_hash
-      );
-
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          error: "Invalid email or password",
-        });
-      }
-
-      //Generate tokens
-      const token = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
-      );
-
-      const refreshToken = jwt.sign(
-        { userId: user.user_id },
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
-      );
-
-      res.json({
-        token,
-        refreshToken,
-        user: {
-          id: user.user_id,
-          email: user.email,
-          fullName: user.full_name,
-          phone: user.phone,
-          avatarUrl: user.avatar_url,
-          role: user.role,
-        },
+    if (result.rows.length === 0) {
+      console.log(`❌ User not found: ${email}`);
+      return res.status(401).json({
+        error: "Invalid email or password",
+        debug: process.env.NODE_ENV === 'development' ? "User not found" : undefined
       });
-    } catch (error) {
-      next(error);
     }
+
+    const user = result.rows[0];
+
+    // Check if verified - WITH BETTER ERROR MESSAGE
+    if (!user.is_verified) {
+      console.log(`❌ Email not verified: ${email}`);
+      return res.status(403).json({
+        error: "Please verify your email before logging in",
+        needsVerification: true,
+        email: email
+      });
+    }
+
+    // Check if password exists (for OAuth-only users)
+    if (!user.password_hash) {
+      console.log(`❌ No password set (OAuth user): ${email}`);
+      return res.status(401).json({
+        error: "This account uses social login. Please use Google/Facebook to sign in.",
+        isOAuthUser: true
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!isPasswordValid) {
+      console.log(`❌ Invalid password for: ${email}`);
+      return res.status(401).json({
+        error: "Invalid email or password",
+        debug: process.env.NODE_ENV === 'development' ? "Password incorrect" : undefined
+      });
+    }
+
+    // Generate tokens
+    const token = jwt.sign(
+      { userId: user.user_id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: user.user_id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+    );
+
+    console.log(`✅ Login successful: ${email}`);
+
+    res.json({
+      token,
+      refreshToken,
+      user: {
+        id: user.user_id,
+        email: user.email,
+        fullName: user.full_name,
+        phone: user.phone,
+        avatarUrl: user.avatar_url,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Login error:", error);
+    next(error);
   }
+}
 
   //Forgot password
   async forgotPassword(req, res, next) {
@@ -268,39 +290,66 @@ class AuthController {
   //Reset password
   async resetPassword(req, res, next) {
     try {
-      const { email, newPassword } = req.body;
+      const { email, newPassword, confirmNewPassword } = req.body;
 
-      //Check if OTP was verified
+      console.log(`🔄 Reset password request for: ${email}`);
+
+      // Validate passwords match (extra validation)
+      if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({
+          error: "Passwords do not match",
+        });
+      }
+
+      // Check if OTP was verified
       const isVerified = await otpService.checkVerified(
         email,
         "password_reset"
       );
 
       if (!isVerified) {
+        console.log("❌ OTP not verified");
         return res.status(400).json({
           error: "Please verify OTP first",
         });
       }
 
-      //Hash new password
+      // Check if user exists
+      const userCheck = await pool.query(
+        "SELECT user_id FROM users WHERE email = $1",
+        [email]
+      );
+
+      if (userCheck.rows.length === 0) {
+        console.log("❌ User not found");
+        return res.status(404).json({
+          error: "User not found",
+        });
+      }
+
+      // Hash new password
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
-      //Update password
+      // Update password
       await pool.query(
         "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2",
         [passwordHash, email]
       );
 
-      //Delete OTP
+      // Delete OTP after successful password reset
       await otpService.deleteOTP(email, "password_reset");
+
+      console.log("✅ Password updated successfully");
 
       res.json({
         message: "Password updated successfully",
       });
     } catch (error) {
+      console.error("❌ Reset password error:", error);
       next(error);
     }
   }
+
 
   //Refresh token
   async refreshToken(req, res, next) {

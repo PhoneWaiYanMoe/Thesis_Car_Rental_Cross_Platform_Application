@@ -40,7 +40,7 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - NODE_ENV=development
-      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051  # Add this
+      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051 
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
