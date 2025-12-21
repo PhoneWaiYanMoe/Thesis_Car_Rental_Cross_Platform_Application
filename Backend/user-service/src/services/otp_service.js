@@ -18,6 +18,8 @@ class OTPService {
        DO UPDATE SET code = $2, expires_at = $4, is_verified = false, created_at = NOW()`,
       [email, code, type, expiresAt, false]
     );
+
+    console.log(`✅ OTP stored for ${email} (type: ${type})`);
   }
 
   async verifyOTP(email, code, type) {
@@ -27,7 +29,13 @@ class OTPService {
       [email, code, type]
     );
 
-    return result.rows.length > 0;
+    if (result.rows.length > 0) {
+      console.log(`✅ OTP verified for ${email}`);
+      return true;
+    } else {
+      console.log(`❌ Invalid or expired OTP for ${email}`);
+      return false;
+    }
   }
 
   async markAsVerified(email, type) {
@@ -35,6 +43,7 @@ class OTPService {
       "UPDATE otps SET is_verified = true WHERE email = $1 AND type = $2",
       [email, type]
     );
+    console.log(`✅ OTP marked as verified for ${email}`);
   }
 
   async checkVerified(email, type) {
@@ -43,7 +52,13 @@ class OTPService {
       [email, type]
     );
 
-    return result.rows.length > 0 && result.rows[0].is_verified;
+    if (result.rows.length > 0 && result.rows[0].is_verified) {
+      console.log(`✅ OTP verification confirmed for ${email}`);
+      return true;
+    } else {
+      console.log(`❌ OTP not verified for ${email}`);
+      return false;
+    }
   }
 
   async deleteOTP(email, type) {
@@ -51,6 +66,7 @@ class OTPService {
       email,
       type,
     ]);
+    console.log(`✅ OTP deleted for ${email} (type: ${type})`);
   }
 }
 

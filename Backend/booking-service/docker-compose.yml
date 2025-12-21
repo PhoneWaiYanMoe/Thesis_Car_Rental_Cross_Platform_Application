@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: wiz-booking-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - booking_postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - wiz-network
+
+  api:
+    build: .
+    container_name: wiz-booking-service
+    restart: always
+    ports:
+      - "3004:3004"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - PORT=3004
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3004
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+    networks:
+      - wiz-network
+
+volumes:
+  booking_postgres_data:
+
+networks:
+  wiz-network:
+    external: true
