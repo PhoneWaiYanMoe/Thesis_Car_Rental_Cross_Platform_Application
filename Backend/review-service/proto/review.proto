@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package review;
+
+service ReviewService {
+  // Get vehicle review summary
+  rpc GetVehicleReviewSummary(GetVehicleReviewSummaryRequest) returns (GetVehicleReviewSummaryResponse);
+  
+  // Get owner review summary
+  rpc GetOwnerReviewSummary(GetOwnerReviewSummaryRequest) returns (GetOwnerReviewSummaryResponse);
+  
+  // Check if user can review booking
+  rpc CanReviewBooking(CanReviewBookingRequest) returns (CanReviewBookingResponse);
+  
+  // Get review by booking ID
+  rpc GetReviewByBooking(GetReviewByBookingRequest) returns (GetReviewByBookingResponse);
+}
+
+// Vehicle Review Summary
+message GetVehicleReviewSummaryRequest {
+  string vehicle_id = 1;
+}
+
+message GetVehicleReviewSummaryResponse {
+  double average_rating = 1;
+  int32 total_reviews = 2;
+  RatingDistribution rating_distribution = 3;
+}
+
+// Owner Review Summary
+message GetOwnerReviewSummaryRequest {
+  string owner_id = 1;
+}
+
+message GetOwnerReviewSummaryResponse {
+  double average_rating = 1;
+  int32 total_reviews = 2;
+  RatingDistribution rating_distribution = 3;
+  AspectRatings aspect_ratings = 4;
+}
+
+// Check if user can review
+message CanReviewBookingRequest {
+  string booking_id = 1;
+  string user_id = 2;
+}
+
+message CanReviewBookingResponse {
+  bool can_review_vehicle = 1;
+  bool can_review_owner = 2;
+  bool vehicle_already_reviewed = 3;
+  bool owner_already_reviewed = 4;
+  string message = 5;
+}
+
+// Get review by booking
+message GetReviewByBookingRequest {
+  string booking_id = 1;
+  string review_type = 2; // "vehicle" or "owner"
+}
+
+message GetReviewByBookingResponse {
+  bool has_review = 1;
+  string review_id = 2;
+  double rating = 3;
+  string comment = 4;
+  string created_at = 5;
+}
+
+// Supporting messages
+message RatingDistribution {
+  int32 five_star = 1;
+  int32 four_star = 2;
+  int32 three_star = 3;
+  int32 two_star = 4;
+  int32 one_star = 5;
+}
+
+message AspectRatings {
+  double communication = 1;
+  double reliability = 2;
+  double car_condition = 3;
+}

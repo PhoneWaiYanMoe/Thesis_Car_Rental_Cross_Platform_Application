@@ -1,18 +1,15 @@
 version: "3.9"
 
 services:
-  # ==================== SHARED DATABASE ====================
+  # ==================== SHARED DATABASE (PostgreSQL) ====================
   postgres:
     image: postgres:18-alpine
     container_name: wiz-postgres-shared
     restart: unless-stopped
     environment:
-      # These must match your .env file
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      # This is the default database created on first startup
       POSTGRES_DB: postgres
-      # Create multiple databases on startup
       POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking
     ports:
       - "5432:5432"
@@ -26,6 +23,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # ==================== MONGODB (For Review Service) ====================
+  mongodb:
+    image: mongo:8.0
+    container_name: wiz-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-wiz_user}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-wiz_password}
+      MONGO_INITDB_DATABASE: wiz_reviews
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   # ==================== REDIS (Shared Cache) ====================
   redis:
@@ -52,30 +73,26 @@ services:
     restart: unless-stopped
     ports:
       - "3001:3001"
+      - "50053:50053"
     environment:
-      # Database
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_user
-      # Service Config
       - PORT=3001
+      - GRPC_PORT=50053
       - NODE_ENV=development
       - BASE_URL=http://localhost:3001
-      # JWT
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
       - JWT_REFRESH_SECRET=${JWT_SECRET}
       - JWT_REFRESH_EXPIRES_IN=7d
-      # OTP
       - OTP_EXPIRY_MINUTES=10
-      # Email
       - EMAIL_HOST=smtp.gmail.com
       - EMAIL_PORT=587
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
-      # OAuth
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
@@ -83,7 +100,6 @@ services:
       - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
       - FACEBOOK_CALLBACK_URL=http://localhost:3001/auth/facebook/callback
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      # gRPC
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
     depends_on:
       postgres:
@@ -100,22 +116,18 @@ services:
     restart: unless-stopped
     ports:
       - "3003:3003"
-      - "50051:50051"  # gRPC port
+      - "50051:50051"
     environment:
-      # Database
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_location
-      # Service Config
       - PORT=3003
       - GRPC_PORT=50051
       - NODE_ENV=development
       - BASE_URL=http://localhost:3003
-      # JWT
       - JWT_SECRET=${JWT_SECRET}
-      # Rate Limiting
       - RATE_LIMIT_WINDOW_MS=900000
       - RATE_LIMIT_MAX_REQUESTS=100
     depends_on:
@@ -133,21 +145,21 @@ services:
     restart: unless-stopped
     ports:
       - "3004:3004"
+      - "50052:50052"
     environment:
-      # Database
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_booking
-      # Service Config
       - PORT=3004
+      - GRPC_PORT=50052
       - NODE_ENV=development
       - BASE_URL=http://localhost:3004
-      # JWT
       - JWT_SECRET=${JWT_SECRET}
-      # gRPC
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
+      - USER_SERVICE_GRPC_URL=user-service:50053
+      - REVIEW_SERVICE_GRPC_URL=review-service:50054
     depends_on:
       postgres:
         condition: service_healthy
@@ -158,8 +170,37 @@ services:
     networks:
       - wiz-network
 
+  # ==================== REVIEW SERVICE ====================
+  review-service:
+    build: ./review-service
+    container_name: wiz-review-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+      - "50054:50054"
+    environment:
+      - MONGODB_URI=mongodb://wiz_user:wiz_password@mongodb:27017/wiz_reviews?authSource=admin&directConnection=true
+      - MONGODB_USER=wiz_user
+      - MONGODB_PASSWORD=wiz_password
+      - PORT=3005
+      - GRPC_PORT=50054
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3005
+      - JWT_SECRET=${JWT_SECRET}
+      - BOOKING_SERVICE_GRPC_URL=booking-service:50052
+      - USER_SERVICE_GRPC_URL=user-service:50053
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./review-service/src:/app/src
+    networks:
+      - wiz-network
+
 volumes:
   postgres_shared_data:
+  mongodb_data:
+  mongodb_config:
   redis_data:
 
 networks:
