@@ -1,0 +1,499 @@
+openapi: 3.0.0
+info:
+  title: Review Service API
+  description: Review and rating service for Wiz Car Rental
+  version: 1.0.0
+servers:
+  - url: http://localhost:3005
+    description: Local development server
+
+paths:
+  /reviews/vehicle:
+    post:
+      summary: Submit vehicle review
+      description: Submit a review for a rented vehicle (requires authentication)
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - vehicleId
+                - rating
+              properties:
+                bookingId:
+                  type: string
+                  example: "booking-123"
+                vehicleId:
+                  type: string
+                  example: "car-456"
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  maxLength: 1000
+                  example: "Great car, very clean and comfortable!"
+                photos:
+                  type: array
+                  items:
+                    type: string
+                  example: ["photo1.jpg", "photo2.jpg"]
+      responses:
+        '201':
+          description: Review submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Review submitted successfully"
+                  review:
+                    $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          description: Invalid input or already reviewed
+        '401':
+          description: Unauthorized
+
+  /reviews/owner:
+    post:
+      summary: Submit owner review
+      description: Submit a review for a vehicle owner (requires authentication)
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - ownerId
+                - rating
+              properties:
+                bookingId:
+                  type: string
+                  example: "booking-123"
+                ownerId:
+                  type: string
+                  example: "owner-789"
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  maxLength: 1000
+                  example: "Very professional and responsive owner!"
+                aspects:
+                  type: object
+                  properties:
+                    communication:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                      example: 5
+                    reliability:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                      example: 5
+                    carCondition:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                      example: 5
+      responses:
+        '201':
+          description: Review submitted successfully
+        '400':
+          description: Invalid input or already reviewed
+        '401':
+          description: Unauthorized
+
+  /reviews/vehicle/{vehicleId}:
+    get:
+      summary: Get vehicle reviews
+      description: Get all reviews for a specific vehicle
+      tags:
+        - Reviews
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "car-456"
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [newest, highest, lowest]
+            default: newest
+        - name: minRating
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of vehicle reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VehicleReview'
+                  summary:
+                    $ref: '#/components/schemas/ReviewSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /reviews/owner/{ownerId}:
+    get:
+      summary: Get owner reviews
+      description: Get all reviews for a specific owner
+      tags:
+        - Reviews
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "owner-789"
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [newest, highest, lowest]
+            default: newest
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of owner reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OwnerReview'
+                  summary:
+                    $ref: '#/components/schemas/OwnerReviewSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /reviews/{id}/response:
+    post:
+      summary: Post owner response to review
+      description: Owner can respond to a review (requires authentication)
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "review-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - response
+              properties:
+                response:
+                  type: string
+                  example: "Thank you for your feedback!"
+      responses:
+        '200':
+          description: Response posted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not the vehicle owner
+        '404':
+          description: Review not found
+
+  /reviews/{id}/report:
+    post:
+      summary: Report a review
+      description: Report inappropriate review (requires authentication)
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  enum: [spam, offensive, inappropriate, fake]
+                  example: "spam"
+                details:
+                  type: string
+                  example: "This review contains promotional content"
+      responses:
+        '200':
+          description: Review reported successfully
+        '401':
+          description: Unauthorized
+
+  /reviews/{id}/helpful:
+    post:
+      summary: Mark review as helpful
+      description: Mark a review as helpful (requires authentication)
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Marked as helpful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Marked as helpful"
+                  helpfulCount:
+                    type: integer
+                    example: 15
+        '400':
+          description: Already marked as helpful
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ReviewResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "review-123"
+        vehicleId:
+          type: string
+          example: "car-456"
+        userId:
+          type: string
+          example: "user-789"
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Great car!"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-12-21T10:30:00Z"
+
+    VehicleReview:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "review-123"
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "user-789"
+            name:
+              type: string
+              example: "John Doe"
+            avatar:
+              type: string
+              nullable: true
+              example: "https://cdn.com/avatar.jpg"
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Excellent vehicle, highly recommended!"
+        photos:
+          type: array
+          items:
+            type: string
+          example: ["photo1.jpg"]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-12-21T10:30:00Z"
+        helpful:
+          type: integer
+          example: 10
+        ownerResponse:
+          type: string
+          nullable: true
+          example: "Thank you for your feedback!"
+
+    OwnerReview:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "review-456"
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            avatar:
+              type: string
+              nullable: true
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Great owner, very professional!"
+        aspects:
+          type: object
+          nullable: true
+          properties:
+            communication:
+              type: integer
+              example: 5
+            reliability:
+              type: integer
+              example: 5
+            carCondition:
+              type: integer
+              example: 5
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewSummary:
+      type: object
+      properties:
+        averageRating:
+          type: number
+          format: float
+          example: 4.5
+        totalReviews:
+          type: integer
+          example: 127
+        ratingDistribution:
+          type: object
+          properties:
+            "5":
+              type: integer
+              example: 80
+            "4":
+              type: integer
+              example: 30
+            "3":
+              type: integer
+              example: 10
+            "2":
+              type: integer
+              example: 5
+            "1":
+              type: integer
+              example: 2
+
+    OwnerReviewSummary:
+      type: object
+      properties:
+        averageRating:
+          type: number
+          format: float
+          example: 4.7
+        totalReviews:
+          type: integer
+          example: 45
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 127
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+
+tags:
+  - name: Reviews
+    description: Review and rating management

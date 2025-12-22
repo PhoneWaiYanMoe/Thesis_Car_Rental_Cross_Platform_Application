@@ -34,7 +34,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-wiz_password}
       MONGO_INITDB_DATABASE: wiz_reviews
     ports:
-      - "27017:27017"
+      - "27020:27020"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
@@ -170,7 +170,6 @@ services:
     networks:
       - wiz-network
 
-  # ==================== REVIEW SERVICE ====================
   review-service:
     build: ./review-service
     container_name: wiz-review-service
@@ -179,14 +178,14 @@ services:
       - "3005:3005"
       - "50054:50054"
     environment:
-      - MONGODB_URI=mongodb://wiz_user:wiz_password@mongodb:27017/wiz_reviews?authSource=admin&directConnection=true
-      - MONGODB_USER=wiz_user
-      - MONGODB_PASSWORD=wiz_password
+      - MONGODB_URI=mongodb://${MONGODB_USER:-wiz_user}:${MONGODB_PASSWORD:-wiz_password}@mongodb:27020/wiz_reviews?authSource=admin
+      - MONGODB_USER=${MONGODB_USER:-wiz_user}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-wiz_password}
       - PORT=3005
       - GRPC_PORT=50054
       - NODE_ENV=development
       - BASE_URL=http://localhost:3005
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
       - USER_SERVICE_GRPC_URL=user-service:50053
     depends_on:

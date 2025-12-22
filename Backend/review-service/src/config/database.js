@@ -12,7 +12,7 @@ class Database {
         process.env.MONGODB_URI ||
         `mongodb://${process.env.MONGODB_USER || "wiz_user"}:${
           process.env.MONGODB_PASSWORD || "wiz_password"
-        }@localhost:27017/wiz_reviews?authSource=admin&directConnection=true`;
+        }@localhost:27020/wiz_reviews?authSource=admin&directConnection=true`;
 
       console.log("🔄 Connecting to MongoDB...");
       console.log(
@@ -23,11 +23,13 @@ class Database {
       const options = {
         maxPoolSize: 10,
         minPoolSize: 2,
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 30000,
         socketTimeoutMS: 45000,
-        family: 4, // Use IPv4
+        connectTimeoutMS: 30000,
+        family: 4,
         retryWrites: true,
         retryReads: true,
+        directConnection: false,
       };
 
       this.connection = await mongoose.connect(mongoUri, options);
@@ -35,6 +37,7 @@ class Database {
       console.log("✅ Connected to MongoDB database");
       console.log("📊 Database:", mongoose.connection.db.databaseName);
       console.log("🏠 Host:", mongoose.connection.host);
+      console.log("🔌 Port:", mongoose.connection.port);
 
       // Handle connection events
       mongoose.connection.on("error", (err) => {
@@ -53,10 +56,7 @@ class Database {
     } catch (error) {
       console.error("❌ MongoDB connection failed:", error.message);
       console.error(
-        "💡 Check if MongoDB is running and credentials are correct"
-      );
-      console.error(
-        "💡 URI format should be: mongodb://username:password@host:port/database?authSource=admin"
+        "💡 Check if MongoDB is running on port 27020 and credentials are correct"
       );
       throw error;
     }
