@@ -4,20 +4,19 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const path = require("path");
-const passport = require('./config/passport');
+const passport = require("./config/passport");
 
 const authRoutes = require("./routes/auth_routes");
 const locationRoutes = require("./routes/location_routes");
 const errorHandler = require("./middleware/errorHandler");
+const { runMigrations } = require("./utils/migrationRunner");
 
 const app = express();
 
-app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(passport.initialize());
 
 app.get("/health", (req, res) => {
@@ -43,14 +42,35 @@ try {
 // Routes
 app.use("/auth", authRoutes);
 app.use("/location", locationRoutes);
-
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/", (req, res) => res.redirect("/api-docs"));
-
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`User Service + Swagger UI running on port ${PORT}`);
-  console.log(`Open: http://localhost:${PORT}/api-docs`);
+// START SERVER WITH MIGRATIONS
+async function startServer() {
+  try {
+    console.log("🔄 Running database migrations...");
+    await runMigrations();
+
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+      console.log(`✅ User Service HTTP running on port ${PORT}`);
+      console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully...");
+  process.exit(0);
 });

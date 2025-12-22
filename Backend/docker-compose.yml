@@ -24,7 +24,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==================== MONGODB (For Review Service) ====================
   mongodb:
     image: mongo:8.0
     container_name: wiz-mongodb
@@ -34,15 +33,16 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-wiz_password}
       MONGO_INITDB_DATABASE: wiz_reviews
     ports:
-      - "27020:27020"
+      - "27020:27020"  # Both host and container use 27020
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
       - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+    command: --port 27020  # Force MongoDB to listen on 27020
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "--port", "27020", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -170,6 +170,7 @@ services:
     networks:
       - wiz-network
 
+# ==================== REVIEW SERVICE ====================
   review-service:
     build: ./review-service
     container_name: wiz-review-service

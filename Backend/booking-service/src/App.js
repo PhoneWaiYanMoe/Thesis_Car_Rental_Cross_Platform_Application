@@ -1,4 +1,3 @@
-// Backend/booking-service/src/app.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -10,6 +9,7 @@ const bookingRoutes = require("./routes/booking_routes");
 const ownerBookingRoutes = require("./routes/owner_booking_routes");
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
+const BookingGrpcServer = require("./grpc/booking_grpc_server"); // Add this
 
 const app = express();
 
@@ -50,7 +50,9 @@ app.use("/", (req, res) => res.redirect("/api-docs"));
 // Error handler
 app.use(errorHandler);
 
-// Initialize database and start server
+// Initialize database and start servers
+let grpcServer = null;
+
 async function startServer() {
   try {
     // Run migrations first
@@ -63,6 +65,11 @@ async function startServer() {
       console.log(`✅ Booking Service HTTP running on port ${PORT}`);
       console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
     });
+
+    // Start gRPC server
+    const GRPC_PORT = process.env.GRPC_PORT || 50052;
+    grpcServer = new BookingGrpcServer();
+    grpcServer.start(GRPC_PORT);
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);
@@ -74,10 +81,16 @@ startServer();
 // Graceful shutdown
 process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully...");
+  if (grpcServer) {
+    grpcServer.stop();
+  }
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
   console.log("SIGINT received, shutting down gracefully...");
+  if (grpcServer) {
+    grpcServer.stop();
+  }
   process.exit(0);
 });

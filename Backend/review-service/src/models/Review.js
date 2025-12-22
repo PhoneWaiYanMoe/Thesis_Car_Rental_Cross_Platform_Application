@@ -1,163 +1,177 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Vehicle Review Schema
-const vehicleReviewSchema = new mongoose.Schema({
-  bookingId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  vehicleId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  customerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  ownerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  rating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5
-  },
-  comment: {
-    type: String,
-    trim: true,
-    maxlength: 1000
-  },
-  photos: [{
-    type: String
-  }],
-  ownerResponse: {
-    text: String,
-    respondedAt: Date
-  },
-  helpful: {
-    type: Number,
-    default: 0
-  },
-  helpfulBy: [{
-    type: String
-  }],
-  reported: {
-    type: Boolean,
-    default: false
-  },
-  reportDetails: {
-    reason: {
+const vehicleReviewSchema = new mongoose.Schema(
+  {
+    bookingId: {
       type: String,
-      enum: ['spam', 'offensive', 'inappropriate', 'fake']
+      required: true,
+      unique: true, // Move unique here instead of index
     },
-    details: String,
-    reportedBy: String,
-    reportedAt: Date
+    vehicleId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    customerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    ownerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    rating: {
+      type: Number, // Changed from mongoose.Schema.Types.Decimal128
+      required: true,
+      min: 1,
+      max: 5,
+      get: (v) => parseFloat(v), // Ensure it's always a number
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    photos: [
+      {
+        type: String,
+      },
+    ],
+    ownerResponse: {
+      text: String,
+      respondedAt: Date,
+    },
+    helpful: {
+      type: Number,
+      default: 0,
+    },
+    helpfulBy: [
+      {
+        type: String,
+      },
+    ],
+    reported: {
+      type: Boolean,
+      default: false,
+    },
+    reportDetails: {
+      reason: {
+        type: String,
+        enum: ["spam", "offensive", "inappropriate", "fake"],
+      },
+      details: String,
+      reportedBy: String,
+      reportedAt: Date,
+    },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
   },
-  isVisible: {
-    type: Boolean,
-    default: true
+  {
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true },
   }
-}, {
-  timestamps: true
-});
+);
 
 // Owner Review Schema
-const ownerReviewSchema = new mongoose.Schema({
-  bookingId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  ownerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  customerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  rating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5
-  },
-  comment: {
-    type: String,
-    trim: true,
-    maxlength: 1000
-  },
-  aspects: {
-    communication: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    reliability: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    carCondition: {
-      type: Number,
-      min: 1,
-      max: 5
-    }
-  },
-  helpful: {
-    type: Number,
-    default: 0
-  },
-  helpfulBy: [{
-    type: String
-  }],
-  reported: {
-    type: Boolean,
-    default: false
-  },
-  reportDetails: {
-    reason: {
+const ownerReviewSchema = new mongoose.Schema(
+  {
+    bookingId: {
       type: String,
-      enum: ['spam', 'offensive', 'inappropriate', 'fake']
+      required: true,
+      unique: true, // Move unique here
     },
-    details: String,
-    reportedBy: String,
-    reportedAt: Date
+    ownerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    customerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+      get: (v) => parseFloat(v),
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    aspects: {
+      communication: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      reliability: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      carCondition: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+    },
+    helpful: {
+      type: Number,
+      default: 0,
+    },
+    helpfulBy: [
+      {
+        type: String,
+      },
+    ],
+    reported: {
+      type: Boolean,
+      default: false,
+    },
+    reportDetails: {
+      reason: {
+        type: String,
+        enum: ["spam", "offensive", "inappropriate", "fake"],
+      },
+      details: String,
+      reportedBy: String,
+      reportedAt: Date,
+    },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
   },
-  isVisible: {
-    type: Boolean,
-    default: true
+  {
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true },
   }
-}, {
-  timestamps: true
-});
+);
 
-// Indexes for performance
+// Indexes
 vehicleReviewSchema.index({ vehicleId: 1, createdAt: -1 });
-vehicleReviewSchema.index({ customerId: 1, vehicleId: 1 }, { unique: true });
+vehicleReviewSchema.index({ customerId: 1, vehicleId: 1 });
 vehicleReviewSchema.index({ rating: 1 });
 
 ownerReviewSchema.index({ ownerId: 1, createdAt: -1 });
-ownerReviewSchema.index({ customerId: 1, ownerId: 1 }, { unique: true });
+ownerReviewSchema.index({ customerId: 1, ownerId: 1 });
 ownerReviewSchema.index({ rating: 1 });
 
-// Prevent duplicate reviews for same booking
-vehicleReviewSchema.index({ bookingId: 1 }, { unique: true });
-ownerReviewSchema.index({ bookingId: 1 }, { unique: true });
-
-const VehicleReview = mongoose.model('VehicleReview', vehicleReviewSchema);
-const OwnerReview = mongoose.model('OwnerReview', ownerReviewSchema);
+const VehicleReview = mongoose.model("VehicleReview", vehicleReviewSchema);
+const OwnerReview = mongoose.model("OwnerReview", ownerReviewSchema);
 
 module.exports = {
   VehicleReview,
-  OwnerReview
+  OwnerReview,
 };
