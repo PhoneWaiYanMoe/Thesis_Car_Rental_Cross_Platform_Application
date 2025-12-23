@@ -3,7 +3,177 @@ const pool = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
 
 class BookingController {
-  // Create new booking (requires driving license)
+  // ==================== VERIFICATION MANAGEMENT ====================
+
+  /**
+   * Get user's verification status (license + selfies)
+   */
+  async getMyVerification(req, res, next) {
+    try {
+      const userId = req.user.userId;
+
+      const result = await pool.query(
+        `SELECT * FROM user_verifications WHERE user_id = $1`,
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.json({
+          isVerified: false,
+          hasLicense: false,
+          hasSelfies: false,
+          needsVerification: true,
+          verification: null,
+        });
+      }
+
+      const verification = result.rows[0];
+
+      res.json({
+        isVerified: verification.is_verified,
+        hasLicense: verification.license_verified,
+        hasSelfies: verification.selfies_verified,
+        needsVerification: false,
+        verification: {
+          license: {
+            fullName: verification.license_full_name,
+            licenseNumber: verification.license_number,
+            expiryDate: verification.license_expiry_date,
+            frontPhoto: verification.license_front_photo,
+            backPhoto: verification.license_back_photo,
+            verified: verification.license_verified,
+          },
+          selfies: {
+            frontSelfie: verification.front_selfie,
+            leftSelfie: verification.left_selfie,
+            rightSelfie: verification.right_selfie,
+            verified: verification.selfies_verified,
+          },
+          createdAt: verification.created_at,
+          updatedAt: verification.updated_at,
+        },
+      });
+    } catch (error) {
+      console.error("Get verification error:", error);
+      next(error);
+    }
+  }
+
+  /**
+   * Upload/Update complete verification (license + selfies)
+   * This is saved in settings and reused for all future bookings
+   */
+  async uploadVerification(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const {
+        // License fields
+        fullName,
+        licenseNumber,
+        expiryDate,
+        licenseFrontPhoto,
+        licenseBackPhoto,
+
+        // Selfie fields (3 required)
+        frontSelfie,
+        leftSelfie,
+        rightSelfie,
+      } = req.body;
+
+      // Validate required fields
+      if (
+        !fullName ||
+        !licenseNumber ||
+        !expiryDate ||
+        !licenseFrontPhoto ||
+        !licenseBackPhoto
+      ) {
+        return res.status(400).json({
+          error: "Missing required license fields",
+          required: [
+            "fullName",
+            "licenseNumber",
+            "expiryDate",
+            "licenseFrontPhoto",
+            "licenseBackPhoto",
+          ],
+        });
+      }
+
+      if (!frontSelfie || !leftSelfie || !rightSelfie) {
+        return res.status(400).json({
+          error: "All 3 selfies are required (front, left, right)",
+          required: ["frontSelfie", "leftSelfie", "rightSelfie"],
+        });
+      }
+
+      // Validate expiry date
+      const expiry = new Date(expiryDate);
+      const now = new Date();
+      if (expiry <= now) {
+        return res.status(400).json({
+          error: "License has expired or is expiring today",
+        });
+      }
+
+      await pool.query(
+        `INSERT INTO user_verifications (
+          user_id, 
+          license_full_name, license_number, license_expiry_date, 
+          license_front_photo, license_back_photo, license_verified,
+          front_selfie, left_selfie, right_selfie, selfies_verified,
+          is_verified
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (user_id) DO UPDATE
+        SET license_full_name = EXCLUDED.license_full_name,
+            license_number = EXCLUDED.license_number,
+            license_expiry_date = EXCLUDED.license_expiry_date,
+            license_front_photo = EXCLUDED.license_front_photo,
+            license_back_photo = EXCLUDED.license_back_photo,
+            license_verified = EXCLUDED.license_verified,
+            front_selfie = EXCLUDED.front_selfie,
+            left_selfie = EXCLUDED.left_selfie,
+            right_selfie = EXCLUDED.right_selfie,
+            selfies_verified = EXCLUDED.selfies_verified,
+            is_verified = EXCLUDED.is_verified,
+            updated_at = NOW()`,
+        [
+          userId,
+          fullName,
+          licenseNumber,
+          expiryDate,
+          licenseFrontPhoto,
+          licenseBackPhoto,
+          true, // license_verified
+          frontSelfie,
+          leftSelfie,
+          rightSelfie,
+          true, // selfies_verified
+          true, // is_verified
+        ]
+      );
+
+      console.log(`✅ Verification saved for user: ${userId}`);
+
+      res.json({
+        message: "Verification saved successfully",
+        isVerified: true,
+        canBookNow: true,
+      });
+    } catch (error) {
+      console.error("Upload verification error:", error);
+      next(error);
+    }
+  }
+
+  // ==================== BOOKING MANAGEMENT ====================
+
+  /**
+   * Create new booking
+   * Requires: vehicleId only (owner is fetched from vehicle)
+   * Checks: User must have verified license + selfies
+   */
   async createBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -11,8 +181,6 @@ class BookingController {
       await client.query("BEGIN");
 
       const userId = req.user.userId;
-      const userEmail = req.user.email || "unknown@example.com";
-      const userRole = req.user.role || "customer";
       const {
         vehicleId,
         startDate,
@@ -25,38 +193,39 @@ class BookingController {
         additionalNotes,
       } = req.body;
 
-      // Check if user has verified driving license
-      const licenseResult = await client.query(
-        `SELECT * FROM user_licenses 
-         WHERE user_id = $1 AND is_verified = true`,
+      // 1. Check if user has complete verification
+      const verificationResult = await client.query(
+        `SELECT * FROM user_verifications 
+         WHERE user_id = $1 AND is_verified = true AND license_verified = true AND selfies_verified = true`,
         [userId]
       );
 
-      if (licenseResult.rows.length === 0) {
+      if (verificationResult.rows.length === 0) {
         return res.status(400).json({
-          error: "Please upload and verify your driving license before booking",
-          requiresLicense: true,
+          error:
+            "Please complete verification (license + selfies) before booking",
+          requiresVerification: true,
+          needsLicense: true,
+          needsSelfies: true,
         });
       }
 
-      // Ensure customer exists in booking service
-      await client.query(
-        `INSERT INTO users (user_id, email, full_name, role)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id) DO UPDATE
-         SET email = EXCLUDED.email, role = EXCLUDED.role`,
-        [
-          userId,
-          userEmail,
-          req.user.fullName || userEmail.split("@")[0],
-          userRole,
-        ]
-      );
+      // Check license expiry
+      const verification = verificationResult.rows[0];
+      const expiryDate = new Date(verification.license_expiry_date);
+      const now = new Date();
 
-      // Validate dates
+      if (expiryDate <= now) {
+        return res.status(400).json({
+          error:
+            "Your driving license has expired. Please update it in settings.",
+          requiresLicenseUpdate: true,
+        });
+      }
+
+      // 2. Validate dates
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const now = new Date();
 
       if (start <= now) {
         return res
@@ -71,7 +240,7 @@ class BookingController {
           .json({ error: "End date must be after start date" });
       }
 
-      // Get vehicle details INCLUDING owner_id
+      // 3. Get vehicle details (including owner's user_id)
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND is_active = true",
         [vehicleId]
@@ -84,39 +253,31 @@ class BookingController {
       }
 
       const vehicle = vehicleResult.rows[0];
+      const vehicleOwnerId = vehicle.user_id; // Owner is stored as user_id in vehicles table
 
-      // IMPORTANT: owner_id comes from the vehicle, NOT the customer
-      const ownerId = vehicle.owner_id;
+      // Prevent booking own vehicle
+      if (vehicleOwnerId === userId) {
+        return res.status(400).json({
+          error: "You cannot book your own vehicle",
+        });
+      }
 
       console.log(
-        `📝 Booking: customer=${userId}, owner=${ownerId}, vehicle=${vehicleId}`
+        `📝 Booking: customer=${userId}, vehicleOwner=${vehicleOwnerId}, vehicle=${vehicleId}`
       );
 
-      // Ensure vehicle owner exists in booking service users table
-      await client.query(
-        `INSERT INTO users (user_id, email, full_name, role)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id) DO NOTHING`,
-        [ownerId, `owner-${ownerId}@wiz.com`, "Vehicle Owner", "owner"]
-      );
-
-      // Calculate pricing
+      // 4. Calculate pricing
       const rentalPrice = vehicle.daily_rate * days;
       const insuranceFee = Math.round(rentalPrice * (insuranceCoverage / 100));
       const total = rentalPrice + insuranceFee;
       const deposit = Math.round(total * 0.3); // 30% deposit
       const remainingPayment = total - deposit;
 
-      // Generate rental ID
-      const rentalId = Math.floor(
-        10000000 + Math.random() * 90000000
-      ).toString();
-
-      // Create booking with PENDING status
+      // 5. Create booking
       const bookingId = uuidv4();
       const bookingResult = await client.query(
         `INSERT INTO bookings (
-          booking_id, rental_id, customer_id, owner_id, vehicle_id,
+          booking_id, customer_id, vehicle_id,
           start_date, end_date, duration_days,
           pickup_location, dropoff_location,
           driver_required, insurance_coverage,
@@ -124,13 +285,11 @@ class BookingController {
           deposit_amount, remaining_payment,
           payment_method_id, additional_notes,
           status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING *`,
         [
           bookingId,
-          rentalId,
-          userId, // customer_id (person renting)
-          ownerId, // owner_id (person who owns the vehicle)
+          userId, // customer_id
           vehicleId,
           startDate,
           endDate,
@@ -146,21 +305,22 @@ class BookingController {
           remainingPayment,
           paymentMethodId,
           additionalNotes,
-          "pending", // Initial status
+          "pending", // Waiting for owner approval
         ]
       );
 
       await client.query("COMMIT");
 
+      console.log(`✅ Booking created: ${bookingId}`);
+
       res.status(201).json({
         message: "Booking created successfully, waiting for owner approval",
         booking: {
           id: bookingId,
-          rentalId: rentalId,
           vehicleId: vehicleId,
           vehicleName: vehicle.name,
           customerId: userId,
-          ownerId: ownerId,
+          vehicleOwnerId: vehicleOwnerId, // Return owner ID in response
           status: "pending",
           startDate: startDate,
           endDate: endDate,
@@ -186,7 +346,9 @@ class BookingController {
     }
   }
 
-  // Get customer's bookings
+  /**
+   * Get customer's bookings
+   */
   async getMyBookings(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -201,11 +363,11 @@ class BookingController {
       let query = `
         SELECT 
           b.*,
-          v.name as vehicle_name, v.photo as vehicle_photo,
-          u.full_name as owner_name, u.avatar_url as owner_avatar
+          v.name as vehicle_name, 
+          v.photo as vehicle_photo,
+          v.user_id as vehicle_owner_id
         FROM bookings b
         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        JOIN users u ON b.owner_id = u.user_id
         WHERE b.customer_id = $1
       `;
 
@@ -237,17 +399,12 @@ class BookingController {
       res.json({
         bookings: result.rows.map((row) => ({
           id: row.booking_id,
-          rentalId: row.rental_id,
           status: row.status,
           vehicle: {
             id: row.vehicle_id,
             name: row.vehicle_name,
             photo: row.vehicle_photo,
-          },
-          owner: {
-            id: row.owner_id,
-            name: row.owner_name,
-            avatar: row.owner_avatar,
+            ownerId: row.vehicle_owner_id,
           },
           startDate: row.start_date,
           endDate: row.end_date,
@@ -260,7 +417,9 @@ class BookingController {
           canCancel:
             ["pending", "booking"].includes(row.status) &&
             new Date(row.start_date) > new Date(),
-          canReview: row.status === "completed" && !row.rated,
+          canReview:
+            row.status === "completed" &&
+            (!row.vehicle_reviewed || !row.owner_reviewed),
           createdAt: row.created_at,
         })),
         pagination: {
@@ -275,7 +434,9 @@ class BookingController {
     }
   }
 
-  // Get booking details
+  /**
+   * Get booking details by ID
+   */
   async getBookingById(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -284,15 +445,16 @@ class BookingController {
       const result = await pool.query(
         `SELECT 
           b.*,
-          v.name as vehicle_name, v.photo as vehicle_photo, 
-          v.transmission, v.seats, v.fuel_type, v.location as vehicle_location,
-          c.full_name as customer_name, c.avatar_url as customer_avatar,
-          o.full_name as owner_name, o.avatar_url as owner_avatar
+          v.name as vehicle_name, 
+          v.photo as vehicle_photo, 
+          v.transmission, 
+          v.seats, 
+          v.fuel_type, 
+          v.location as vehicle_location,
+          v.user_id as vehicle_owner_id
         FROM bookings b
         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        JOIN users c ON b.customer_id = c.user_id
-        JOIN users o ON b.owner_id = o.user_id
-        WHERE b.booking_id = $1 AND (b.customer_id = $2 OR b.owner_id = $2)`,
+        WHERE b.booking_id = $1 AND (b.customer_id = $2 OR v.user_id = $2)`,
         [id, userId]
       );
 
@@ -307,7 +469,6 @@ class BookingController {
       res.json({
         booking: {
           id: booking.booking_id,
-          rentalId: booking.rental_id,
           status: booking.status,
           vehicle: {
             id: booking.vehicle_id,
@@ -317,17 +478,9 @@ class BookingController {
             seats: booking.seats,
             fuelType: booking.fuel_type,
             location: booking.vehicle_location,
+            ownerId: booking.vehicle_owner_id,
           },
-          customer: {
-            id: booking.customer_id,
-            name: booking.customer_name,
-            avatar: booking.customer_avatar,
-          },
-          owner: {
-            id: booking.owner_id,
-            name: booking.owner_name,
-            avatar: booking.owner_avatar,
-          },
+          customerId: booking.customer_id,
           timeline: {
             startDate: booking.start_date,
             endDate: booking.end_date,
@@ -361,7 +514,9 @@ class BookingController {
             : null,
           canCancel:
             ["pending", "booking"].includes(booking.status) && startDate > now,
-          canReview: booking.status === "completed" && !booking.rated,
+          canReview:
+            booking.status === "completed" &&
+            (!booking.vehicle_reviewed || !booking.owner_reviewed),
           canSignContract:
             booking.status === "booking" &&
             startDate.toDateString() === now.toDateString() &&
@@ -374,84 +529,11 @@ class BookingController {
     }
   }
 
-  // Upload/Update driving license
-  async uploadLicense(req, res, next) {
-    try {
-      const userId = req.user.userId;
-      const {
-        fullName,
-        licenseNumber,
-        expiryDate,
-        frontPhotoUrl,
-        backPhotoUrl,
-      } = req.body;
+  // ==================== BOOKING ACTIONS ====================
 
-      await pool.query(
-        `INSERT INTO user_licenses (user_id, full_name, license_number, expiry_date, front_photo_url, back_photo_url, is_verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (user_id) DO UPDATE
-         SET full_name = EXCLUDED.full_name,
-             license_number = EXCLUDED.license_number,
-             expiry_date = EXCLUDED.expiry_date,
-             front_photo_url = EXCLUDED.front_photo_url,
-             back_photo_url = EXCLUDED.back_photo_url,
-             is_verified = EXCLUDED.is_verified,
-             updated_at = NOW()`,
-        [
-          userId,
-          fullName,
-          licenseNumber,
-          expiryDate,
-          frontPhotoUrl || "front-url",
-          backPhotoUrl || "back-url",
-          true,
-        ]
-      );
-
-      res.json({
-        message: "License saved and verified successfully",
-        licenseVerified: true,
-      });
-    } catch (error) {
-      console.error("Upload license error:", error);
-      next(error);
-    }
-  }
-
-  // Get user's license
-  async getMyLicense(req, res, next) {
-    try {
-      const userId = req.user.userId;
-
-      const result = await pool.query(
-        `SELECT full_name, license_number, expiry_date, front_photo_url, back_photo_url, is_verified
-         FROM user_licenses WHERE user_id = $1`,
-        [userId]
-      );
-
-      if (result.rows.length === 0) {
-        return res.json({ hasLicense: false, license: null });
-      }
-
-      const license = result.rows[0];
-      res.json({
-        hasLicense: true,
-        license: {
-          fullName: license.full_name,
-          licenseNumber: license.license_number,
-          expiryDate: license.expiry_date,
-          frontPhotoUrl: license.front_photo_url,
-          backPhotoUrl: license.back_photo_url,
-          isVerified: license.is_verified,
-        },
-      });
-    } catch (error) {
-      console.error("Get license error:", error);
-      next(error);
-    }
-  }
-
-  // Confirm car pickup (changes status to on-journey)
+  /**
+   * Confirm car pickup (changes status to on-journey)
+   */
   async confirmPickup(req, res, next) {
     const client = await pool.connect();
 
@@ -462,11 +544,10 @@ class BookingController {
       const { id } = req.params;
       const { pickupPhotos, odometerReading, notes } = req.body;
 
-      // Validate photos
       if (!pickupPhotos || pickupPhotos.length < 3) {
-        return res
-          .status(400)
-          .json({ error: "Please upload at least 3 photos of the car" });
+        return res.status(400).json({
+          error: "Please upload at least 3 photos of the car",
+        });
       }
 
       const bookingResult = await client.query(
@@ -480,14 +561,12 @@ class BookingController {
 
       const booking = bookingResult.rows[0];
 
-      // Check if booking is in correct status
       if (booking.status !== "booking") {
         return res.status(400).json({
           error: `Cannot confirm pickup. Current status: ${booking.status}. Expected: booking`,
         });
       }
 
-      // Check if contract is signed (required on booking day)
       const startDate = new Date(booking.start_date);
       const now = new Date();
       if (
@@ -526,7 +605,9 @@ class BookingController {
     }
   }
 
-  // Confirm car return (changes status to completed)
+  /**
+   * Confirm car return (changes status to completed)
+   */
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -537,11 +618,10 @@ class BookingController {
       const { id } = req.params;
       const { returnPhotos, odometerReading, notes } = req.body;
 
-      // Validate photos
       if (!returnPhotos || returnPhotos.length < 3) {
-        return res
-          .status(400)
-          .json({ error: "Please upload at least 3 photos of the car" });
+        return res.status(400).json({
+          error: "Please upload at least 3 photos of the car",
+        });
       }
 
       const bookingResult = await client.query(
@@ -589,7 +669,9 @@ class BookingController {
     }
   }
 
-  // Cancel booking
+  /**
+   * Cancel booking
+   */
   async cancelBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -613,7 +695,6 @@ class BookingController {
       const startDate = new Date(booking.start_date);
       const now = new Date();
 
-      // Can only cancel if status is pending or booking, and before start date
       if (!["pending", "booking"].includes(booking.status)) {
         return res.status(400).json({
           error: `Cannot cancel booking with status: ${booking.status}`,
@@ -672,7 +753,9 @@ class BookingController {
     }
   }
 
-  // Sign contract (only on booking day)
+  /**
+   * Sign contract (only on booking day)
+   */
   async signContract(req, res, next) {
     const client = await pool.connect();
 
@@ -684,9 +767,9 @@ class BookingController {
       const { signature, agreedToTerms } = req.body;
 
       if (!agreedToTerms) {
-        return res
-          .status(400)
-          .json({ error: "You must agree to the terms and conditions" });
+        return res.status(400).json({
+          error: "You must agree to the terms and conditions",
+        });
       }
 
       const bookingResult = await client.query(
@@ -700,14 +783,12 @@ class BookingController {
 
       const booking = bookingResult.rows[0];
 
-      // Check if status is booking
       if (booking.status !== "booking") {
         return res.status(400).json({
           error: "Contract can only be signed for confirmed bookings",
         });
       }
 
-      // Check if it's booking day
       const startDate = new Date(booking.start_date);
       const now = new Date();
 

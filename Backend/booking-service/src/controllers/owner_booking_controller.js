@@ -2,10 +2,13 @@
 const pool = require("../config/database");
 
 class OwnerBookingController {
-  // Get owner's rental requests
+  /**
+   * Get owner's rental requests
+   * Fetches all bookings for vehicles owned by this user (user_id matches vehicle.user_id)
+   */
   async getOwnerBookings(req, res, next) {
     try {
-      const ownerId = req.user.userId;
+      const userId = req.user.userId; // Owner's user_id
       const {
         status = "all",
         vehicleId,
@@ -14,18 +17,18 @@ class OwnerBookingController {
         limit = 10,
       } = req.query;
 
+      // Join bookings with vehicles where vehicle.user_id = current user (owner)
       let query = `
         SELECT 
           b.*,
-          v.name as vehicle_name, v.photo as vehicle_photo,
-          c.full_name as customer_name, c.avatar_url as customer_avatar
+          v.name as vehicle_name, 
+          v.photo as vehicle_photo
         FROM bookings b
         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        JOIN users c ON b.customer_id = c.user_id
-        WHERE b.owner_id = $1
+        WHERE v.user_id = $1
       `;
 
-      const params = [ownerId];
+      const params = [userId];
       let paramIndex = 2;
 
       if (status !== "all") {
@@ -45,31 +48,36 @@ class OwnerBookingController {
       params.push(limit, (page - 1) * limit);
 
       const result = await pool.query(query, params);
+
+      // Count total bookings for this owner
       const countResult = await pool.query(
-        "SELECT COUNT(*) FROM bookings WHERE owner_id = $1",
-        [ownerId]
+        `SELECT COUNT(*) 
+         FROM bookings b
+         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+         WHERE v.user_id = $1`,
+        [userId]
+      );
+
+      console.log(
+        `📊 Owner ${userId} has ${result.rows.length} bookings in this page`
       );
 
       res.json({
         bookings: result.rows.map((row) => ({
           id: row.booking_id,
-          rentalId: row.rental_id,
           status: row.status,
           vehicle: {
             id: row.vehicle_id,
             name: row.vehicle_name,
             photo: row.vehicle_photo,
           },
-          customer: {
-            id: row.customer_id,
-            name: row.customer_name,
-            avatar: row.customer_avatar,
-          },
+          customerId: row.customer_id,
           startDate: row.start_date,
           endDate: row.end_date,
+          duration: `${row.duration_days} days`,
           totalAmount: row.total_amount,
           createdAt: row.created_at,
-          needsAction: row.status === "pending",
+          needsAction: row.status === "pending", // Requires owner approval
         })),
         pagination: {
           total: parseInt(countResult.rows[0].count),
@@ -83,23 +91,31 @@ class OwnerBookingController {
     }
   }
 
-  // Accept booking request (changes status from pending to booking)
+  /**
+   * Accept booking request (changes status from pending to booking)
+   */
   async acceptBooking(req, res, next) {
     const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
-      const ownerId = req.user.userId;
+      const userId = req.user.userId; // Owner's user_id
       const { id } = req.params;
 
+      // Verify this booking belongs to a vehicle owned by this user
       const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND owner_id = $2",
-        [id, ownerId]
+        `SELECT b.* 
+         FROM bookings b
+         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+         WHERE b.booking_id = $1 AND v.user_id = $2`,
+        [id, userId]
       );
 
       if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
+        return res.status(404).json({
+          error: "Booking not found or you don't own this vehicle",
+        });
       }
 
       const booking = bookingResult.rows[0];
@@ -121,7 +137,7 @@ class OwnerBookingController {
 
       await client.query("COMMIT");
 
-      console.log(`✅ Owner accepted booking: ${id}`);
+      console.log(`✅ Owner ${userId} accepted booking: ${id}`);
 
       res.json({
         message: "Booking accepted successfully",
@@ -136,24 +152,38 @@ class OwnerBookingController {
     }
   }
 
-  // Reject booking request (changes status to cancelled)
+  /**
+   * Reject booking request (changes status to cancelled)
+   */
   async rejectBooking(req, res, next) {
     const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
-      const ownerId = req.user.userId;
+      const userId = req.user.userId; // Owner's user_id
       const { id } = req.params;
       const { reason } = req.body;
 
+      if (!reason || reason.trim() === "") {
+        return res.status(400).json({
+          error: "Please provide a reason for rejection",
+        });
+      }
+
+      // Verify this booking belongs to a vehicle owned by this user
       const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND owner_id = $2",
-        [id, ownerId]
+        `SELECT b.* 
+         FROM bookings b
+         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+         WHERE b.booking_id = $1 AND v.user_id = $2`,
+        [id, userId]
       );
 
       if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
+        return res.status(404).json({
+          error: "Booking not found or you don't own this vehicle",
+        });
       }
 
       const booking = bookingResult.rows[0];
@@ -181,7 +211,7 @@ class OwnerBookingController {
 
       await client.query("COMMIT");
 
-      console.log(`❌ Owner rejected booking: ${id}`);
+      console.log(`❌ Owner ${userId} rejected booking: ${id}`);
 
       res.json({
         message: "Booking rejected",
