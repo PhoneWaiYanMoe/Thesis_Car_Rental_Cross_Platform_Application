@@ -144,7 +144,7 @@ export const generateBookingData = () => {
     carId: `CAR-${String(Math.floor(Math.random() * 30) + 1).padStart(4, '0')}`,
     userId: `USER-${String(Math.floor(Math.random() * 50) + 1).padStart(4, '0')}`,
     // amount: Math.floor(Math.random() * 500) + 100,
-    amount: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.floor(Math.random() * 3000000) + 1000000),
+    amount: Math.floor(Math.random() * 3000000) + 1000000,
     date: new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString(),
     status: ['completed', 'ongoing', 'cancelled'][Math.floor(Math.random() * 3)]
   }));
