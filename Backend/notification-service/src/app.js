@@ -7,7 +7,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Home route
 app.get('/', (req, res) => {
-  res.send('Hello, Express!');
+  res.send('Hello, From the NOTIFICATIONS!');
 });
 
 // Example API route
@@ -16,7 +16,7 @@ app.get('/api', (req, res) => {
 });
 
 // Server
-const PORT = process.env.PORT || 3009;
+const PORT = process.env.PORT || 3007;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
