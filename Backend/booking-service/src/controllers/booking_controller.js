@@ -39,7 +39,7 @@ class BookingController {
         });
       }
 
-      // Ensure user exists in booking service
+      // Ensure customer exists in booking service
       await client.query(
         `INSERT INTO users (user_id, email, full_name, role)
          VALUES ($1, $2, $3, $4)
@@ -71,7 +71,7 @@ class BookingController {
           .json({ error: "End date must be after start date" });
       }
 
-      // Get vehicle details
+      // Get vehicle details INCLUDING owner_id
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND is_active = true",
         [vehicleId]
@@ -85,17 +85,19 @@ class BookingController {
 
       const vehicle = vehicleResult.rows[0];
 
-      // Ensure vehicle owner exists
+      // IMPORTANT: owner_id comes from the vehicle, NOT the customer
+      const ownerId = vehicle.owner_id;
+
+      console.log(
+        `📝 Booking: customer=${userId}, owner=${ownerId}, vehicle=${vehicleId}`
+      );
+
+      // Ensure vehicle owner exists in booking service users table
       await client.query(
         `INSERT INTO users (user_id, email, full_name, role)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (user_id) DO NOTHING`,
-        [
-          vehicle.owner_id,
-          `owner-${vehicle.owner_id}@wiz.com`,
-          "Vehicle Owner",
-          "owner",
-        ]
+        [ownerId, `owner-${ownerId}@wiz.com`, "Vehicle Owner", "owner"]
       );
 
       // Calculate pricing
@@ -127,8 +129,8 @@ class BookingController {
         [
           bookingId,
           rentalId,
-          userId,
-          vehicle.owner_id,
+          userId, // customer_id (person renting)
+          ownerId, // owner_id (person who owns the vehicle)
           vehicleId,
           startDate,
           endDate,
@@ -157,6 +159,8 @@ class BookingController {
           rentalId: rentalId,
           vehicleId: vehicleId,
           vehicleName: vehicle.name,
+          customerId: userId,
+          ownerId: ownerId,
           status: "pending",
           startDate: startDate,
           endDate: endDate,
