@@ -33,7 +33,8 @@ paths:
               properties:
                 vehicleId:
                   type: string
-                  example: "car-123"
+                  description: Vehicle UUID (must match seeded data)
+                  example: "550e8400-e29b-41d4-a716-446655440001"
                 startDate:
                   type: string
                   format: date-time
@@ -194,8 +195,9 @@ paths:
           required: true
           schema:
             type: string
-          description: Booking ID
-          example: "booking-789"
+            format: uuid
+          description: Booking ID (UUID)
+          example: "550e8400-e29b-41d4-a716-446655440100"
       responses:
         '200':
           description: Booking details
@@ -207,40 +209,68 @@ paths:
                   booking:
                     $ref: '#/components/schemas/BookingDetail'
 
-  /bookings/{id}/upload-license:
-    post:
-      summary: Upload driving license
-      description: Upload driving license for first-time booking (Customer only)
+  /bookings/license/me:
+    get:
+      summary: Get current user's driving license
+      description: Returns the saved driving license for the authenticated user (if any)
       tags:
         - Customer
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Booking ID
+      responses:
+        '200':
+          description: License info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasLicense:
+                    type: boolean
+                    example: true
+                  license:
+                    type: object
+                    nullable: true
+                    properties:
+                      fullName:
+                        type: string
+                        example: "John Doe"
+                      licenseNumber:
+                        type: string
+                        example: "DL123456"
+                      expiryDate:
+                        type: string
+                        format: date
+                        example: "2027-12-31"
+                      frontPhotoUrl:
+                        type: string
+                        example: "https://cdn.com/license-front.jpg"
+                      backPhotoUrl:
+                        type: string
+                        example: "https://cdn.com/license-back.jpg"
+                      isVerified:
+                        type: boolean
+                        example: true
+
+  /bookings/license:
+    post:
+      summary: Save or update driving license
+      description: Upload or update driving license for the authenticated user. Required before creating bookings.
+      tags:
+        - Customer
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               required:
-                - frontPhoto
-                - backPhoto
                 - fullName
                 - licenseNumber
                 - expiryDate
               properties:
-                frontPhoto:
-                  type: string
-                  format: binary
-                backPhoto:
-                  type: string
-                  format: binary
                 fullName:
                   type: string
                   example: "John Doe"
@@ -251,9 +281,15 @@ paths:
                   type: string
                   format: date
                   example: "2027-12-31"
+                frontPhotoUrl:
+                  type: string
+                  example: "https://cdn.com/license-front.jpg"
+                backPhotoUrl:
+                  type: string
+                  example: "https://cdn.com/license-back.jpg"
       responses:
         '200':
-          description: License uploaded successfully
+          description: License saved successfully
           content:
             application/json:
               schema:
@@ -261,10 +297,10 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "License uploaded, pending verification"
-                  bookingStatus:
-                    type: string
-                    example: "pending_support_approval"
+                    example: "License saved successfully"
+                  licenseVerified:
+                    type: boolean
+                    example: true
 
   /bookings/{id}/upload-selfies:
     post:
@@ -717,22 +753,26 @@ components:
       properties:
         id:
           type: string
-          example: "booking-789"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440100"
         rentalId:
           type: string
           example: "238927484934"
         vehicleId:
           type: string
-          example: "car-123"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
         vehicleName:
           type: string
           example: "BMW X1 2020"
         customerId:
           type: string
-          example: "user-123"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440020"
         ownerId:
           type: string
-          example: "owner-456"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440010"
         status:
           type: string
           example: "pending_license_verification"
@@ -789,7 +829,8 @@ components:
       properties:
         id:
           type: string
-          example: "booking-789"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440100"
         rentalId:
           type: string
           example: "238927484934"
@@ -802,7 +843,8 @@ components:
           properties:
             id:
               type: string
-              example: "car-123"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440001"
             name:
               type: string
               example: "BMW X1 2020"
@@ -814,7 +856,8 @@ components:
           properties:
             id:
               type: string
-              example: "owner-456"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440010"
             name:
               type: string
               example: "Rumbling"
@@ -870,7 +913,8 @@ components:
       properties:
         id:
           type: string
-          example: "booking-789"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440100"
         rentalId:
           type: string
           example: "238927484934"
@@ -883,7 +927,8 @@ components:
           properties:
             id:
               type: string
-              example: "car-123"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440001"
             name:
               type: string
               example: "BMW X1 2020"
@@ -907,7 +952,8 @@ components:
           properties:
             id:
               type: string
-              example: "user-123"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440020"
             name:
               type: string
               example: "Jass Myatt"
@@ -919,7 +965,8 @@ components:
           properties:
             id:
               type: string
-              example: "owner-456"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440010"
             name:
               type: string
               example: "Rumbling"
@@ -1087,7 +1134,8 @@ components:
       properties:
         id:
           type: string
-          example: "booking-789"
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440100"
         rentalId:
           type: string
           example: "238927484934"
@@ -1100,7 +1148,8 @@ components:
           properties:
             id:
               type: string
-              example: "car-123"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440001"
             name:
               type: string
               example: "BMW X1 2020"
@@ -1109,7 +1158,8 @@ components:
           properties:
             id:
               type: string
-              example: "user-123"
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440020"
             name:
               type: string
               example: "Jass Myatt"

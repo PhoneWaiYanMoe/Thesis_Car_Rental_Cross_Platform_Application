@@ -9,10 +9,11 @@ const { validateBooking } = require("../middleware/validation");
 router.use(authenticate);
 
 // Customer booking endpoints
+router.get("/license/me", bookingController.getMyLicense);
+router.post("/license", bookingController.uploadLicense);
 router.post("/", validateBooking, bookingController.createBooking);
 router.get("/my-bookings", bookingController.getMyBookings);
 router.get("/:id", bookingController.getBookingById);
-router.post("/:id/upload-license", bookingController.uploadLicense);
 router.post("/:id/confirm-pickup", bookingController.confirmPickup);
 router.post("/:id/confirm-return", bookingController.confirmReturn);
 router.post("/:id/cancel", bookingController.cancelBooking);

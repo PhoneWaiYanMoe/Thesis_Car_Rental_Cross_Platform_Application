@@ -45,3 +45,26 @@ CREATE INDEX idx_otps_email_type ON otps(email, type);
 CREATE INDEX idx_otps_expires_at ON otps(expires_at);
 CREATE INDEX idx_oauth_user_id ON oauth_accounts(user_id);
 CREATE INDEX idx_oauth_provider_user ON oauth_accounts(provider, provider_user_id);
+
+-- Seed mock users for testing (owner and customer)
+INSERT INTO users (user_id, email, password_hash, full_name, phone, role, is_verified, avatar_url)
+VALUES
+  -- Owner account (matches booking-service seed owner_id)
+  ('550e8400-e29b-41d4-a716-446655440010',
+   'owner1@wiz.com',
+   '$2b$10$Fzb0rZVkkA1dNLJ3z0yzxuQCxpDBL8par8c8KPU.jlhzblFkGJy7a', -- OwnerPass123!
+   'Rumbling',
+   '+84 900 000 001',
+   'owner',
+   TRUE,
+   'assets/images/Car_2.png'),
+  -- Customer account (for booking flow)
+  ('550e8400-e29b-41d4-a716-446655440020',
+   'customer1@wiz.com',
+   '$2b$10$Ba8FaVfFXDFUcRlLDOtcwezJsrtigUZF5TvjeJ55nXOIlCzm3aKry', -- UserPass123!
+   'Jass Myatt',
+   '+84 900 000 002',
+   'customer',
+   TRUE,
+   'assets/images/article_2.png')
+ON CONFLICT (user_id) DO NOTHING;

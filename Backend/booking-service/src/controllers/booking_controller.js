@@ -25,6 +25,19 @@ class BookingController {
         additionalNotes
       } = req.body;
 
+      // Ensure user has a verified driving license before booking
+      const licenseResult = await client.query(
+        `SELECT * FROM user_licenses 
+         WHERE user_id = $1 AND is_verified = true`,
+        [userId]
+      );
+
+      if (licenseResult.rows.length === 0) {
+        return res.status(400).json({
+          error: "Driving license not uploaded or not verified",
+        });
+      }
+
       // Ensure user exists in booking service's users table (upsert)
       await client.query(
         `INSERT INTO users (user_id, email, full_name, role)
@@ -313,38 +326,68 @@ class BookingController {
   async uploadLicense(req, res, next) {
     try {
       const userId = req.user.userId;
-      const { id } = req.params;
-      const { fullName, licenseNumber, expiryDate } = req.body;
+      const { fullName, licenseNumber, expiryDate, frontPhotoUrl, backPhotoUrl } = req.body;
 
-      // In production, handle file uploads with multer
-      // const frontPhoto = req.files.frontPhoto;
-      // const backPhoto = req.files.backPhoto;
-
-      const result = await pool.query(
-        `UPDATE bookings 
-         SET license_full_name = $1, 
-             license_number = $2, 
-             license_expiry_date = $3,
-             license_front_photo = $4,
-             license_back_photo = $5,
-             status = 'pending_support_approval',
-             updated_at = NOW()
-         WHERE booking_id = $6 AND customer_id = $7
-         RETURNING *`,
-        [fullName, licenseNumber, expiryDate, 'front-photo-url', 'back-photo-url', id, userId]
+      // Upsert user license (reusable for all future bookings)
+      await pool.query(
+        `INSERT INTO user_licenses (user_id, full_name, license_number, expiry_date, front_photo_url, back_photo_url, is_verified)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (user_id) DO UPDATE
+         SET full_name = EXCLUDED.full_name,
+             license_number = EXCLUDED.license_number,
+             expiry_date = EXCLUDED.expiry_date,
+             front_photo_url = EXCLUDED.front_photo_url,
+             back_photo_url = EXCLUDED.back_photo_url,
+             is_verified = EXCLUDED.is_verified,
+             updated_at = NOW()`,
+        [userId, fullName, licenseNumber, expiryDate, frontPhotoUrl || 'front-photo-url', backPhotoUrl || 'back-photo-url', true]
       );
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
       res.json({
-        message: "License uploaded, pending verification",
-        bookingStatus: "pending_support_approval"
+        message: "License saved successfully",
+        licenseVerified: true,
       });
 
     } catch (error) {
       console.error("Upload license error:", error);
+      next(error);
+    }
+  }
+
+  // Get current user's license (for frontend setting / flag)
+  async getMyLicense(req, res, next) {
+    try {
+      const userId = req.user.userId;
+
+      const result = await pool.query(
+        `SELECT full_name, license_number, expiry_date, front_photo_url, back_photo_url, is_verified
+         FROM user_licenses
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.json({
+          hasLicense: false,
+          license: null,
+        });
+      }
+
+      const license = result.rows[0];
+
+      res.json({
+        hasLicense: true,
+        license: {
+          fullName: license.full_name,
+          licenseNumber: license.license_number,
+          expiryDate: license.expiry_date,
+          frontPhotoUrl: license.front_photo_url,
+          backPhotoUrl: license.back_photo_url,
+          isVerified: license.is_verified,
+        },
+      });
+    } catch (error) {
+      console.error("Get license error:", error);
       next(error);
     }
   }

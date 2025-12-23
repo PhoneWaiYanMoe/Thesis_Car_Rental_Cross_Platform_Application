@@ -164,6 +164,23 @@ CREATE TABLE IF NOT EXISTS booking_notifications (
 CREATE INDEX idx_notifications_user ON booking_notifications(user_id, is_read);
 CREATE INDEX idx_notifications_booking ON booking_notifications(booking_id);
 
+-- User licenses table (store reusable driving license per user)
+CREATE TABLE IF NOT EXISTS user_licenses (
+    license_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(user_id),
+    full_name VARCHAR(100) NOT NULL,
+    license_number VARCHAR(50) NOT NULL,
+    expiry_date DATE NOT NULL,
+    front_photo_url VARCHAR(500),
+    back_photo_url VARCHAR(500),
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id)
+);
+
+CREATE INDEX idx_user_licenses_user ON user_licenses(user_id);
+
 -- Insert sample vehicles for testing
 INSERT INTO vehicles (vehicle_id, owner_id, name, photo, daily_rate, transmission, seats, fuel_type, location, is_active)
 VALUES 
