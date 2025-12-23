@@ -4,11 +4,10 @@ const pool = require("../config/database");
 class OwnerBookingController {
   /**
    * Get owner's rental requests
-   * Fetches all bookings for vehicles owned by this user (user_id matches vehicle.user_id)
    */
   async getOwnerBookings(req, res, next) {
     try {
-      const userId = req.user.userId; // Owner's user_id
+      const userId = req.user.userId;
       const {
         status = "all",
         vehicleId,
@@ -17,7 +16,6 @@ class OwnerBookingController {
         limit = 10,
       } = req.query;
 
-      // Join bookings with vehicles where vehicle.user_id = current user (owner)
       let query = `
         SELECT 
           b.*,
@@ -49,17 +47,12 @@ class OwnerBookingController {
 
       const result = await pool.query(query, params);
 
-      // Count total bookings for this owner
       const countResult = await pool.query(
         `SELECT COUNT(*) 
          FROM bookings b
          JOIN vehicles v ON b.vehicle_id = v.vehicle_id
          WHERE v.user_id = $1`,
         [userId]
-      );
-
-      console.log(
-        `📊 Owner ${userId} has ${result.rows.length} bookings in this page`
       );
 
       res.json({
@@ -77,7 +70,8 @@ class OwnerBookingController {
           duration: `${row.duration_days} days`,
           totalAmount: row.total_amount,
           createdAt: row.created_at,
-          needsAction: row.status === "pending", // Requires owner approval
+          needsAction:
+            row.status === "pending" || row.status === "return_submitted",
         })),
         pagination: {
           total: parseInt(countResult.rows[0].count),
@@ -92,7 +86,7 @@ class OwnerBookingController {
   }
 
   /**
-   * Accept booking request (changes status from pending to booking)
+   * Accept booking request
    */
   async acceptBooking(req, res, next) {
     const client = await pool.connect();
@@ -100,10 +94,9 @@ class OwnerBookingController {
     try {
       await client.query("BEGIN");
 
-      const userId = req.user.userId; // Owner's user_id
+      const userId = req.user.userId;
       const { id } = req.params;
 
-      // Verify this booking belongs to a vehicle owned by this user
       const bookingResult = await client.query(
         `SELECT b.* 
          FROM bookings b
@@ -114,7 +107,7 @@ class OwnerBookingController {
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found or you don't own this vehicle",
+          error: "Booking not found",
         });
       }
 
@@ -122,7 +115,7 @@ class OwnerBookingController {
 
       if (booking.status !== "pending") {
         return res.status(400).json({
-          error: `Cannot accept booking with status: ${booking.status}. Expected: pending`,
+          error: `Cannot accept booking with status: ${booking.status}`,
         });
       }
 
@@ -153,7 +146,7 @@ class OwnerBookingController {
   }
 
   /**
-   * Reject booking request (changes status to cancelled)
+   * Reject booking request - FIXED: Added refund in request body
    */
   async rejectBooking(req, res, next) {
     const client = await pool.connect();
@@ -161,9 +154,9 @@ class OwnerBookingController {
     try {
       await client.query("BEGIN");
 
-      const userId = req.user.userId; // Owner's user_id
+      const userId = req.user.userId;
       const { id } = req.params;
-      const { reason } = req.body;
+      const { reason, refundAmount } = req.body;
 
       if (!reason || reason.trim() === "") {
         return res.status(400).json({
@@ -171,7 +164,13 @@ class OwnerBookingController {
         });
       }
 
-      // Verify this booking belongs to a vehicle owned by this user
+      // Validate refund amount is provided
+      if (refundAmount === undefined || refundAmount === null) {
+        return res.status(400).json({
+          error: "Refund amount is required",
+        });
+      }
+
       const bookingResult = await client.query(
         `SELECT b.* 
          FROM bookings b
@@ -182,7 +181,7 @@ class OwnerBookingController {
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found or you don't own this vehicle",
+          error: "Booking not found",
         });
       }
 
@@ -190,12 +189,17 @@ class OwnerBookingController {
 
       if (booking.status !== "pending") {
         return res.status(400).json({
-          error: `Cannot reject booking with status: ${booking.status}. Expected: pending`,
+          error: `Cannot reject booking with status: ${booking.status}`,
         });
       }
 
-      // Calculate refund (full refund if owner rejects)
-      const refundAmount = booking.deposit_paid ? booking.deposit_amount : 0;
+      // Validate refund amount doesn't exceed deposit
+      const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
+      if (refundAmount > maxRefund) {
+        return res.status(400).json({
+          error: `Refund amount cannot exceed deposit: ${maxRefund}`,
+        });
+      }
 
       await client.query(
         `UPDATE bookings 
@@ -221,6 +225,108 @@ class OwnerBookingController {
     } catch (error) {
       await client.query("ROLLBACK");
       console.error("Reject booking error:", error);
+      next(error);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Confirm vehicle return and complete booking (or open dispute)
+   * FIXED: Owner chooses between 'complete' or 'dispute'
+   */
+  async confirmReturn(req, res, next) {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const userId = req.user.userId;
+      const { id } = req.params;
+      const {
+        conditionPhotos,
+        conditionNotes,
+        damagesReported,
+        odometerReading,
+        action, // 'complete' or 'dispute'
+      } = req.body;
+
+      if (
+        !conditionPhotos ||
+        !Array.isArray(conditionPhotos) ||
+        conditionPhotos.length < 3
+      ) {
+        return res.status(400).json({
+          error: "Please provide at least 3 condition photos as an array",
+        });
+      }
+
+      if (!action || !["complete", "dispute"].includes(action)) {
+        return res.status(400).json({
+          error: "Action must be either 'complete' or 'dispute'",
+        });
+      }
+
+      const bookingResult = await client.query(
+        `SELECT b.* 
+         FROM bookings b
+         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+         WHERE b.booking_id = $1 AND v.user_id = $2`,
+        [id, userId]
+      );
+
+      if (bookingResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Booking not found",
+        });
+      }
+
+      const booking = bookingResult.rows[0];
+
+      if (booking.status !== "return_submitted") {
+        return res.status(400).json({
+          error: `Cannot confirm return. Current status: ${booking.status}. Expected: return_submitted`,
+        });
+      }
+
+      const newStatus = action === "complete" ? "completed" : "dispute_opened";
+
+      await client.query(
+        `UPDATE bookings 
+         SET owner_return_photos = $1,
+             owner_return_notes = $2,
+             damages_reported = $3,
+             owner_return_odometer_reading = $4,
+             owner_confirmed_return_at = NOW(),
+             status = $5,
+             updated_at = NOW()
+         WHERE booking_id = $6`,
+        [
+          JSON.stringify(conditionPhotos),
+          conditionNotes,
+          damagesReported,
+          odometerReading,
+          newStatus,
+          id,
+        ]
+      );
+
+      await client.query("COMMIT");
+
+      console.log(
+        `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`
+      );
+
+      res.json({
+        message:
+          action === "complete"
+            ? "Return confirmed, booking completed"
+            : "Dispute opened, customer support will review",
+        bookingStatus: newStatus,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Confirm return error:", error);
       next(error);
     } finally {
       client.release();

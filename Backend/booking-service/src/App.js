@@ -1,3 +1,4 @@
+// Backend/booking-service/src/App.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -9,7 +10,8 @@ const bookingRoutes = require("./routes/booking_routes");
 const ownerBookingRoutes = require("./routes/owner_booking_routes");
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
-const BookingGrpcServer = require("./grpc/booking_grpc_server"); // Add this
+const BookingGrpcServer = require("./grpc/booking_grpc_server");
+const { startNoShowChecker } = require("./utils/no_show_checker");
 
 const app = express();
 
@@ -70,6 +72,9 @@ async function startServer() {
     const GRPC_PORT = process.env.GRPC_PORT || 50052;
     grpcServer = new BookingGrpcServer();
     grpcServer.start(GRPC_PORT);
+
+    // Start no-show checker (runs every hour)
+    startNoShowChecker();
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);

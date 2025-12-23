@@ -61,26 +61,21 @@ class BookingController {
 
   /**
    * Upload/Update complete verification (license + selfies)
-   * This is saved in settings and reused for all future bookings
    */
   async uploadVerification(req, res, next) {
     try {
       const userId = req.user.userId;
       const {
-        // License fields
         fullName,
         licenseNumber,
         expiryDate,
         licenseFrontPhoto,
         licenseBackPhoto,
-
-        // Selfie fields (3 required)
         frontSelfie,
         leftSelfie,
         rightSelfie,
       } = req.body;
 
-      // Validate required fields
       if (
         !fullName ||
         !licenseNumber ||
@@ -90,24 +85,15 @@ class BookingController {
       ) {
         return res.status(400).json({
           error: "Missing required license fields",
-          required: [
-            "fullName",
-            "licenseNumber",
-            "expiryDate",
-            "licenseFrontPhoto",
-            "licenseBackPhoto",
-          ],
         });
       }
 
       if (!frontSelfie || !leftSelfie || !rightSelfie) {
         return res.status(400).json({
           error: "All 3 selfies are required (front, left, right)",
-          required: ["frontSelfie", "leftSelfie", "rightSelfie"],
         });
       }
 
-      // Validate expiry date
       const expiry = new Date(expiryDate);
       const now = new Date();
       if (expiry <= now) {
@@ -145,12 +131,12 @@ class BookingController {
           expiryDate,
           licenseFrontPhoto,
           licenseBackPhoto,
-          true, // license_verified
+          true,
           frontSelfie,
           leftSelfie,
           rightSelfie,
-          true, // selfies_verified
-          true, // is_verified
+          true,
+          true,
         ]
       );
 
@@ -171,8 +157,6 @@ class BookingController {
 
   /**
    * Create new booking
-   * Requires: vehicleId only (owner is fetched from vehicle)
-   * Checks: User must have verified license + selfies
    */
   async createBooking(req, res, next) {
     const client = await pool.connect();
@@ -193,37 +177,32 @@ class BookingController {
         additionalNotes,
       } = req.body;
 
-      // 1. Check if user has complete verification
+      // Check verification
       const verificationResult = await client.query(
         `SELECT * FROM user_verifications 
-         WHERE user_id = $1 AND is_verified = true AND license_verified = true AND selfies_verified = true`,
+         WHERE user_id = $1 AND is_verified = true`,
         [userId]
       );
 
       if (verificationResult.rows.length === 0) {
         return res.status(400).json({
-          error:
-            "Please complete verification (license + selfies) before booking",
+          error: "Please complete verification before booking",
           requiresVerification: true,
-          needsLicense: true,
-          needsSelfies: true,
         });
       }
 
-      // Check license expiry
       const verification = verificationResult.rows[0];
       const expiryDate = new Date(verification.license_expiry_date);
       const now = new Date();
 
       if (expiryDate <= now) {
         return res.status(400).json({
-          error:
-            "Your driving license has expired. Please update it in settings.",
+          error: "Your driving license has expired",
           requiresLicenseUpdate: true,
         });
       }
 
-      // 2. Validate dates
+      // Validate dates
       const start = new Date(startDate);
       const end = new Date(endDate);
 
@@ -240,42 +219,33 @@ class BookingController {
           .json({ error: "End date must be after start date" });
       }
 
-      // 3. Get vehicle details (including owner's user_id)
+      // Get vehicle
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND is_active = true",
         [vehicleId]
       );
 
       if (vehicleResult.rows.length === 0) {
-        return res
-          .status(404)
-          .json({ error: "Vehicle not found or not available" });
+        return res.status(404).json({ error: "Vehicle not found" });
       }
 
       const vehicle = vehicleResult.rows[0];
-      const vehicleOwnerId = vehicle.user_id; // Owner is stored as user_id in vehicles table
+      const vehicleOwnerId = vehicle.user_id;
 
-      // Prevent booking own vehicle
       if (vehicleOwnerId === userId) {
-        return res.status(400).json({
-          error: "You cannot book your own vehicle",
-        });
+        return res.status(400).json({ error: "Cannot book your own vehicle" });
       }
 
-      console.log(
-        `📝 Booking: customer=${userId}, vehicleOwner=${vehicleOwnerId}, vehicle=${vehicleId}`
-      );
-
-      // 4. Calculate pricing
+      // Calculate pricing
       const rentalPrice = vehicle.daily_rate * days;
       const insuranceFee = Math.round(rentalPrice * (insuranceCoverage / 100));
       const total = rentalPrice + insuranceFee;
-      const deposit = Math.round(total * 0.3); // 30% deposit
+      const deposit = Math.round(total * 0.3);
       const remainingPayment = total - deposit;
 
-      // 5. Create booking
+      // Create booking
       const bookingId = uuidv4();
-      const bookingResult = await client.query(
+      await client.query(
         `INSERT INTO bookings (
           booking_id, customer_id, vehicle_id,
           start_date, end_date, duration_days,
@@ -285,11 +255,10 @@ class BookingController {
           deposit_amount, remaining_payment,
           payment_method_id, additional_notes,
           status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-        RETURNING *`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
         [
           bookingId,
-          userId, // customer_id
+          userId,
           vehicleId,
           startDate,
           endDate,
@@ -305,7 +274,7 @@ class BookingController {
           remainingPayment,
           paymentMethodId,
           additionalNotes,
-          "pending", // Waiting for owner approval
+          "pending",
         ]
       );
 
@@ -314,13 +283,13 @@ class BookingController {
       console.log(`✅ Booking created: ${bookingId}`);
 
       res.status(201).json({
-        message: "Booking created successfully, waiting for owner approval",
+        message: "Booking created successfully",
         booking: {
           id: bookingId,
           vehicleId: vehicleId,
           vehicleName: vehicle.name,
           customerId: userId,
-          vehicleOwnerId: vehicleOwnerId, // Return owner ID in response
+          vehicleOwnerId: vehicleOwnerId,
           status: "pending",
           startDate: startDate,
           endDate: endDate,
@@ -328,14 +297,11 @@ class BookingController {
           pricing: {
             rentalPrice,
             insuranceFee,
-            dailyRate: vehicle.daily_rate,
-            numberOfDays: days,
             total,
             deposit,
             remainingPayment,
           },
         },
-        nextStep: "wait_for_owner_approval",
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -347,7 +313,7 @@ class BookingController {
   }
 
   /**
-   * Get customer's bookings
+   * Get customer's bookings - FIXED to return complete booking data
    */
   async getMyBookings(req, res, next) {
     try {
@@ -362,7 +328,19 @@ class BookingController {
 
       let query = `
         SELECT 
-          b.*,
+          b.booking_id,
+          b.status,
+          b.start_date,
+          b.end_date,
+          b.duration_days,
+          b.total_amount,
+          b.deposit_amount,
+          b.remaining_payment,
+          b.deposit_paid,
+          b.vehicle_reviewed,
+          b.owner_reviewed,
+          b.created_at,
+          v.vehicle_id,
           v.name as vehicle_name, 
           v.photo as vehicle_photo,
           v.user_id as vehicle_owner_id
@@ -388,13 +366,16 @@ class BookingController {
 
       query += ` ORDER BY b.created_at ${sortBy === "oldest" ? "ASC" : "DESC"}`;
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-      params.push(limit, (page - 1) * limit);
+      params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
       const result = await pool.query(query, params);
+
       const countResult = await pool.query(
         "SELECT COUNT(*) FROM bookings WHERE customer_id = $1",
         [userId]
       );
+
+      const now = new Date();
 
       res.json({
         bookings: result.rows.map((row) => ({
@@ -413,10 +394,11 @@ class BookingController {
             total: row.total_amount,
             deposit: row.deposit_amount,
             remainingPayment: row.remaining_payment,
+            depositPaid: row.deposit_paid,
           },
           canCancel:
             ["pending", "booking"].includes(row.status) &&
-            new Date(row.start_date) > new Date(),
+            new Date(row.start_date) > now,
           canReview:
             row.status === "completed" &&
             (!row.vehicle_reviewed || !row.owner_reviewed),
@@ -435,7 +417,7 @@ class BookingController {
   }
 
   /**
-   * Get booking details by ID
+   * Get booking details - FIXED JSON parsing
    */
   async getBookingById(req, res, next) {
     try {
@@ -466,6 +448,52 @@ class BookingController {
       const now = new Date();
       const startDate = new Date(booking.start_date);
 
+      // Safely parse JSON fields
+      let pickupLocation = null;
+      let dropoffLocation = null;
+      let pickupPhotos = null;
+      let returnPhotos = null;
+
+      try {
+        pickupLocation =
+          typeof booking.pickup_location === "string"
+            ? JSON.parse(booking.pickup_location)
+            : booking.pickup_location;
+      } catch (e) {
+        console.error("Failed to parse pickup_location:", e);
+      }
+
+      try {
+        dropoffLocation =
+          typeof booking.dropoff_location === "string"
+            ? JSON.parse(booking.dropoff_location)
+            : booking.dropoff_location;
+      } catch (e) {
+        console.error("Failed to parse dropoff_location:", e);
+      }
+
+      try {
+        if (booking.pickup_condition_photos) {
+          pickupPhotos =
+            typeof booking.pickup_condition_photos === "string"
+              ? JSON.parse(booking.pickup_condition_photos)
+              : booking.pickup_condition_photos;
+        }
+      } catch (e) {
+        console.error("Failed to parse pickup_condition_photos:", e);
+      }
+
+      try {
+        if (booking.return_photos) {
+          returnPhotos =
+            typeof booking.return_photos === "string"
+              ? JSON.parse(booking.return_photos)
+              : booking.return_photos;
+        }
+      } catch (e) {
+        console.error("Failed to parse return_photos:", e);
+      }
+
       res.json({
         booking: {
           id: booking.booking_id,
@@ -487,8 +515,8 @@ class BookingController {
             duration: `${booking.duration_days} days`,
             isBookingDay: startDate.toDateString() === now.toDateString(),
           },
-          pickup: JSON.parse(booking.pickup_location),
-          dropoff: JSON.parse(booking.dropoff_location),
+          pickup: pickupLocation,
+          dropoff: dropoffLocation,
           billing: {
             rentalPrice: booking.rental_price,
             insuranceFee: booking.insurance_fee,
@@ -503,8 +531,8 @@ class BookingController {
           insurance: {
             coverage: booking.insurance_coverage,
           },
-          pickupPhotos: booking.pickup_condition_photos,
-          returnPhotos: booking.return_photos,
+          pickupPhotos: pickupPhotos,
+          returnPhotos: returnPhotos,
           additionalNotes: booking.additional_notes,
           contract: booking.contract_signed_at
             ? {
@@ -532,7 +560,7 @@ class BookingController {
   // ==================== BOOKING ACTIONS ====================
 
   /**
-   * Confirm car pickup (changes status to on-journey)
+   * Confirm car pickup - FIXED: Changes to picked_up status
    */
   async confirmPickup(req, res, next) {
     const client = await pool.connect();
@@ -544,9 +572,13 @@ class BookingController {
       const { id } = req.params;
       const { pickupPhotos, odometerReading, notes } = req.body;
 
-      if (!pickupPhotos || pickupPhotos.length < 3) {
+      if (
+        !pickupPhotos ||
+        !Array.isArray(pickupPhotos) ||
+        pickupPhotos.length < 3
+      ) {
         return res.status(400).json({
-          error: "Please upload at least 3 photos of the car",
+          error: "Please provide at least 3 pickup photos as an array",
         });
       }
 
@@ -563,18 +595,13 @@ class BookingController {
 
       if (booking.status !== "booking") {
         return res.status(400).json({
-          error: `Cannot confirm pickup. Current status: ${booking.status}. Expected: booking`,
+          error: `Cannot confirm pickup. Current status: ${booking.status}`,
         });
       }
 
-      const startDate = new Date(booking.start_date);
-      const now = new Date();
-      if (
-        startDate.toDateString() === now.toDateString() &&
-        !booking.contract_signed_at
-      ) {
+      if (!booking.contract_signed_at) {
         return res.status(400).json({
-          error: "Please sign the rental contract before pickup",
+          error: "Please sign the contract before pickup",
         });
       }
 
@@ -584,7 +611,7 @@ class BookingController {
              pickup_condition_notes = $2,
              pickup_odometer_reading = $3,
              pickup_confirmed_at = NOW(),
-             status = 'on-journey',
+             status = 'picked_up',
              updated_at = NOW()
          WHERE booking_id = $4`,
         [JSON.stringify(pickupPhotos), notes, odometerReading, id]
@@ -594,7 +621,7 @@ class BookingController {
 
       res.json({
         message: "Car pickup confirmed. Have a safe journey!",
-        bookingStatus: "on-journey",
+        bookingStatus: "picked_up",
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -606,7 +633,7 @@ class BookingController {
   }
 
   /**
-   * Confirm car return (changes status to completed)
+   * Confirm car return - FIXED: Changes to return_submitted status
    */
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
@@ -618,9 +645,13 @@ class BookingController {
       const { id } = req.params;
       const { returnPhotos, odometerReading, notes } = req.body;
 
-      if (!returnPhotos || returnPhotos.length < 3) {
+      if (
+        !returnPhotos ||
+        !Array.isArray(returnPhotos) ||
+        returnPhotos.length < 3
+      ) {
         return res.status(400).json({
-          error: "Please upload at least 3 photos of the car",
+          error: "Please provide at least 3 return photos as an array",
         });
       }
 
@@ -635,9 +666,9 @@ class BookingController {
 
       const booking = bookingResult.rows[0];
 
-      if (booking.status !== "on-journey") {
+      if (booking.status !== "picked_up") {
         return res.status(400).json({
-          error: `Cannot confirm return. Current status: ${booking.status}. Expected: on-journey`,
+          error: `Cannot confirm return. Current status: ${booking.status}`,
         });
       }
 
@@ -647,7 +678,7 @@ class BookingController {
              return_odometer_reading = $2,
              return_notes = $3,
              return_confirmed_at = NOW(),
-             status = 'completed',
+             status = 'return_submitted',
              updated_at = NOW()
          WHERE booking_id = $4`,
         [JSON.stringify(returnPhotos), odometerReading, notes, id]
@@ -656,9 +687,8 @@ class BookingController {
       await client.query("COMMIT");
 
       res.json({
-        message: "Car returned successfully. Thank you for using our service!",
-        bookingStatus: "completed",
-        canReviewNow: true,
+        message: "Return submitted. Waiting for owner confirmation.",
+        bookingStatus: "return_submitted",
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -737,12 +767,6 @@ class BookingController {
         message: "Booking cancelled successfully",
         refundAmount,
         refundStatus: refundAmount > 0 ? "processing" : "none",
-        refundPolicy:
-          hoursUntilStart > 24
-            ? "full_refund"
-            : hoursUntilStart > 12
-            ? "partial_refund"
-            : "no_refund",
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -754,7 +778,7 @@ class BookingController {
   }
 
   /**
-   * Sign contract (only on booking day)
+   * Sign contract
    */
   async signContract(req, res, next) {
     const client = await pool.connect();
@@ -768,7 +792,7 @@ class BookingController {
 
       if (!agreedToTerms) {
         return res.status(400).json({
-          error: "You must agree to the terms and conditions",
+          error: "You must agree to the terms",
         });
       }
 
@@ -789,15 +813,6 @@ class BookingController {
         });
       }
 
-      const startDate = new Date(booking.start_date);
-      const now = new Date();
-
-      if (startDate.toDateString() !== now.toDateString()) {
-        return res.status(400).json({
-          error: "Contract can only be signed on the booking day",
-        });
-      }
-
       await client.query(
         `UPDATE bookings 
          SET customer_signature = $1,
@@ -812,7 +827,6 @@ class BookingController {
       res.json({
         message: "Contract signed successfully",
         contractUrl: `https://cdn.com/contracts/${id}.pdf`,
-        nextStep: "confirm_car_pickup",
       });
     } catch (error) {
       await client.query("ROLLBACK");
