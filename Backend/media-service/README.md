@@ -27,6 +27,35 @@ The Media Service handles file uploads, image processing, and storage for the Wi
 - PostgreSQL 14+
 - Cloudinary account (free tier works)
 
+## Installation
+
+1. **Clone and navigate**
+```bash
+cd media-service
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Create PostgreSQL database**
+```bash
+createdb wiz_media_db
+```
+
+4. **Configure environment**
+Create `.env` file with your credentials (see `.env` file)
+
+5. **Start the service**
+```bash
+# Development with auto-reload
+npm run dev
+
+# Production
+npm start
+```
+
 ## API Endpoints
 
 ### Upload Single File
@@ -68,6 +97,14 @@ Headers: Authorization: Bearer <token>
 Query: type (optional filter)
 ```
 
+## File Types Supported
+- **Images**: JPEG, PNG, JPG, WebP
+- **Documents**: PDF, DOC, DOCX
+
+## File Size Limits
+- Maximum file size: 5MB (configurable in .env)
+- Maximum files per batch: 10
+
 ## Database Schema
 
 ### media_files table
@@ -84,3 +121,39 @@ Query: type (optional filter)
 - width (Integer, nullable)
 - height (Integer, nullable)
 - uploaded_at (Timestamp)
+
+## Image Processing
+- Images are automatically resized to max 1200px width
+- Thumbnails are generated at 300x300px
+- JPEG optimization at 85% quality
+- WebP support for modern browsers
+
+## Testing
+See TESTING_GUIDE.md for comprehensive manual testing instructions.
+
+## Security
+- JWT authentication required for all endpoints
+- File type validation
+- Size limit enforcement
+- Rate limiting (100 requests per 15 minutes)
+- Helmet.js security headers
+
+## Error Handling
+All endpoints return consistent JSON responses:
+```json
+{
+  "success": true/false,
+  "message": "...",
+  "data": {...}
+}
+```
+
+## Cloudinary Integration
+The service uses Cloudinary for reliable cloud storage:
+- Automatic CDN delivery
+- Image transformations on-the-fly
+- Secure signed URLs
+- Automatic backup
+
+## Support
+For issues or questions, contact the development team.
