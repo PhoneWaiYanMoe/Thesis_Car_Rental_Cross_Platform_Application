@@ -4,12 +4,12 @@ info:
   description: Complete Booking Service APIs for managing vehicle rentals, bookings, and rental workflows
   version: 1.0.0
 servers:
-  - url: http://localhost:3003
+  - url: http://localhost:3004
     description: Local development server
 
 paths:
   #customer booking endpoints
-  /:
+  /bookings:
     post:
       summary: Create new booking
       description: Create a new vehicle rental booking (Customer only)
@@ -114,7 +114,7 @@ paths:
                     type: string
                     example: "upload_license"
 
-  /my-bookings:
+  /bookings/my-bookings:
     get:
       summary: Get customer's booking history
       description: Retrieve all bookings for the authenticated customer
@@ -179,7 +179,7 @@ paths:
                         type: integer
                         example: 10
 
-  /{id}:
+  /bookings/{id}:
     get:
       summary: Get booking details by ID
       description: Retrieve detailed information about a specific booking
@@ -207,7 +207,7 @@ paths:
                   booking:
                     $ref: '#/components/schemas/BookingDetail'
 
-  /{id}/upload-license:
+  /bookings/{id}/upload-license:
     post:
       summary: Upload driving license
       description: Upload driving license for first-time booking (Customer only)
@@ -266,7 +266,7 @@ paths:
                     type: string
                     example: "pending_support_approval"
 
-  /{id}/upload-selfies:
+  /bookings/{id}/upload-selfies:
     post:
       summary: Upload selfie verification
       description: Upload selfie photos for KYC verification (Customer only, first-time)
@@ -313,7 +313,7 @@ paths:
                     type: string
                     example: "Selfies uploaded, pending verification"
 
-  /{id}/confirm-pickup:
+  /bookings/{id}/confirm-pickup:
     post:
       summary: Confirm car pickup
       description: Confirm vehicle pickup and document condition (Customer only)
@@ -364,7 +364,7 @@ paths:
                     type: string
                     example: "active"
 
-  /{id}/confirm-return:
+  /bookings/{id}/confirm-return:
     post:
       summary: Confirm car return
       description: Confirm vehicle return with proof photos (Customer only)
@@ -419,7 +419,7 @@ paths:
                     type: number
                     example: 1190000
 
-  /{id}/cancel:
+  /bookings/{id}/cancel:
     post:
       summary: Cancel booking
       description: Cancel a booking and request refund
@@ -467,7 +467,7 @@ paths:
                     type: string
                     example: "processing"
 
-  /{id}/sign-contract:
+  /bookings/{id}/sign-contract:
     post:
       summary: E-sign rental contract
       description: Digitally sign the rental contract
@@ -514,7 +514,7 @@ paths:
                     example: "https://cdn.com/contracts/contract-123.pdf"
 
   #owner booking endpoints
-  /owner/bookings:
+  /bookings/owner/bookings:
     get:
       summary: Get owner's rental requests
       description: Retrieve all booking requests for vehicles owned by authenticated user
@@ -579,7 +579,7 @@ paths:
                         type: integer
                         example: 10
 
-  /{id}/accept:
+  /bookings/owner/{id}/accept:
     post:
       summary: Accept booking request
       description: Accept a pending booking request (Owner only)
@@ -609,7 +609,7 @@ paths:
                     type: string
                     example: "confirmed"
 
-  /{id}/reject:
+  /bookings/owner/{id}/reject:
     post:
       summary: Reject booking request
       description: Reject a pending booking request (Owner only)
@@ -648,7 +648,7 @@ paths:
                     type: string
                     example: "Booking rejected"
 
-  /owner/{id}/confirm-return:
+  /bookings/owner/{id}/confirm-return:
     post:
       summary: Confirm vehicle return (Owner)
       description: Confirm that customer has returned the vehicle (Owner only)

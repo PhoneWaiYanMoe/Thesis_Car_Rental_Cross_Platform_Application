@@ -11,6 +11,8 @@ class BookingController {
       await client.query('BEGIN');
       
       const userId = req.user.userId;
+      const userEmail = req.user.email || 'unknown@example.com';
+      const userRole = req.user.role || 'customer';
       const {
         vehicleId,
         startDate,
@@ -22,6 +24,16 @@ class BookingController {
         paymentMethodId,
         additionalNotes
       } = req.body;
+
+      // Ensure user exists in booking service's users table (upsert)
+      await client.query(
+        `INSERT INTO users (user_id, email, full_name, role)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id) DO UPDATE
+         SET email = EXCLUDED.email,
+             role = EXCLUDED.role`,
+        [userId, userEmail, req.user.fullName || userEmail.split('@')[0], userRole]
+      );
 
       // Validate dates
       const start = new Date(startDate);
@@ -43,6 +55,15 @@ class BookingController {
       }
 
       const vehicle = vehicleResult.rows[0];
+
+      // Ensure vehicle owner exists in users table (upsert)
+      // Note: Owner info might not be available, so we'll use minimal data
+      await client.query(
+        `INSERT INTO users (user_id, email, full_name, role)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [vehicle.owner_id, `owner-${vehicle.owner_id}@wiz.com`, 'Vehicle Owner', 'owner']
+      );
 
       // Calculate pricing
       const rentalPrice = vehicle.daily_rate * days;

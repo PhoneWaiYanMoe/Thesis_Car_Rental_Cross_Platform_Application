@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package booking;
+
+service BookingService {
+  // Verify booking for review eligibility
+  rpc VerifyBookingForReview(VerifyBookingRequest) returns (VerifyBookingResponse);
+  
+  // Get booking details
+  rpc GetBookingDetails(GetBookingDetailsRequest) returns (GetBookingDetailsResponse);
+  
+  // Mark booking as reviewed
+  rpc MarkAsReviewed(MarkAsReviewedRequest) returns (MarkAsReviewedResponse);
+}
+
+message VerifyBookingRequest {
+  string booking_id = 1;
+  string user_id = 2;
+}
+
+message VerifyBookingResponse {
+  bool valid = 1;
+  string message = 2;
+  bool is_completed = 3;
+  bool is_customer = 4;
+}
+
+message GetBookingDetailsRequest {
+  string booking_id = 1;
+}
+
+message GetBookingDetailsResponse {
+  string booking_id = 1;
+  string customer_id = 2;
+  string owner_id = 3;
+  string vehicle_id = 4;
+  string status = 5;
+}
+
+message MarkAsReviewedRequest {
+  string booking_id = 1;
+  string review_type = 2; // "vehicle" or "owner"
+}
+
+message MarkAsReviewedResponse {
+  bool success = 1;
+  string message = 2;
+}
