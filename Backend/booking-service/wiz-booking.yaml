@@ -1,24 +1,128 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: Booking Service API
-  description: Complete Booking Service APIs for managing vehicle rentals, bookings, and rental workflows
+  title: Wiz Booking Service API
+  description: |
+    Complete Booking Service APIs for managing vehicle rentals, bookings, and rental workflows.
+    
+    **Key Changes:**
+    - Unified user system (user_id + role, no separate owner_id)
+    - No rental_id field (using booking_id only)
+    - Combined license + selfie verification (reusable in settings)
+    - Owner auto-fetched from vehicle
   version: 2.0.0
+  contact:
+    name: Wiz Car Rental
+    email: support@wiz.com
+
 servers:
   - url: http://localhost:3004
     description: Local development server
+  - url: https://api.wiz.com
+    description: Production server
+
+tags:
+  - name: Verification
+    description: User verification (license + selfies) management
+  - name: Customer
+    description: Customer booking management endpoints
+  - name: Owner
+    description: Owner rental request management endpoints
 
 paths:
-  # ==================== CUSTOMER BOOKING ENDPOINTS ====================
-  
-  /bookings/license:
-    post:
-      summary: Upload or update driving license
+  # ==================== VERIFICATION ENDPOINTS ====================
+  /bookings/verification/me:
+    get:
+      summary: Check user verification status
       description: |
-        Upload or update driving license for the authenticated user. 
-        **REQUIRED before creating any booking.**
-        License is reusable for all future bookings.
+        Check if the current user has completed verification (license + selfies).
+        Returns verification status and what's missing (if any).
       tags:
-        - Customer - License
+        - Verification
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Verification status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isVerified:
+                    type: boolean
+                    example: true
+                    description: Overall verification status
+                  needsVerification:
+                    type: boolean
+                    example: false
+                    description: Whether user needs to complete verification
+                  verification:
+                    type: object
+                    nullable: true
+                    properties:
+                      hasLicense:
+                        type: boolean
+                        example: true
+                      hasSelfies:
+                        type: boolean
+                        example: true
+                      licenseExpired:
+                        type: boolean
+                        example: false
+                      license:
+                        type: object
+                        nullable: true
+                        properties:
+                          fullName:
+                            type: string
+                            example: "John Doe"
+                          licenseNumber:
+                            type: string
+                            example: "DL123456"
+                          expiryDate:
+                            type: string
+                            format: date
+                            example: "2027-12-31"
+                          frontPhotoUrl:
+                            type: string
+                            example: "https://cdn.com/license-front.jpg"
+                          backPhotoUrl:
+                            type: string
+                            example: "https://cdn.com/license-back.jpg"
+                      selfies:
+                        type: object
+                        nullable: true
+                        properties:
+                          frontSelfie:
+                            type: string
+                            example: "https://cdn.com/selfie-front.jpg"
+                          leftSelfie:
+                            type: string
+                            example: "https://cdn.com/selfie-left.jpg"
+                          rightSelfie:
+                            type: string
+                            example: "https://cdn.com/selfie-right.jpg"
+                  canBookNow:
+                    type: boolean
+                    example: true
+                    description: Whether user can create bookings
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /bookings/verification:
+    post:
+      summary: Upload or update verification
+      description: |
+        Upload driving license and selfies for user verification.
+        Required for first-time booking. Can be updated anytime in settings.
+        
+        **Requirements:**
+        - Driving license (front & back photos)
+        - 3 selfie photos (front, left, right)
+        
+        After first verification, this data is saved and reused for all future bookings.
+      tags:
+        - Verification
       security:
         - bearerAuth: []
       requestBody:
@@ -31,26 +135,48 @@ paths:
                 - fullName
                 - licenseNumber
                 - expiryDate
+                - licenseFrontPhoto
+                - licenseBackPhoto
+                - frontSelfie
+                - leftSelfie
+                - rightSelfie
               properties:
                 fullName:
                   type: string
                   example: "John Doe"
+                  description: Full name as on license
                 licenseNumber:
                   type: string
                   example: "DL123456"
+                  description: Driving license number
                 expiryDate:
                   type: string
                   format: date
                   example: "2027-12-31"
-                frontPhotoUrl:
+                  description: License expiry date
+                licenseFrontPhoto:
                   type: string
                   example: "https://cdn.com/license-front.jpg"
-                backPhotoUrl:
+                  description: URL of license front photo
+                licenseBackPhoto:
                   type: string
                   example: "https://cdn.com/license-back.jpg"
+                  description: URL of license back photo
+                frontSelfie:
+                  type: string
+                  example: "https://cdn.com/selfie-front.jpg"
+                  description: URL of front-facing selfie
+                leftSelfie:
+                  type: string
+                  example: "https://cdn.com/selfie-left.jpg"
+                  description: URL of left-facing selfie
+                rightSelfie:
+                  type: string
+                  example: "https://cdn.com/selfie-right.jpg"
+                  description: URL of right-facing selfie
       responses:
         '200':
-          description: License saved successfully
+          description: Verification saved successfully
           content:
             application/json:
               schema:
@@ -58,69 +184,40 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "License saved and verified successfully"
-                  licenseVerified:
+                    example: "Verification saved successfully"
+                  isVerified:
                     type: boolean
                     example: true
-
-  /bookings/license/me:
-    get:
-      summary: Get current user's driving license
-      description: Returns the saved driving license for the authenticated user (if any)
-      tags:
-        - Customer - License
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: License information
+                  canBookNow:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid data or expired license
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  hasLicense:
-                    type: boolean
-                    example: true
-                  license:
-                    type: object
-                    nullable: true
-                    properties:
-                      fullName:
-                        type: string
-                        example: "John Doe"
-                      licenseNumber:
-                        type: string
-                        example: "DL123456"
-                      expiryDate:
-                        type: string
-                        format: date
-                        example: "2027-12-31"
-                      frontPhotoUrl:
-                        type: string
-                        example: "https://cdn.com/license-front.jpg"
-                      backPhotoUrl:
-                        type: string
-                        example: "https://cdn.com/license-back.jpg"
-                      isVerified:
-                        type: boolean
-                        example: true
+                  error:
+                    type: string
+                    example: "License has expired"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
+  # ==================== CUSTOMER BOOKING ENDPOINTS ====================
   /bookings:
     post:
       summary: Create new booking
       description: |
-        Create a new vehicle rental booking. 
-        **Requires verified driving license** - Status will be 'pending' awaiting owner approval.
+        Create a new vehicle rental booking.
         
-        **Status Flow:**
-        - pending (waiting for owner)
-        - booking (owner approved)
-        - on-journey (car picked up)
-        - completed (car returned)
-        - cancelled (cancelled by customer or owner)
+        **Prerequisites:**
+        - User must have completed verification (license + selfies)
+        - License must not be expired
+        
+        **Note:** Only `vehicleId` is required. Owner ID is automatically fetched from the vehicle.
       tags:
-        - Customer - Bookings
+        - Customer
       security:
         - bearerAuth: []
       requestBody:
@@ -135,22 +232,21 @@ paths:
                 - endDate
                 - pickupLocation
                 - dropoffLocation
+                - insuranceCoverage
                 - paymentMethodId
               properties:
                 vehicleId:
                   type: string
                   format: uuid
-                  description: Vehicle UUID
                   example: "550e8400-e29b-41d4-a716-446655440001"
+                  description: Vehicle UUID (owner auto-fetched from vehicle)
                 startDate:
                   type: string
                   format: date-time
-                  description: Must be in the future
                   example: "2025-12-28T10:00:00Z"
                 endDate:
                   type: string
                   format: date-time
-                  description: Must be after startDate
                   example: "2025-12-30T10:00:00Z"
                 pickupLocation:
                   type: object
@@ -167,11 +263,11 @@ paths:
                       properties:
                         lat:
                           type: number
-                          format: float
+                          format: double
                           example: 10.7295
                         lng:
                           type: number
-                          format: float
+                          format: double
                           example: 106.7019
                 dropoffLocation:
                   type: object
@@ -188,19 +284,20 @@ paths:
                       nullable: true
                 driverRequired:
                   type: boolean
+                  default: false
                   example: false
                 insuranceCoverage:
                   type: integer
                   minimum: 0
                   maximum: 100
-                  description: Insurance coverage percentage
                   example: 80
+                  description: Insurance coverage percentage
                 paymentMethodId:
                   type: string
                   example: "pm-123"
                 additionalNotes:
                   type: string
-                  example: "Please have the car ready by 10 AM"
+                  example: "Please have the car ready by 9 PM"
       responses:
         '201':
           description: Booking created successfully
@@ -214,11 +311,8 @@ paths:
                     example: "Booking created successfully, waiting for owner approval"
                   booking:
                     $ref: '#/components/schemas/BookingCreatedResponse'
-                  nextStep:
-                    type: string
-                    example: "wait_for_owner_approval"
         '400':
-          description: Bad request - License not uploaded or invalid dates
+          description: Invalid request or verification incomplete
           content:
             application/json:
               schema:
@@ -226,17 +320,34 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Please upload and verify your driving license before booking"
-                  requiresLicense:
-                    type: boolean
-                    example: true
+                    examples:
+                      verification_required:
+                        value: "Verification required. Please complete license and selfie upload."
+                      expired_license:
+                        value: "Your driving license has expired. Please update it."
+                      invalid_dates:
+                        value: "Invalid date range"
+                      own_vehicle:
+                        value: "Cannot book your own vehicle"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Vehicle not found or not available"
 
   /bookings/my-bookings:
     get:
       summary: Get customer's booking history
-      description: Retrieve all bookings for the authenticated customer with filters
+      description: Retrieve all bookings for the authenticated customer
       tags:
-        - Customer - Bookings
+        - Customer
       security:
         - bearerAuth: []
       parameters:
@@ -244,7 +355,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, pending, booking, on-journey, completed, cancelled]
+            enum: [all, pending, confirmed, active, completed, cancelled, rejected]
             default: all
           description: Filter by booking status
         - name: search
@@ -263,11 +374,14 @@ paths:
           schema:
             type: integer
             default: 1
+            minimum: 1
         - name: limit
           in: query
           schema:
             type: integer
             default: 10
+            minimum: 1
+            maximum: 100
       responses:
         '200':
           description: List of customer bookings
@@ -282,14 +396,16 @@ paths:
                       $ref: '#/components/schemas/BookingListItem'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /bookings/{id}:
     get:
-      summary: Get booking details by ID
+      summary: Get booking details
       description: Retrieve detailed information about a specific booking
       tags:
-        - Customer - Bookings
-        - Owner - Bookings
+        - Customer
+        - Owner
       security:
         - bearerAuth: []
       parameters:
@@ -300,6 +416,7 @@ paths:
             type: string
             format: uuid
           description: Booking ID
+          example: "550e8400-e29b-41d4-a716-446655440100"
       responses:
         '200':
           description: Booking details
@@ -310,18 +427,25 @@ paths:
                 properties:
                   booking:
                     $ref: '#/components/schemas/BookingDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Booking not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Booking not found"
 
   /bookings/{id}/sign-contract:
     post:
-      summary: Sign rental contract
-      description: |
-        Digitally sign the rental contract.
-        **Only available on booking day** when status is 'booking'.
-        Contract must be signed before car pickup.
+      summary: E-sign rental contract
+      description: Digitally sign the rental contract
       tags:
-        - Customer - Contract
+        - Customer
       security:
         - bearerAuth: []
       parameters:
@@ -343,8 +467,8 @@ paths:
               properties:
                 signature:
                   type: string
-                  description: Base64 encoded signature image
-                  example: "data:image/png;base64,iVBORw0KG..."
+                  description: Base64-encoded signature
+                  example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
                 agreedToTerms:
                   type: boolean
                   example: true
@@ -358,29 +482,31 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Contract signed successfully"
+                    example: "Contract signed"
                   contractUrl:
                     type: string
-                    example: "https://cdn.com/contracts/uuid-123.pdf"
-                  nextStep:
-                    type: string
-                    example: "confirm_car_pickup"
+                    example: "https://cdn.com/contracts/contract-123.pdf"
         '400':
-          description: Cannot sign contract (not booking day or wrong status)
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Must agree to terms"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
   /bookings/{id}/confirm-pickup:
     post:
       summary: Confirm car pickup
-      description: |
-        Confirm vehicle pickup with condition photos.
-        **Changes status from 'booking' to 'on-journey'.**
-        
-        Requirements:
-        - Status must be 'booking'
-        - Contract must be signed (on booking day)
-        - Minimum 3 photos required
+      description: Confirm vehicle pickup and document condition
       tags:
-        - Customer - Journey
+        - Customer
       security:
         - bearerAuth: []
       parameters:
@@ -397,30 +523,26 @@ paths:
             schema:
               type: object
               required:
-                - pickupPhotos
+                - conditionPhotos
                 - odometerReading
               properties:
-                pickupPhotos:
+                conditionPhotos:
                   type: array
                   items:
                     type: string
                   minItems: 3
-                  description: Minimum 3 photos of car condition
-                  example: [
-                    "https://cdn.com/pickup-1.jpg",
-                    "https://cdn.com/pickup-2.jpg",
-                    "https://cdn.com/pickup-3.jpg"
-                  ]
-                odometerReading:
-                  type: integer
-                  description: Starting odometer reading
-                  example: 109211
-                notes:
+                  example: ["https://cdn.com/photo1.jpg", "https://cdn.com/photo2.jpg"]
+                  description: Vehicle condition photos (minimum 3)
+                conditionNotes:
                   type: string
                   example: "Car is in excellent condition"
+                odometerReading:
+                  type: integer
+                  example: 109211
+                  description: Current odometer reading
       responses:
         '200':
-          description: Pickup confirmed, journey started
+          description: Pickup confirmed
           content:
             application/json:
               schema:
@@ -428,27 +550,23 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Car pickup confirmed. Have a safe journey!"
+                    example: "Pickup confirmed"
                   bookingStatus:
                     type: string
-                    example: "on-journey"
+                    example: "active"
         '400':
-          description: Cannot confirm pickup (contract not signed, less than 3 photos, or wrong status)
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
   /bookings/{id}/confirm-return:
     post:
       summary: Confirm car return
-      description: |
-        Confirm vehicle return with condition photos.
-        **Changes status from 'on-journey' to 'completed'.**
-        
-        Requirements:
-        - Status must be 'on-journey'
-        - Minimum 3 photos required
-        
-        After completion, customer can review/rate the vehicle and owner.
+      description: Confirm vehicle return with proof photos
       tags:
-        - Customer - Journey
+        - Customer
       security:
         - bearerAuth: []
       parameters:
@@ -473,22 +591,17 @@ paths:
                   items:
                     type: string
                   minItems: 3
-                  description: Minimum 3 photos of car condition
-                  example: [
-                    "https://cdn.com/return-1.jpg",
-                    "https://cdn.com/return-2.jpg",
-                    "https://cdn.com/return-3.jpg"
-                  ]
+                  example: ["https://cdn.com/return1.jpg", "https://cdn.com/return2.jpg"]
+                  description: Return condition photos (minimum 3)
                 odometerReading:
                   type: integer
-                  description: Final odometer reading
                   example: 109461
                 notes:
                   type: string
                   example: "Returned in good condition"
       responses:
         '200':
-          description: Return confirmed, booking completed
+          description: Return confirmed
           content:
             application/json:
               schema:
@@ -496,32 +609,26 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Car returned successfully. Thank you for using our service!"
+                    example: "Return confirmed, awaiting owner confirmation"
                   bookingStatus:
                     type: string
-                    example: "completed"
-                  canReviewNow:
-                    type: boolean
-                    example: true
+                    example: "pending_owner_confirmation"
+                  finalPaymentDue:
+                    type: number
+                    example: 1190000
         '400':
-          description: Cannot confirm return (less than 3 photos or wrong status)
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
   /bookings/{id}/cancel:
     post:
       summary: Cancel booking
-      description: |
-        Cancel a booking and request refund.
-        
-        **Can only cancel when:**
-        - Status is 'pending' or 'booking'
-        - Before the start date
-        
-        **Refund Policy:**
-        - More than 24 hours before start: 100% refund
-        - 12-24 hours before start: 50% refund
-        - Less than 12 hours: No refund
+      description: Cancel a booking and request refund based on cancellation policy
       tags:
-        - Customer - Bookings
+        - Customer
       security:
         - bearerAuth: []
       parameters:
@@ -543,9 +650,13 @@ paths:
                 reason:
                   type: string
                   example: "Change of plans"
+                requestRefund:
+                  type: boolean
+                  default: true
+                  example: true
       responses:
         '200':
-          description: Booking cancelled successfully
+          description: Booking cancelled
           content:
             application/json:
               schema:
@@ -553,29 +664,34 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Booking cancelled successfully"
+                    example: "Booking cancelled"
                   refundAmount:
                     type: number
-                    example: 421200
+                    example: 350000
+                    description: Refund amount based on cancellation policy
                   refundStatus:
                     type: string
-                    enum: [processing, none]
+                    enum: [none, processing, completed]
                     example: "processing"
-                  refundPolicy:
-                    type: string
-                    enum: [full_refund, partial_refund, no_refund]
-                    example: "full_refund"
         '400':
-          description: Cannot cancel (wrong status or after start date)
+          description: Cannot cancel booking
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
   # ==================== OWNER BOOKING ENDPOINTS ====================
-  
   /bookings/owner/bookings:
     get:
       summary: Get owner's rental requests
-      description: Retrieve all booking requests for vehicles owned by authenticated user
+      description: |
+        Retrieve all booking requests for vehicles owned by the authenticated user.
+        
+        **How it works:**
+        - Queries bookings for vehicles where `vehicle.user_id = current_user_id`
+        - Owner ID is automatically matched via vehicle ownership
       tags:
-        - Owner - Bookings
+        - Owner
       security:
         - bearerAuth: []
       parameters:
@@ -583,13 +699,14 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, pending, booking, on-journey, completed, cancelled]
+            enum: [all, pending, active, completed, cancelled]
             default: all
         - name: vehicleId
           in: query
           schema:
             type: string
             format: uuid
+          description: Filter by specific vehicle
         - name: sortBy
           in: query
           schema:
@@ -601,14 +718,17 @@ paths:
           schema:
             type: integer
             default: 1
+            minimum: 1
         - name: limit
           in: query
           schema:
             type: integer
             default: 10
+            minimum: 1
+            maximum: 100
       responses:
         '200':
-          description: List of owner's rental requests
+          description: List of rental requests
           content:
             application/json:
               schema:
@@ -620,17 +740,15 @@ paths:
                       $ref: '#/components/schemas/OwnerBookingListItem'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /bookings/owner/{id}/accept:
     post:
       summary: Accept booking request
-      description: |
-        Accept a pending booking request.
-        **Changes status from 'pending' to 'booking'.**
-        
-        Customer will be notified and can proceed with booking.
+      description: Accept a pending booking request (Owner only)
       tags:
-        - Owner - Bookings
+        - Owner
       security:
         - bearerAuth: []
       parameters:
@@ -642,7 +760,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Booking accepted successfully
+          description: Booking accepted
           content:
             application/json:
               schema:
@@ -650,23 +768,23 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Booking accepted successfully"
+                    example: "Booking accepted"
                   bookingStatus:
                     type: string
-                    example: "booking"
+                    example: "confirmed"
         '400':
-          description: Cannot accept (wrong status)
+          description: Cannot accept booking
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
   /bookings/owner/{id}/reject:
     post:
       summary: Reject booking request
-      description: |
-        Reject a pending booking request.
-        **Changes status from 'pending' to 'cancelled'.**
-        
-        Full refund will be processed if deposit was paid.
+      description: Reject a pending booking request (Owner only)
       tags:
-        - Owner - Bookings
+        - Owner
       security:
         - bearerAuth: []
       parameters:
@@ -687,10 +805,10 @@ paths:
               properties:
                 reason:
                   type: string
-                  example: "Vehicle not available for those dates"
+                  example: "Vehicle not available"
       responses:
         '200':
-          description: Booking rejected successfully
+          description: Booking rejected
           content:
             application/json:
               schema:
@@ -699,25 +817,112 @@ paths:
                   message:
                     type: string
                     example: "Booking rejected"
-                  refundAmount:
-                    type: number
-                    example: 421200
-                  customerNotified:
-                    type: boolean
-                    example: true
         '400':
-          description: Cannot reject (wrong status)
+          description: Cannot reject booking
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
+
+  /bookings/owner/{id}/confirm-return:
+    post:
+      summary: Confirm vehicle return (Owner)
+      description: Confirm that customer has returned the vehicle and complete booking
+      tags:
+        - Owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conditionPhotos
+                - damagesReported
+                - odometerReading
+              properties:
+                conditionPhotos:
+                  type: array
+                  items:
+                    type: string
+                  example: ["https://cdn.com/return-check1.jpg"]
+                conditionNotes:
+                  type: string
+                  example: "Car returned in good condition"
+                damagesReported:
+                  type: boolean
+                  example: false
+                odometerReading:
+                  type: integer
+                  example: 109461
+      responses:
+        '200':
+          description: Return confirmed, booking completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Return confirmed, booking completed"
+                  bookingStatus:
+                    type: string
+                    example: "completed"
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Booking not found
 
 # ==================== COMPONENTS ====================
-
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT token from user-service authentication
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "No token provided"
 
   schemas:
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 15
+          description: Total number of items
+        page:
+          type: integer
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          example: 10
+          description: Items per page
+
     BookingCreatedResponse:
       type: object
       properties:
@@ -725,9 +930,7 @@ components:
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440100"
-        rentalId:
-          type: string
-          example: "12345678"
+          description: Booking ID (primary identifier)
         vehicleId:
           type: string
           format: uuid
@@ -735,9 +938,19 @@ components:
         vehicleName:
           type: string
           example: "BMW X1 2020"
+        customerId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440020"
+          description: Customer user ID
+        vehicleOwnerId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440010"
+          description: Owner user ID (auto-fetched from vehicle)
         status:
           type: string
-          enum: [pending, booking, on-journey, completed, cancelled]
+          enum: [pending, confirmed, active, pending_owner_confirmation, completed, cancelled, rejected]
           example: "pending"
         startDate:
           type: string
@@ -758,22 +971,31 @@ components:
               example: 780000
             insuranceFee:
               type: number
-              example: 624000
+              example: 70000
             dailyRate:
               type: number
               example: 390000
             numberOfDays:
               type: integer
               example: 2
-            total:
+            subtotal:
               type: number
-              example: 1404000
+              example: 850000
             deposit:
               type: number
-              example: 421200
-            remainingPayment:
+              example: 255000
+            paymentAfterReceiving:
               type: number
-              example: 982800
+              example: 595000
+            total:
+              type: number
+              example: 850000
+        depositPaid:
+          type: boolean
+          example: false
+        finalPaymentPending:
+          type: boolean
+          example: true
 
     BookingListItem:
       type: object
@@ -781,11 +1003,11 @@ components:
         id:
           type: string
           format: uuid
-        rentalId:
-          type: string
+          example: "550e8400-e29b-41d4-a716-446655440100"
         status:
           type: string
-          enum: [pending, booking, on-journey, completed, cancelled]
+          enum: [pending, confirmed, active, completed, cancelled, rejected]
+          example: "completed"
         vehicle:
           type: object
           properties:
@@ -794,8 +1016,10 @@ components:
               format: uuid
             name:
               type: string
+              example: "BMW X1 2020"
             photo:
               type: string
+              example: "https://cdn.com/car.jpg"
         owner:
           type: object
           properties:
@@ -804,8 +1028,10 @@ components:
               format: uuid
             name:
               type: string
+              example: "Rumbling"
             avatar:
               type: string
+              nullable: true
         startDate:
           type: string
           format: date-time
@@ -814,21 +1040,19 @@ components:
           format: date-time
         duration:
           type: string
+          example: "2 days"
         pricing:
           type: object
           properties:
             total:
               type: number
-            deposit:
+              example: 850000
+            depositPaid:
               type: number
+              example: 255000
             remainingPayment:
               type: number
-        canCancel:
-          type: boolean
-          description: Can customer cancel this booking
-        canReview:
-          type: boolean
-          description: Can customer review this booking
+              example: 595000
         createdAt:
           type: string
           format: date-time
@@ -839,11 +1063,9 @@ components:
         id:
           type: string
           format: uuid
-        rentalId:
-          type: string
         status:
           type: string
-          enum: [pending, booking, on-journey, completed, cancelled]
+          enum: [pending, confirmed, active, pending_owner_confirmation, completed, cancelled, rejected]
         vehicle:
           type: object
           properties:
@@ -870,8 +1092,6 @@ components:
               format: uuid
             name:
               type: string
-            avatar:
-              type: string
         owner:
           type: object
           properties:
@@ -882,6 +1102,10 @@ components:
               type: string
             avatar:
               type: string
+              nullable: true
+            joinedDate:
+              type: string
+              format: date
         timeline:
           type: object
           properties:
@@ -893,15 +1117,10 @@ components:
               format: date-time
             duration:
               type: string
-            isBookingDay:
-              type: boolean
-              description: Is today the booking day
         pickup:
           type: object
-          description: Pickup location details
         dropoff:
           type: object
-          description: Dropoff location details
         billing:
           type: object
           properties:
@@ -913,50 +1132,30 @@ components:
               type: number
             numberOfDays:
               type: integer
-            total:
+            subtotal:
               type: number
             deposit:
               type: number
-            depositPaid:
-              type: boolean
-            remainingPayment:
+            depositStatus:
+              type: string
+              enum: [paid, pending]
+            finalPayment:
               type: number
-            finalPaymentPaid:
-              type: boolean
+            finalPaymentStatus:
+              type: string
+              enum: [paid, pending]
         insurance:
           type: object
           properties:
             coverage:
               type: integer
-        pickupPhotos:
-          type: array
-          items:
-            type: string
-          nullable: true
-        returnPhotos:
-          type: array
-          items:
-            type: string
-          nullable: true
-        additionalNotes:
+        additionalMessage:
           type: string
           nullable: true
-        contract:
-          type: object
-          nullable: true
-          properties:
-            signedAt:
-              type: string
-              format: date-time
-            url:
-              type: string
+        canRate:
+          type: boolean
         canCancel:
           type: boolean
-        canReview:
-          type: boolean
-        canSignContract:
-          type: boolean
-          description: Can sign contract (booking day only)
 
     OwnerBookingListItem:
       type: object
@@ -964,11 +1163,9 @@ components:
         id:
           type: string
           format: uuid
-        rentalId:
-          type: string
         status:
           type: string
-          enum: [pending, booking, on-journey, completed, cancelled]
+          enum: [pending, confirmed, active, completed, cancelled]
         vehicle:
           type: object
           properties:
@@ -989,6 +1186,11 @@ components:
               type: string
             avatar:
               type: string
+              nullable: true
+            rating:
+              type: number
+              format: float
+              nullable: true
         startDate:
           type: string
           format: date-time
@@ -1000,31 +1202,3 @@ components:
         createdAt:
           type: string
           format: date-time
-        needsAction:
-          type: boolean
-          description: Does this booking need owner action (status = pending)
-
-    Pagination:
-      type: object
-      properties:
-        total:
-          type: integer
-          example: 15
-        page:
-          type: integer
-          example: 1
-        limit:
-          type: integer
-          example: 10
-
-tags:
-  - name: Customer - License
-    description: Driving license management (required before booking)
-  - name: Customer - Bookings
-    description: Customer booking management
-  - name: Customer - Contract
-    description: Rental contract signing
-  - name: Customer - Journey
-    description: Car pickup and return
-  - name: Owner - Bookings
-    description: Owner rental request management
