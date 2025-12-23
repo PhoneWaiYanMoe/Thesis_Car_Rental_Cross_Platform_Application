@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Search, UserPlus, Eye, Settings } from "lucide-react";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import { useNavigate } from 'react-router-dom';
 
 export default function StaffManagement({
   staffData,
   onCreateStaff,
   onUpdateStaffStatus,
 }) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);

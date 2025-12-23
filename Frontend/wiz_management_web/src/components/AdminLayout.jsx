@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Users, Car, UserCog, LogOut } from "lucide-react";
+import { Home, Users, Car, UserCog, LogOut, Shield } from "lucide-react";
 
 export default function AdminLayout({ children, user, onLogout }) {
   const navigate = useNavigate();
