@@ -11,6 +11,5 @@ router.use(authenticate);
 router.get("/bookings", ownerBookingController.getOwnerBookings);
 router.post("/:id/accept", ownerBookingController.acceptBooking);
 router.post("/:id/reject", ownerBookingController.rejectBooking);
-router.post("/:id/confirm-return", ownerBookingController.confirmReturn);
 
 module.exports = router;
