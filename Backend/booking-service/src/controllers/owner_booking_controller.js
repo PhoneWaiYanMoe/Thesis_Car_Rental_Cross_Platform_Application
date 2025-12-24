@@ -4,10 +4,22 @@ const pool = require("../config/database");
 class OwnerBookingController {
   /**
    * Get owner's rental requests
+   * FIXED: Only owners can access this
    */
   async getOwnerBookings(req, res, next) {
     try {
       const userId = req.user.userId;
+      const userRole = req.user.role;
+
+      // SECURITY: Check if user is an owner
+      if (userRole !== "owner") {
+        return res.status(403).json({
+          error: "Access denied. Only vehicle owners can view rental requests.",
+          requiredRole: "owner",
+          yourRole: userRole,
+        });
+      }
+
       const {
         status = "all",
         vehicleId,
@@ -87,6 +99,7 @@ class OwnerBookingController {
 
   /**
    * Accept booking request
+   * FIXED: Only owners can accept
    */
   async acceptBooking(req, res, next) {
     const client = await pool.connect();
@@ -95,7 +108,16 @@ class OwnerBookingController {
       await client.query("BEGIN");
 
       const userId = req.user.userId;
+      const userRole = req.user.role;
       const { id } = req.params;
+
+      // SECURITY: Check if user is an owner
+      if (userRole !== "owner") {
+        return res.status(403).json({
+          error: "Access denied. Only vehicle owners can accept bookings.",
+          requiredRole: "owner",
+        });
+      }
 
       const bookingResult = await client.query(
         `SELECT b.* 
@@ -107,7 +129,7 @@ class OwnerBookingController {
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found",
+          error: "Booking not found or you don't own this vehicle",
         });
       }
 
@@ -146,7 +168,8 @@ class OwnerBookingController {
   }
 
   /**
-   * Reject booking request - FIXED: Added refund in request body
+   * Reject booking request
+   * FIXED: Only owners can reject
    */
   async rejectBooking(req, res, next) {
     const client = await pool.connect();
@@ -155,8 +178,17 @@ class OwnerBookingController {
       await client.query("BEGIN");
 
       const userId = req.user.userId;
+      const userRole = req.user.role;
       const { id } = req.params;
       const { reason, refundAmount } = req.body;
+
+      // SECURITY: Check if user is an owner
+      if (userRole !== "owner") {
+        return res.status(403).json({
+          error: "Access denied. Only vehicle owners can reject bookings.",
+          requiredRole: "owner",
+        });
+      }
 
       if (!reason || reason.trim() === "") {
         return res.status(400).json({
@@ -164,7 +196,6 @@ class OwnerBookingController {
         });
       }
 
-      // Validate refund amount is provided
       if (refundAmount === undefined || refundAmount === null) {
         return res.status(400).json({
           error: "Refund amount is required",
@@ -181,7 +212,7 @@ class OwnerBookingController {
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found",
+          error: "Booking not found or you don't own this vehicle",
         });
       }
 
@@ -193,7 +224,6 @@ class OwnerBookingController {
         });
       }
 
-      // Validate refund amount doesn't exceed deposit
       const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
       if (refundAmount > maxRefund) {
         return res.status(400).json({
@@ -232,8 +262,8 @@ class OwnerBookingController {
   }
 
   /**
-   * Confirm vehicle return and complete booking (or open dispute)
-   * FIXED: Owner chooses between 'complete' or 'dispute'
+   * Confirm vehicle return
+   * FIXED: Only owners can confirm return
    */
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
@@ -242,14 +272,23 @@ class OwnerBookingController {
       await client.query("BEGIN");
 
       const userId = req.user.userId;
+      const userRole = req.user.role;
       const { id } = req.params;
       const {
         conditionPhotos,
         conditionNotes,
         damagesReported,
         odometerReading,
-        action, // 'complete' or 'dispute'
+        action,
       } = req.body;
+
+      // SECURITY: Check if user is an owner
+      if (userRole !== "owner") {
+        return res.status(403).json({
+          error: "Access denied. Only vehicle owners can confirm returns.",
+          requiredRole: "owner",
+        });
+      }
 
       if (
         !conditionPhotos ||
@@ -277,7 +316,7 @@ class OwnerBookingController {
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found",
+          error: "Booking not found or you don't own this vehicle",
         });
       }
 
