@@ -1,0 +1,1528 @@
+{
+	"info": {
+		"_postman_id": "99125838-d07f-4df2-acbc-04273e51ac58",
+		"name": "Media Service Apis",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42883958"
+	},
+	"item": [
+		{
+			"name": "/upload",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY4MjA4LCJleHAiOjE3NjY4NTQ2MDh9.UPZAZIEkQGspxBsFxtQrfFYSW2wLvLXFey3FnjS3CQ4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "postman-cloud:///1f0e27a6-aee1-4240-a315-bef5657fb22e"
+						},
+						{
+							"key": "type",
+							"value": "vehicle_photo",
+							"type": "text"
+						},
+						{
+							"key": "category",
+							"value": "sedan",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3008/api/v1/media/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"media",
+						"upload"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY4MjA4LCJleHAiOjE3NjY4NTQ2MDh9.UPZAZIEkQGspxBsFxtQrfFYSW2wLvLXFey3FnjS3CQ4",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1f0e27a6-aee1-4240-a315-bef5657fb22e"
+								},
+								{
+									"key": "ownerId",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"type": "text"
+								},
+								{
+									"key": "ownerType",
+									"value": "VEHICLE",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "vehicle_photo",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/upload",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"upload"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "99"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:29:29 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766785470"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "635"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"27b-KGlDA2xDy3/W3kzGwLqc7gowVZA\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"File uploaded successfully\",\n    \"file\": {\n        \"id\": \"777b605e-7960-426d-9572-c9e72e384db5\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784572/wiz/vehicle_photo/1766784569522_profile.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784573/wiz/vehicle_photo/thumbnails/1766784572570_thumb_profile.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"vehicle_photo\",\n        \"width\": 736,\n        \"height\": 722,\n        \"fileName\": \"profile.jpg\",\n        \"size\": 43979,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:29:33.519Z\"\n    }\n}"
+				},
+				{
+					"name": "error",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY4MjA4LCJleHAiOjE3NjY4NTQ2MDh9.UPZAZIEkQGspxBsFxtQrfFYSW2wLvLXFey3FnjS3CQ4",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1f0e27a6-aee1-4240-a315-bef5657fb22e"
+								},
+								{
+									"key": "type",
+									"value": "vehicle_photo",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "sedan",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/media/upload",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"media",
+								"upload"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": null
+				}
+			]
+		},
+		{
+			"name": "/upload/batch",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY4MjA4LCJleHAiOjE3NjY4NTQ2MDh9.UPZAZIEkQGspxBsFxtQrfFYSW2wLvLXFey3FnjS3CQ4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "files",
+							"type": "file",
+							"src": "postman-cloud:///1f0e27f5-f8df-4c30-809c-e4b9e15b52b9"
+						},
+						{
+							"key": "files",
+							"type": "file",
+							"src": "postman-cloud:///1f0e27f6-662a-4470-b6d9-6a6238f2cf6e"
+						},
+						{
+							"key": "files",
+							"type": "file",
+							"src": "postman-cloud:///1f0e27f6-b626-45a0-857c-70b4a449332f"
+						},
+						{
+							"key": "type",
+							"value": "vehicle_photo",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3008/api/v1/media/upload/batch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"media",
+						"upload",
+						"batch"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY4MjA4LCJleHAiOjE3NjY4NTQ2MDh9.UPZAZIEkQGspxBsFxtQrfFYSW2wLvLXFey3FnjS3CQ4",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": "postman-cloud:///1f0e27f5-f8df-4c30-809c-e4b9e15b52b9"
+								},
+								{
+									"key": "files",
+									"type": "file",
+									"src": "postman-cloud:///1f0e27f6-662a-4470-b6d9-6a6238f2cf6e"
+								},
+								{
+									"key": "files",
+									"type": "file",
+									"src": "postman-cloud:///1f0e27f6-b626-45a0-857c-70b4a449332f"
+								},
+								{
+									"key": "type",
+									"value": "document",
+									"type": "text"
+								},
+								{
+									"key": "ownerType",
+									"value": "VEHICLE",
+									"type": "text"
+								},
+								{
+									"key": "ownerId",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/upload/batch",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"upload",
+								"batch"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "96"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:35:23 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766785470"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1757"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"6dd-bD6CTFnytQBE2TgWKgOzCjpCY+M\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"Files uploaded successfully\",\n    \"files\": [\n        {\n            \"id\": \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923129_profile01.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925967_thumb_profile01.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 600,\n            \"height\": 600,\n            \"fileName\": \"profile01.jpg\",\n            \"size\": 23894,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:27.205Z\"\n        },\n        {\n            \"id\": \"56b4700c-7c00-4f18-a5ca-0d6883c874df\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784924/wiz/document/1766784923145_profile02.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/thumbnails/1766784925160_thumb_profile02.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 736,\n            \"height\": 736,\n            \"fileName\": \"profile02.jpg\",\n            \"size\": 28030,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.245Z\"\n        },\n        {\n            \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 210,\n            \"height\": 210,\n            \"fileName\": \"profile03.jpg\",\n            \"size\": 7727,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "/:id(image)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzcxMTEwLCJleHAiOjE3NjY4NTc1MTB9.cZnS_Yt3OOJcWHkDkOei5bxB4NZFjRJ0mu_rJzH7K1E",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3008/api/v1/media/379198eb-aee3-4c4d-bcb6-5a609fd8b1e2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"media",
+						"379198eb-aee3-4c4d-bcb6-5a609fd8b1e2"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "success",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/6bbb7284-c6af-41e4-aee2-464f056e42b0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"6bbb7284-c6af-41e4-aee2-464f056e42b0"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "94"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:42:37 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766785470"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "586"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"24a-oxNMOHoMkM2EYunAr9D4eJfxbUY\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"file\": {\n        \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 210,\n        \"height\": 210,\n        \"fileName\": \"profile03.jpg\",\n        \"size\": 7727,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "/:id(image) error",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3008/api/v1/media/12ed1ad8-5aad-434e-8f32-5594f14ec82d",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"media",
+						"12ed1ad8-5aad-434e-8f32-5594f14ec82d"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "fail with file not found",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3008/api/v1/12ed1ad8-5aad-434e-8f32-5594f14ec82d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"12ed1ad8-5aad-434e-8f32-5594f14ec82d"
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "93"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:58:21 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "44"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"2c-+7GsHmL9Vi35er4QiZrTfrYGa+I\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": false,\n    \"message\": \"File not found\"\n}"
+				}
+			]
+		},
+		{
+			"name": "/batch",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3008/api/v1/media/user/files?type=avatar",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"media",
+						"user",
+						"files"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "avatar"
+						}
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "success with type=document",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3008/api/v1/batch?ownerType=VEHICLE&ownerId=123e4567-e89b-12d3-a456-426614174000&type=document",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"batch"
+							],
+							"query": [
+								{
+									"key": "ownerType",
+									"value": "VEHICLE"
+								},
+								{
+									"key": "ownerId",
+									"value": "123e4567-e89b-12d3-a456-426614174000"
+								},
+								{
+									"key": "type",
+									"value": "document"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "97"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:52:42 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1702"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"6a6-0vjgCkwgCOU9kFOxRdXykqfhkGk\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"items\": [\n        {\n            \"id\": \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923129_profile01.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925967_thumb_profile01.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 600,\n            \"height\": 600,\n            \"fileName\": \"profile01.jpg\",\n            \"size\": 23894,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:27.205Z\"\n        },\n        {\n            \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 210,\n            \"height\": 210,\n            \"fileName\": \"profile03.jpg\",\n            \"size\": 7727,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n        },\n        {\n            \"id\": \"56b4700c-7c00-4f18-a5ca-0d6883c874df\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784924/wiz/document/1766784923145_profile02.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/thumbnails/1766784925160_thumb_profile02.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 736,\n            \"height\": 736,\n            \"fileName\": \"profile02.jpg\",\n            \"size\": 28030,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.245Z\"\n        }\n    ]\n}"
+				},
+				{
+					"name": "success with type=vehicle_photo",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3008/api/v1/batch?ownerType=VEHICLE&ownerId=123e4567-e89b-12d3-a456-426614174000&type=document",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"batch"
+							],
+							"query": [
+								{
+									"key": "ownerType",
+									"value": "VEHICLE"
+								},
+								{
+									"key": "ownerId",
+									"value": "123e4567-e89b-12d3-a456-426614174000"
+								},
+								{
+									"key": "type",
+									"value": "document"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "97"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:52:42 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1702"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"6a6-0vjgCkwgCOU9kFOxRdXykqfhkGk\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"items\": [\n        {\n            \"id\": \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923129_profile01.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925967_thumb_profile01.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 600,\n            \"height\": 600,\n            \"fileName\": \"profile01.jpg\",\n            \"size\": 23894,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:27.205Z\"\n        },\n        {\n            \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 210,\n            \"height\": 210,\n            \"fileName\": \"profile03.jpg\",\n            \"size\": 7727,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n        },\n        {\n            \"id\": \"56b4700c-7c00-4f18-a5ca-0d6883c874df\",\n            \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784924/wiz/document/1766784923145_profile02.jpg\",\n            \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/thumbnails/1766784925160_thumb_profile02.jpg\",\n            \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"ownerType\": \"VEHICLE\",\n            \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"type\": \"document\",\n            \"width\": 736,\n            \"height\": 736,\n            \"fileName\": \"profile02.jpg\",\n            \"size\": 28030,\n            \"mimeType\": \"image/jpeg\",\n            \"uploadedAt\": \"2025-12-26T21:35:26.245Z\"\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "/batch",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "http://localhost:3008/api/v1/batch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"batch"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ids\": [\"56b4700c-7c00-4f18-a5ca-0d6883c874df\", \"6bbb7284-c6af-41e4-aee2-464f056e42b0\", \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/batch",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"batch"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "95"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:56:41 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1809"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"711-PW23mB58d0Tb+31X+SZY8LfEMao\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"56b4700c-7c00-4f18-a5ca-0d6883c874df\": {\n        \"id\": \"56b4700c-7c00-4f18-a5ca-0d6883c874df\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784924/wiz/document/1766784923145_profile02.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/thumbnails/1766784925160_thumb_profile02.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 736,\n        \"height\": 736,\n        \"fileName\": \"profile02.jpg\",\n        \"size\": 28030,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:26.245Z\"\n    },\n    \"6bbb7284-c6af-41e4-aee2-464f056e42b0\": {\n        \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 210,\n        \"height\": 210,\n        \"fileName\": \"profile03.jpg\",\n        \"size\": 7727,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n    },\n    \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\": {\n        \"id\": \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923129_profile01.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925967_thumb_profile01.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 600,\n        \"height\": 600,\n        \"fileName\": \"profile01.jpg\",\n        \"size\": 23894,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:27.205Z\"\n    }\n}"
+				},
+				{
+					"name": "success without authorization",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ids\": [\"56b4700c-7c00-4f18-a5ca-0d6883c874df\", \"6bbb7284-c6af-41e4-aee2-464f056e42b0\", \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3008/api/v1/batch",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"batch"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "95"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 21:56:41 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1809"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"711-PW23mB58d0Tb+31X+SZY8LfEMao\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"56b4700c-7c00-4f18-a5ca-0d6883c874df\": {\n        \"id\": \"56b4700c-7c00-4f18-a5ca-0d6883c874df\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784924/wiz/document/1766784923145_profile02.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/thumbnails/1766784925160_thumb_profile02.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 736,\n        \"height\": 736,\n        \"fileName\": \"profile02.jpg\",\n        \"size\": 28030,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:26.245Z\"\n    },\n    \"6bbb7284-c6af-41e4-aee2-464f056e42b0\": {\n        \"id\": \"6bbb7284-c6af-41e4-aee2-464f056e42b0\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923122_profile03.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925880_thumb_profile03.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 210,\n        \"height\": 210,\n        \"fileName\": \"profile03.jpg\",\n        \"size\": 7727,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:26.898Z\"\n    },\n    \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\": {\n        \"id\": \"27abadf0-e8b2-44ea-989e-ed0f8fb119ba\",\n        \"url\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784925/wiz/document/1766784923129_profile01.jpg\",\n        \"thumbnailUrl\": \"https://res.cloudinary.com/dj9a4oimv/image/upload/v1766784926/wiz/document/thumbnails/1766784925967_thumb_profile01.jpg\",\n        \"ownerId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"ownerType\": \"VEHICLE\",\n        \"uploaderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"type\": \"document\",\n        \"width\": 600,\n        \"height\": 600,\n        \"fileName\": \"profile01.jpg\",\n        \"size\": 23894,\n        \"mimeType\": \"image/jpeg\",\n        \"uploadedAt\": \"2025-12-26T21:35:27.205Z\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "/:id(image) success",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3008/api/v1/56b4700c-7c00-4f18-a5ca-0d6883c874df",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3008",
+					"path": [
+						"api",
+						"v1",
+						"56b4700c-7c00-4f18-a5ca-0d6883c874df"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "delete success",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsImVtYWlsIjoibWF1bmdteWF0dGhpcmlAZ21haWwuY29tIiwidHlwZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzY2NzY3MDQ3LCJleHAiOjE3NjY4NTM0NDd9.RH3b5zANvVgJOyv8LUTrWy7WyI2dT5gA8D3cst4FdqY",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3008/api/v1/56b4700c-7c00-4f18-a5ca-0d6883c874df",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3008",
+							"path": [
+								"api",
+								"v1",
+								"56b4700c-7c00-4f18-a5ca-0d6883c874df"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Security-Policy",
+							"value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+						},
+						{
+							"key": "Cross-Origin-Opener-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Cross-Origin-Resource-Policy",
+							"value": "same-origin"
+						},
+						{
+							"key": "Origin-Agent-Cluster",
+							"value": "?1"
+						},
+						{
+							"key": "Referrer-Policy",
+							"value": "no-referrer"
+						},
+						{
+							"key": "Strict-Transport-Security",
+							"value": "max-age=31536000; includeSubDomains"
+						},
+						{
+							"key": "X-Content-Type-Options",
+							"value": "nosniff"
+						},
+						{
+							"key": "X-DNS-Prefetch-Control",
+							"value": "off"
+						},
+						{
+							"key": "X-Download-Options",
+							"value": "noopen"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN"
+						},
+						{
+							"key": "X-Permitted-Cross-Domain-Policies",
+							"value": "none"
+						},
+						{
+							"key": "X-XSS-Protection",
+							"value": "0"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "X-RateLimit-Limit",
+							"value": "100"
+						},
+						{
+							"key": "X-RateLimit-Remaining",
+							"value": "90"
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 26 Dec 2025 22:01:01 GMT"
+						},
+						{
+							"key": "X-RateLimit-Reset",
+							"value": "1766786843"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "54"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"36-gGE0tZT1nG4zsvc2MkxcSGl56QA\""
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"File deleted successfully\"\n}"
+				}
+			]
+		}
+	]
+}
