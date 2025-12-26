@@ -27,13 +27,7 @@ export default function AdminDashboard({
   const [timePeriod, setTimePeriod] = useState("all");
 
   // calculate statistics
-  const totalRevenue = bookingData.reduce((sum, b) => {
-    const amount =
-      typeof b.amount === "string"
-        ? parseFloat(b.amount.replace(/[^\d]/g, ""))
-        : b.amount;
-    return sum + (amount || 0);
-  }, 0);
+  const totalRevenue = bookingData.reduce((sum, b) => sum + (b.total || 0), 0);
   const totalProfit = totalRevenue * 0.08;
   const totalUsers = userData.length;
   const totalCars = carData.length;
@@ -168,7 +162,7 @@ export default function AdminDashboard({
           value={new Intl.NumberFormat("vi-VN", {
             style: "currency",
             currency: "VND",
-          }).format(totalRevenue * 0.08)}
+          }).format(totalProfit)}
           trend={{ isPositive: true, value: "15%" }}
           bgColor="#DBEAFE"
         />

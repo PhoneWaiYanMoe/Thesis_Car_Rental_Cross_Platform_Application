@@ -20,21 +20,18 @@ import BookingList from "./pages/admin/BookingList";
 import BookingDetail from "./pages/admin/BookingDetail";
 import StaffRequests from "./pages/admin/StaffRequests";
 
-import { generateMockRequests } from "./utils/mockData";
-import {
-  generateCarData,
-  generateUserData,
-  generateStaffData,
-  generateBookingData,
-} from "./utils/adminMockData";
+import { generateAllMockData } from "./utils/unifiedMockData";
 
 function App() {
   const [user, setUser] = useState(null);
-  const [requests, setRequests] = useState(generateMockRequests());
-  const [carData, setCarData] = useState(generateCarData());
-  const [userData, setUserData] = useState(generateUserData());
-  const [staffData, setStaffData] = useState(generateStaffData());
-  const [bookingData] = useState(generateBookingData());
+
+  // Generate all mock data once
+  const [mockData] = useState(() => generateAllMockData());
+  const [requests, setRequests] = useState(mockData.requests);
+  const [carData, setCarData] = useState(mockData.cars);
+  const [userData, setUserData] = useState(mockData.users);
+  const [staffData, setStaffData] = useState(mockData.staff);
+  const [bookingData] = useState(mockData.bookings);
 
   const handleLogin = (username, password, role) => {
     setUser({ username, role });
@@ -275,6 +272,26 @@ function App() {
                         <SupportDashboard
                           requests={requests}
                           currentUser={user.username}
+                        />
+                      }
+                    />
+                    <Route
+                      path="bookings"
+                      element={
+                        <BookingList
+                          bookingData={bookingData}
+                          carData={carData}
+                          userData={userData}
+                        />
+                      }
+                    />
+                    <Route
+                      path="bookings/:id"
+                      element={
+                        <BookingDetail
+                          bookingData={bookingData}
+                          carData={carData}
+                          userData={userData}
                         />
                       }
                     />

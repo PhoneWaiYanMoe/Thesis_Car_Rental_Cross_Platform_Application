@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Car,
@@ -15,6 +15,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 export default function CarDetail({ carData, onUpdateCarStatus, userData }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const car = carData.find((c) => c.id === id);
 
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
@@ -24,27 +25,42 @@ export default function CarDetail({ carData, onUpdateCarStatus, userData }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const carImages = car ? [car.image, car.image, car.image] : [];
 
-  if (!car) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
-            Car Not Found
-          </h2>
-          <p className="text-[#717685] mb-6">
-            The car you're looking for doesn't exist
-          </p>
-          <button
-            onClick={() => navigate("/admin/cars")}
-            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-          >
-            Back to Cars
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // if (!car) {
+  //   return (
+  //     <div className="flex items-center justify-center h-96">
+  //       <div className="text-center">
+  //         <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+  //         <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+  //           Car Not Found
+  //         </h2>
+  //         <p className="text-[#717685] mb-6">
+  //           The car you're looking for doesn't exist
+  //         </p>
+  //         <button
+  //           onClick={() => navigate("/admin/cars")}
+  //           className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+  //         >
+  //           Back to Cars
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  // <button
+  //   onClick={() => {
+  //     // If we came from a specific route (stored in location.state), go back there
+  //     if (location.state?.from) {
+  //       navigate(location.state.from);
+  //     } else {
+  //       navigate("/admin/cars");
+  //     }
+  //   }}
+  //   className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
+  // >
+  //   <ArrowLeft className="w-5 h-5" />
+  //   Back
+  // </button>;
 
   const handleStatusChange = (status) => {
     setNewStatus(status);
@@ -81,12 +97,19 @@ export default function CarDetail({ carData, onUpdateCarStatus, userData }) {
     <div>
       {/* header */}
       <div className="mb-8">
-        <button
+        {/* <button
           onClick={() => navigate("/admin/cars")}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Cars
+        </button> */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Back
         </button>
         <div className="flex items-start justify-between">
           <div>

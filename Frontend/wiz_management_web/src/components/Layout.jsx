@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, BarChart3, LogOut, User } from "lucide-react";
+import { Home, FileText, BarChart3, LogOut, User, Calendar } from "lucide-react";
 
 export default function Layout({ children, user, onLogout }) {
   const navigate = useNavigate();
@@ -9,6 +9,7 @@ export default function Layout({ children, user, onLogout }) {
   const menuItems = [
     { icon: Home, label: "Dashboard", path: "/support/dashboard" },
     { icon: FileText, label: "All Requests", path: "/support/requests" },
+    { icon: Calendar, label: "Bookings", path: "/support/bookings" },
     { icon: BarChart3, label: "My Statistics", path: "/support/stats" },
   ];
 

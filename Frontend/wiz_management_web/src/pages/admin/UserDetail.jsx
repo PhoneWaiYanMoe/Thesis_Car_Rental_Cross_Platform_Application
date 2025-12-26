@@ -32,28 +32,6 @@ export default function UserDetail({
     ? bookingData.filter((b) => b.userId === user.id)
     : [];
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
-            User Not Found
-          </h2>
-          <p className="text-[#717685] mb-6">
-            The user you're looking for doesn't exist
-          </p>
-          <button
-            onClick={() => navigate("/admin/users")}
-            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-          >
-            Back to Users
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const handleStatusChange = (status) => {
     setNewStatus(status);
     setShowConfirm(true);
@@ -90,11 +68,11 @@ export default function UserDetail({
       {/* header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate("/admin/users")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Users
+          Back
         </button>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -443,8 +421,11 @@ export default function UserDetail({
                 View All Bookings
               </button>
               {user.type === "owner" && (
-                <button className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all">
-                  View Cars
+                <button
+                  onClick={() => navigate(`/admin/cars?ownerId=${user.id}`)}
+                  className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
+                >
+                  View Owner's Cars
                 </button>
               )}
               <button className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all">

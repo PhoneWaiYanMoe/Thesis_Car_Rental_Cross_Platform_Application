@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Users, Car, UserCog, LogOut, Shield } from "lucide-react";
+import { Home, Users, Car, UserCog, LogOut, Calendar, Shield } from "lucide-react";
 
 export default function AdminLayout({ children, user, onLogout }) {
   const navigate = useNavigate();
@@ -8,11 +8,11 @@ export default function AdminLayout({ children, user, onLogout }) {
 
   const menuItems = [
     { icon: Home, label: "Dashboard", path: "/admin/dashboard" },
+    { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
     { icon: Users, label: "Users", path: "/admin/users" },
     { icon: Car, label: "Cars", path: "/admin/cars" },
     { icon: UserCog, label: "Support Staff", path: "/admin/staff" },
   ];
-
   const isActive = (path) => location.pathname === path;
 
   return (
