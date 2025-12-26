@@ -10,34 +10,27 @@ class MediaController {
         });
       }
 
-      const { type, category } = req.body;
+      const { ownerId, ownerType, type } = req.body;
 
-      if (!type) {
+      if (!ownerId || !ownerType || !type) {
         return res.status(400).json({
           success: false,
-          message: "File type is required",
+          message: "ownerId, ownerType, and type are required",
         });
       }
 
       const file = await mediaService.uploadSingleFile(
         req.file,
-        req.user.id,
-        type,
-        category
+        req.user.id, // uploaderId from JWT
+        ownerId,
+        ownerType,
+        type
       );
 
       res.status(200).json({
         success: true,
         message: "File uploaded successfully",
-        file: {
-          id: file.id,
-          url: file.url,
-          thumbnailUrl: file.thumbnailUrl,
-          type: file.type,
-          size: file.size,
-          mimeType: file.mimeType,
-          uploadedAt: file.uploadedAt,
-        },
+        file: file,
       });
     } catch (error) {
       console.error("Upload error:", error);
@@ -57,34 +50,27 @@ class MediaController {
         });
       }
 
-      const { type, category } = req.body;
+      const { ownerId, ownerType, type } = req.body;
 
-      if (!type) {
+      if (!ownerId || !ownerType || !type) {
         return res.status(400).json({
           success: false,
-          message: "File type is required",
+          message: "ownerId, ownerType, and type are required",
         });
       }
 
       const files = await mediaService.uploadMultipleFiles(
         req.files,
-        req.user.id,
-        type,
-        category
+        req.user.id, // uploaderId from JWT
+        ownerId,
+        ownerType,
+        type
       );
 
       res.status(200).json({
         success: true,
         message: "Files uploaded successfully",
-        files: files.map((file) => ({
-          id: file.id,
-          url: file.url,
-          thumbnailUrl: file.thumbnailUrl,
-          type: file.type,
-          size: file.size,
-          mimeType: file.mimeType,
-          uploadedAt: file.uploadedAt,
-        })),
+        files: files,
       });
     } catch (error) {
       console.error("Batch upload error:", error);
@@ -98,7 +84,7 @@ class MediaController {
   async getFileById(req, res) {
     try {
       const { id } = req.params;
-      const file = await mediaService.getFileById(id, req.user.id);
+      const file = await mediaService.getFileById(id);
 
       res.status(200).json({
         success: true,
@@ -113,10 +99,58 @@ class MediaController {
     }
   }
 
+  async getBatch(req, res) {
+    try {
+      const { ids } = req.body;
+
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "ids array is required",
+        });
+      }
+
+      const files = await mediaService.getBatchByIds(ids);
+
+      res.status(200).json(files);
+    } catch (error) {
+      console.error("Get batch error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async getByOwner(req, res) {
+    try {
+      const { ownerType, ownerId, type } = req.query;
+
+      if (!ownerType || !ownerId) {
+        return res.status(400).json({
+          success: false,
+          message: "ownerType and ownerId are required",
+        });
+      }
+
+      const files = await mediaService.getByOwner(ownerType, ownerId, type);
+
+      res.status(200).json({
+        items: files,
+      });
+    } catch (error) {
+      console.error("Get by owner error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
   async deleteFile(req, res) {
     try {
       const { id } = req.params;
-      await mediaService.deleteFile(id, req.user.id);
+      await mediaService.deleteFile(id, req.user.id, req.user.type);
 
       res.status(200).json({
         success: true,
@@ -125,33 +159,6 @@ class MediaController {
     } catch (error) {
       console.error("Delete file error:", error);
       res.status(404).json({
-        success: false,
-        message: error.message,
-      });
-    }
-  }
-
-  async getUserFiles(req, res) {
-    try {
-      const { type } = req.query;
-      const files = await mediaService.getUserFiles(req.user.id, type);
-
-      res.status(200).json({
-        success: true,
-        files: files.map((file) => ({
-          id: file.id,
-          url: file.url,
-          thumbnailUrl: file.thumbnailUrl,
-          type: file.type,
-          category: file.category,
-          fileName: file.fileName,
-          size: file.size,
-          uploadedAt: file.uploadedAt,
-        })),
-      });
-    } catch (error) {
-      console.error("Get user files error:", error);
-      res.status(500).json({
         success: false,
         message: error.message,
       });

@@ -9,27 +9,33 @@ const MediaFile = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    ownerId: {
       type: DataTypes.UUID,
       allowNull: false,
-      field: "user_id",
+      field: "owner_id",
+    },
+    ownerType: {
+      type: DataTypes.ENUM("VEHICLE", "REVIEW", "USER", "REQUEST"),
+      allowNull: false,
+      field: "owner_type",
+    },
+    uploaderId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: "uploader_id",
     },
     type: {
       type: DataTypes.ENUM(
-        "avatar",
         "vehicle_photo",
         "document",
         "review_photo",
         "license",
         "selfie",
         "passport",
-        "contract"
+        "contract",
+        "profile"
       ),
       allowNull: false,
-    },
-    category: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
     url: {
       type: DataTypes.TEXT,

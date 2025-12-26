@@ -9,36 +9,36 @@ const {
 const { v4: uuidv4 } = require("uuid");
 
 class MediaService {
-  async uploadSingleFile(file, userId, type, category = null) {
+  async uploadSingleFile(file, uploaderId, ownerId, ownerType, type) {
     try {
       let processedBuffer = file.buffer;
       let thumbnailBuffer = null;
       let metadata = {};
 
-      // Process image files
+      // process image files
       if (isImageFile(file.mimetype)) {
-        // Get original metadata
+        // get original metadata
         metadata = await getImageMetadata(file.buffer);
 
-        // Process main image
+        // process main image
         processedBuffer = await processImage(file.buffer, {
           width: 1200,
           quality: 85,
           format: "jpeg",
         });
 
-        // Create thumbnail
+        // create thumbnail
         thumbnailBuffer = await createThumbnail(file.buffer, 300);
       }
 
-      // Upload main file to Cloudinary
+      // upload main file to Cloudinary
       const uploadResult = await this.uploadToCloudinary(
         processedBuffer,
         `wiz/${type}`,
         file.originalname
       );
 
-      // Upload thumbnail if it's an image
+      // upload thumbnail if it's an image
       let thumbnailUrl = null;
       if (thumbnailBuffer) {
         const thumbnailResult = await this.uploadToCloudinary(
@@ -49,12 +49,13 @@ class MediaService {
         thumbnailUrl = thumbnailResult.secure_url;
       }
 
-      // Save to database
+      // save to database
       const mediaFile = await MediaFile.create({
         id: uuidv4(),
-        userId,
+        uploaderId,
+        ownerId,
+        ownerType,
         type,
-        category,
         url: uploadResult.secure_url,
         thumbnailUrl,
         cloudinaryPublicId: uploadResult.public_id,
@@ -65,16 +66,17 @@ class MediaService {
         height: metadata.height || null,
       });
 
-      return mediaFile;
+      // return without cloudinaryPublicId
+      return this.formatMediaResponse(mediaFile);
     } catch (error) {
       throw new Error("File upload failed: " + error.message);
     }
   }
 
-  async uploadMultipleFiles(files, userId, type, category = null) {
+  async uploadMultipleFiles(files, uploaderId, ownerId, ownerType, type) {
     try {
       const uploadPromises = files.map((file) =>
-        this.uploadSingleFile(file, userId, type, category)
+        this.uploadSingleFile(file, uploaderId, ownerId, ownerType, type)
       );
       return await Promise.all(uploadPromises);
     } catch (error) {
@@ -99,68 +101,106 @@ class MediaService {
     });
   }
 
-  async getFileById(fileId, userId) {
+  async getFileById(fileId) {
     const file = await MediaFile.findOne({
-      where: { id: fileId, userId },
+      where: { id: fileId },
     });
 
     if (!file) {
       throw new Error("File not found");
     }
 
-    // Generate temporary URL (valid for 1 hour)
-    const temporaryUrl = this.generateTemporaryUrl(file.cloudinaryPublicId);
+    return this.formatMediaResponse(file);
+  }
 
-    return {
-      ...file.toJSON(),
-      temporaryUrl,
-      expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+  async getBatchByIds(ids) {
+    const files = await MediaFile.findAll({
+      where: { id: ids },
+    });
+
+    // transform to object with id as key
+    const result = {};
+    files.forEach((file) => {
+      result[file.id] = this.formatMediaResponse(file);
+    });
+
+    return result;
+  }
+
+  async getByOwner(ownerType, ownerId, type = null) {
+    const where = {
+      ownerType,
+      ownerId,
     };
-  }
 
-  generateTemporaryUrl(publicId) {
-    // Generate signed URL valid for 1 hour
-    return cloudinary.url(publicId, {
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    if (type) {
+      where.type = type;
+    }
+
+    const files = await MediaFile.findAll({
+      where,
+      order: [["uploadedAt", "DESC"]],
     });
+
+    return files.map((file) => this.formatMediaResponse(file));
   }
 
-  async deleteFile(fileId, userId) {
+  async deleteFile(fileId, userId, userType) {
     const file = await MediaFile.findOne({
-      where: { id: fileId, userId },
+      where: { id: fileId },
     });
 
     if (!file) {
       throw new Error("File not found");
     }
 
-    // Delete from Cloudinary
+    // check authorization, must be uploader or admin
+    if (file.uploaderId !== userId && userType !== "admin") {
+      throw new Error("Unauthorized: You can only delete files you uploaded");
+    }
+
+    // delete from Cloudinary
     await cloudinary.uploader.destroy(file.cloudinaryPublicId);
 
-    // Delete thumbnail if exists
+    // delete thumbnail if exists
     if (file.thumbnailUrl) {
-      const thumbnailPublicId = file.thumbnailUrl
-        .split("/")
-        .pop()
-        .split(".")[0];
+      const thumbnailPublicId = this.extractPublicIdFromUrl(file.thumbnailUrl);
       await cloudinary.uploader.destroy(thumbnailPublicId);
     }
 
-    // Delete from database
+    // delete from database
     await file.destroy();
 
     return { success: true, message: "File deleted successfully" };
   }
 
-  async getUserFiles(userId, type = null) {
-    const where = { userId };
-    if (type) where.type = type;
+  extractPublicIdFromUrl(url) {
+    // extract public_id from Cloudinary URL
+    const parts = url.split("/");
+    const filename = parts[parts.length - 1];
+    const folder = parts.slice(-3, -1).join("/");
+    return `${folder}/${filename.split(".")[0]}`;
+  }
 
-    return await MediaFile.findAll({
-      where,
-      order: [["uploadedAt", "DESC"]],
-    });
+  // format response without cloudinaryPublicId
+  formatMediaResponse(file) {
+    const fileData = file.toJSON ? file.toJSON() : file;
+
+    return {
+      id: fileData.id,
+      url: fileData.url,
+      thumbnailUrl: fileData.thumbnailUrl,
+      ownerId: fileData.ownerId,
+      ownerType: fileData.ownerType,
+      uploaderId: fileData.uploaderId,
+      type: fileData.type,
+      width: fileData.width,
+      height: fileData.height,
+      fileName: fileData.fileName,
+      size: fileData.size,
+      mimeType: fileData.mimeType,
+      uploadedAt: fileData.uploadedAt,
+    };
   }
 }
 

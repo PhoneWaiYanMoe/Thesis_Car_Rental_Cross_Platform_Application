@@ -1,10 +1,10 @@
 const multer = require("multer");
 const path = require("path");
 
-// Use memory storage to process files before uploading to Cloudinary
+// use memory storage to process files before uploading to Cloudinary
 const storage = multer.memoryStorage();
 
-// File filter function
+// file filter function
 const fileFilter = (req, file, cb) => {
   const allowedImageTypes = (process.env.ALLOWED_IMAGE_TYPES || "").split(",");
   const allowedDocTypes = (process.env.ALLOWED_DOCUMENT_TYPES || "").split(",");
@@ -20,7 +20,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer configuration
+// multer configuration
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,

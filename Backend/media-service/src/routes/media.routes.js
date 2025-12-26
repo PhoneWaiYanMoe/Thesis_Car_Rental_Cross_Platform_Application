@@ -7,26 +7,28 @@ const {
   uploadMultiple,
 } = require("../middleware/upload.middleware");
 
-// All routes require authentication
-router.use(authenticateToken);
+// protected routes, require authentication
+router.post(
+  "/upload",
+  authenticateToken,
+  uploadSingle("file"),
+  mediaController.uploadSingle
+);
 
-// Upload single file
-router.post("/upload", uploadSingle("file"), mediaController.uploadSingle);
-
-// Upload multiple files (batch)
 router.post(
   "/upload/batch",
+  authenticateToken,
   uploadMultiple("files", 10),
   mediaController.uploadBatch
 );
 
-// Get file by ID
-router.get("/:id", mediaController.getFileById);
+router.delete("/:id", authenticateToken, mediaController.deleteFile);
 
-// Delete file
-router.delete("/:id", mediaController.deleteFile);
+// public routes, no authentication required
+router.get("/media/:id", mediaController.getFileById);
 
-// Get user's files (optional type filter)
-router.get("/user/files", mediaController.getUserFiles);
+router.post("/batch", mediaController.getBatch);
+
+router.get("/batch", mediaController.getByOwner);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const upload = require("../config/multer");
 
-// Handle single file upload
+// handle single file upload
 const uploadSingle = (fieldName) => {
   return (req, res, next) => {
     upload.single(fieldName)(req, res, (err) => {
@@ -15,7 +15,7 @@ const uploadSingle = (fieldName) => {
   };
 };
 
-// Handle multiple files upload
+// handle multiple files upload
 const uploadMultiple = (fieldName, maxCount) => {
   return (req, res, next) => {
     upload.array(fieldName, maxCount)(req, res, (err) => {

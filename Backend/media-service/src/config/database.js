@@ -24,7 +24,7 @@ const connectDB = async () => {
     await sequelize.authenticate();
     console.log("Media Service: Database connected successfully");
 
-    // Sync models
+    // sync models
     await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
     console.log("Media Service: Database synced");
   } catch (error) {
