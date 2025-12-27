@@ -1,35 +1,49 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Eye, ChevronDown, User as UserIcon } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Search,
+  Filter,
+  Eye,
+  ChevronDown,
+  User as UserIcon,
+} from "lucide-react";
 
 export default function UserManagement({ userData, onUpdateUserStatus }) {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterType, setFilterType] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const sortByParam = searchParams.get("sortBy");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [sortBy, setSortBy] = useState(sortByParam || "name");
   const [showFilters, setShowFilters] = useState(false);
 
-  const userTypes = ['all', 'renter', 'owner'];
-  
-  let filteredUsers = userData.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-    const matchesType = filterType === 'all' || user.type === filterType;
+  const userTypes = ["all", "renter", "owner"];
+
+  let filteredUsers = userData.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" || user.status === filterStatus;
+    const matchesType = filterType === "all" || user.type === filterType;
     return matchesSearch && matchesStatus && matchesType;
   });
 
   // sort
   filteredUsers = [...filteredUsers].sort((a, b) => {
     switch (sortBy) {
-      case 'name':
+      case "name":
         return a.name.localeCompare(b.name);
-      case 'joined':
+      case "joined":
         return new Date(b.joinedDate) - new Date(a.joinedDate);
-      case 'bookings':
+      case "bookings":
         return b.totalBookings - a.totalBookings;
+      case "rentals":
+        return (b.totalRentals || 0) - (a.totalRentals || 0);
       default:
         return 0;
     }
@@ -37,51 +51,59 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
 
   const getStatusBadge = (status) => {
     const badges = {
-      normal: { bg: 'bg-green-50', text: 'text-green-700', label: 'Normal' },
-      stopped: { bg: 'bg-yellow-50', text: 'text-yellow-700', label: 'Stopped' },
-      banned: { bg: 'bg-red-50', text: 'text-red-700', label: 'Banned' }
+      normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
+      stopped: {
+        bg: "bg-yellow-50",
+        text: "text-yellow-700",
+        label: "Stopped",
+      },
+      banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
     };
     return badges[status];
   };
 
   const statusCounts = {
     all: userData.length,
-    normal: userData.filter(u => u.status === 'normal').length,
-    stopped: userData.filter(u => u.status === 'stopped').length,
-    banned: userData.filter(u => u.status === 'banned').length,
+    normal: userData.filter((u) => u.status === "normal").length,
+    stopped: userData.filter((u) => u.status === "stopped").length,
+    banned: userData.filter((u) => u.status === "banned").length,
   };
 
   return (
     <div>
       {/* header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#131A34] mb-2">User Management</h1>
+        <h1 className="text-3xl font-bold text-[#131A34] mb-2">
+          User Management
+        </h1>
         <p className="text-[#717685]">Manage all users on the platform</p>
       </div>
 
       {/* status tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
-          { id: 'all', label: 'All Users' },
-          { id: 'normal', label: 'Normal' },
-          { id: 'stopped', label: 'Stopped' },
-          { id: 'banned', label: 'Banned' }
-        ].map(tab => (
+          { id: "all", label: "All Users" },
+          { id: "normal", label: "Normal" },
+          { id: "stopped", label: "Stopped" },
+          { id: "banned", label: "Banned" },
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setFilterStatus(tab.id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${
               filterStatus === tab.id
-                ? 'bg-[#6679C0] text-white shadow-lg'
-                : 'text-[#717685] hover:bg-[#F8F9FF]'
+                ? "bg-[#6679C0] text-white shadow-lg"
+                : "text-[#717685] hover:bg-[#F8F9FF]"
             }`}
           >
             {tab.label}
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filterStatus === tab.id
-                ? 'bg-white/20 text-white'
-                : 'bg-gray-100 text-[#717685]'
-            }`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filterStatus === tab.id
+                  ? "bg-white/20 text-white"
+                  : "bg-gray-100 text-[#717685]"
+              }`}
+            >
               {statusCounts[tab.id]}
             </span>
           </button>
@@ -110,7 +132,11 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
           >
             <Filter className="w-5 h-5" />
             Filters
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${
+                showFilters ? "rotate-180" : ""
+              }`}
+            />
           </button>
 
           {/* sort */}
@@ -122,6 +148,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
             <option value="name">Sort by Name</option>
             <option value="joined">Sort by Join Date</option>
             <option value="bookings">Sort by Bookings</option>
+            <option value="rentals">Sort by Rentals</option>
           </select>
         </div>
 
@@ -129,15 +156,21 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <div>
-              <label className="block text-sm font-semibold text-[#131A34] mb-2">User Type</label>
+              <label className="block text-sm font-semibold text-[#131A34] mb-2">
+                User Type
+              </label>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white"
               >
-                {userTypes.map(type => (
+                {userTypes.map((type) => (
                   <option key={type} value={type}>
-                    {type === 'all' ? 'All Types' : type === 'renter' ? 'Renters' : 'Car Owners'}
+                    {type === "all"
+                      ? "All Types"
+                      : type === "renter"
+                      ? "Renters"
+                      : "Car Owners"}
                   </option>
                 ))}
               </select>
@@ -149,14 +182,18 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
       {/* results count */}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[#717685]">
-          Showing <span className="font-semibold text-[#131A34]">{filteredUsers.length}</span> users
+          Showing{" "}
+          <span className="font-semibold text-[#131A34]">
+            {filteredUsers.length}
+          </span>{" "}
+          users
         </p>
-        {(searchTerm || filterStatus !== 'all' || filterType !== 'all') && (
+        {(searchTerm || filterStatus !== "all" || filterType !== "all") && (
           <button
             onClick={() => {
-              setSearchTerm('');
-              setFilterStatus('all');
-              setFilterType('all');
+              setSearchTerm("");
+              setFilterStatus("all");
+              setFilterType("all");
             }}
             className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
           >
@@ -171,11 +208,13 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
           <div className="p-12 text-center">
             <UserIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
             <p className="text-[#717685] text-lg font-medium">No users found</p>
-            <p className="text-[#B2BCE0] text-sm mt-1">Try adjusting your filters</p>
+            <p className="text-[#B2BCE0] text-sm mt-1">
+              Try adjusting your filters
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {filteredUsers.map(user => {
+            {filteredUsers.map((user) => {
               const badge = getStatusBadge(user.status);
               return (
                 <div
@@ -195,11 +234,13 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
                           <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
                             {user.name}
                           </h4>
-                          <span className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}>
+                          <span
+                            className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
+                          >
                             {badge.label}
                           </span>
                           <span className="bg-[#F8F9FF] text-[#6679C0] px-2.5 py-1 rounded-lg text-xs font-semibold">
-                            {user.type === 'renter' ? 'Renter' : 'Car Owner'}
+                            {user.type === "renter" ? "Renter" : "Car Owner"}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-[#717685]">
@@ -207,19 +248,26 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
                           <span>•</span>
                           <span>{user.id}</span>
                           <span>•</span>
-                          <span>Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
+                          <span>
+                            Joined{" "}
+                            {new Date(user.joinedDate).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-6 text-center">
                       <div>
                         <p className="text-sm text-[#717685]">Bookings</p>
-                        <p className="font-bold text-[#131A34]">{user.totalBookings}</p>
+                        <p className="font-bold text-[#131A34]">
+                          {user.totalBookings}
+                        </p>
                       </div>
-                      {user.type === 'owner' && (
+                      {user.type === "owner" && (
                         <div>
                           <p className="text-sm text-[#717685]">Cars</p>
-                          <p className="font-bold text-[#131A34]">{user.totalCars || 0}</p>
+                          <p className="font-bold text-[#131A34]">
+                            {user.totalCars || 0}
+                          </p>
                         </div>
                       )}
                       <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />

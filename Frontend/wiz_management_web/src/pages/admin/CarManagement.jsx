@@ -6,11 +6,12 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const ownerId = searchParams.get("ownerId");
+  const sortByParam = searchParams.get('sortBy');
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState(sortByParam || 'name');
   const [showFilters, setShowFilters] = useState(false);
 
   const vehicleTypes = ["all", ...new Set(carData.map((c) => c.vehicleType))];

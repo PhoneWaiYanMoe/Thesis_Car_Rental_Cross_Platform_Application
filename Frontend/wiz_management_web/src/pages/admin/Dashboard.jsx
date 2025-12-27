@@ -26,6 +26,28 @@ export default function AdminDashboard({
   const navigate = useNavigate();
   const [timePeriod, setTimePeriod] = useState("all");
 
+  // Filter bookings by time period
+  const getFilteredBookings = () => {
+    const now = new Date();
+
+    switch (timePeriod) {
+      case "week":
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return bookingData.filter((b) => new Date(b.createdDate) >= weekAgo);
+      case "month":
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return bookingData.filter((b) => new Date(b.createdDate) >= monthAgo);
+      case "year":
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        return bookingData.filter((b) => new Date(b.createdDate) >= yearAgo);
+      case "all":
+      default:
+        return bookingData;
+    }
+  };
+
+  const filteredBookings = getFilteredBookings();
+
   // calculate statistics
   const totalRevenue = bookingData.reduce((sum, b) => sum + (b.total || 0), 0);
   const totalProfit = totalRevenue * 0.08;
@@ -387,15 +409,22 @@ export default function AdminDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* top rated cars */}
         <div className="bg-white rounded-2xl border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#131A34]">Top Rated Cars</h3>
+            <button
+              onClick={() => navigate("/admin/cars?sortBy=rating")}
+              className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
+            >
+              See More →
+            </button>
           </div>
           <div className="divide-y divide-gray-100">
             {topRatedCars.length > 0 ? (
               topRatedCars.map((car, idx) => (
                 <div
                   key={car.id}
-                  className="p-6 hover:bg-[#F8F9FF] transition-all"
+                  onClick={() => navigate(`/admin/cars/${car.id}`)}
+                  className="p-6 hover:bg-[#F8F9FF] transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -432,34 +461,46 @@ export default function AdminDashboard({
 
         {/* top car owners */}
         <div className="bg-white rounded-2xl border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#131A34]">Top Car Owners</h3>
+            <button
+              onClick={() => navigate("/admin/users?type=owner&sortBy=rentals")}
+              className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
+            >
+              See More →
+            </button>
           </div>
           <div className="divide-y divide-gray-100">
             {topOwners.length > 0 ? (
-              topOwners.map((owner, idx) => (
-                <div
-                  key={idx}
-                  className="p-6 hover:bg-[#F8F9FF] transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="w-8 h-8 bg-[#9AE8AB] text-[#131A34] rounded-full flex items-center justify-center font-bold text-sm">
-                        {idx + 1}
-                      </span>
-                      <p className="font-semibold text-[#131A34]">
-                        {owner.name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-[#131A34]">
-                        {owner.rentals}
-                      </p>
-                      <p className="text-xs text-[#717685]">total rentals</p>
+              topOwners.map((owner, idx) => {
+                const ownerUser = userData.find((u) => u.name === owner.name);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() =>
+                      ownerUser && navigate(`/admin/users/${ownerUser.id}`)
+                    }
+                    className="p-6 hover:bg-[#F8F9FF] transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="w-8 h-8 bg-[#9AE8AB] text-[#131A34] rounded-full flex items-center justify-center font-bold text-sm">
+                          {idx + 1}
+                        </span>
+                        <p className="font-semibold text-[#131A34]">
+                          {owner.name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-[#131A34]">
+                          {owner.rentals}
+                        </p>
+                        <p className="text-xs text-[#717685]">total rentals</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="p-12 text-center text-[#717685]">
                 No data available

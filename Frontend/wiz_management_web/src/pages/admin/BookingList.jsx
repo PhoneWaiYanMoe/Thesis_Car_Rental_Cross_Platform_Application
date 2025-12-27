@@ -6,6 +6,7 @@ import {
   Eye,
   ChevronDown,
   Calendar as CalendarIcon,
+  ArrowLeft
 } from "lucide-react";
 
 export default function BookingList({ bookingData, carData, userData }) {
@@ -125,6 +126,19 @@ export default function BookingList({ bookingData, carData, userData }) {
   };
   return (
     <div>
+      {/* ack button */}
+      {(userId || ownerId) && (
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+        </div>
+      )}
+
       {/* header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#131A34] mb-2">
