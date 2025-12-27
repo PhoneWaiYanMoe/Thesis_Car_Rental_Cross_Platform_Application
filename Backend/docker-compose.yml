@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking
+      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle
     ports:
       - "5432:5432"
     volumes:
@@ -33,12 +33,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-wiz_password}
       MONGO_INITDB_DATABASE: wiz_reviews
     ports:
-      - "27020:27020"  # Both host and container use 27020
+      - "27020:27020"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
       - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
-    command: --port 27020  # Force MongoDB to listen on 27020
+    command: --port 27020
     networks:
       - wiz-network
     healthcheck:
@@ -138,7 +138,7 @@ services:
     networks:
       - wiz-network
 
-    # ==================== VEHICLE SERVICE ====================
+  # ==================== VEHICLE SERVICE ====================
   vehicle-service:
     build: ./vehicle-service
     container_name: wiz-vehicle-service
@@ -188,18 +188,21 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - USER_SERVICE_GRPC_URL=user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
     depends_on:
       postgres:
         condition: service_healthy
       location-service:
         condition: service_started
+      vehicle-service:
+        condition: service_started
     volumes:
       - ./booking-service/src:/app/src
     networks:
       - wiz-network
 
-# ==================== REVIEW SERVICE ====================
+  # ==================== REVIEW SERVICE ====================
   review-service:
     build: ./review-service
     container_name: wiz-review-service

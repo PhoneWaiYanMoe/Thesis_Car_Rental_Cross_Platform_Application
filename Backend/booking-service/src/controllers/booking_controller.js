@@ -1,13 +1,11 @@
 // Backend/booking-service/src/controllers/booking_controller.js
 const pool = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
+const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
 class BookingController {
   // ==================== VERIFICATION MANAGEMENT ====================
 
-  /**
-   * Get user's verification status (license + selfies)
-   */
   async getMyVerification(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -59,9 +57,6 @@ class BookingController {
     }
   }
 
-  /**
-   * Upload/Update complete verification (license + selfies)
-   */
   async uploadVerification(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -155,9 +150,6 @@ class BookingController {
 
   // ==================== BOOKING MANAGEMENT ====================
 
-  /**
-   * Create new booking
-   */
   async createBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -219,25 +211,31 @@ class BookingController {
           .json({ error: "End date must be after start date" });
       }
 
-      // Get vehicle
-      const vehicleResult = await client.query(
-        "SELECT * FROM vehicles WHERE vehicle_id = $1 AND is_active = true",
-        [vehicleId]
-      );
-
-      if (vehicleResult.rows.length === 0) {
-        return res.status(404).json({ error: "Vehicle not found" });
+      // FETCH VEHICLE FROM VEHICLE-SERVICE VIA GRPC
+      let vehicle;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(vehicleId);
+      } catch (error) {
+        return res.status(404).json({
+          error: "Vehicle not found or not available",
+          details: error.message,
+        });
       }
 
-      const vehicle = vehicleResult.rows[0];
-      const vehicleOwnerId = vehicle.user_id;
+      if (vehicle.status !== "active") {
+        return res.status(400).json({
+          error: "Vehicle is not available for booking",
+        });
+      }
+
+      const vehicleOwnerId = vehicle.owner_id;
 
       if (vehicleOwnerId === userId) {
         return res.status(400).json({ error: "Cannot book your own vehicle" });
       }
 
-      // Calculate pricing
-      const rentalPrice = vehicle.daily_rate * days;
+      // Calculate pricing using vehicle info from gRPC
+      const rentalPrice = vehicle.price_per_day * days;
       const insuranceFee = Math.round(rentalPrice * (insuranceCoverage / 100));
       const total = rentalPrice + insuranceFee;
       const deposit = Math.round(total * 0.3);
@@ -312,9 +310,6 @@ class BookingController {
     }
   }
 
-  /**
-   * Get customer's bookings - FIXED to return complete booking data
-   */
   async getMyBookings(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -329,6 +324,7 @@ class BookingController {
       let query = `
         SELECT 
           b.booking_id,
+          b.vehicle_id,
           b.status,
           b.start_date,
           b.end_date,
@@ -339,13 +335,8 @@ class BookingController {
           b.deposit_paid,
           b.vehicle_reviewed,
           b.owner_reviewed,
-          b.created_at,
-          v.vehicle_id,
-          v.name as vehicle_name, 
-          v.photo as vehicle_photo,
-          v.user_id as vehicle_owner_id
+          b.created_at
         FROM bookings b
-        JOIN vehicles v ON b.vehicle_id = v.vehicle_id
         WHERE b.customer_id = $1
       `;
 
@@ -358,17 +349,26 @@ class BookingController {
         paramIndex++;
       }
 
-      if (search) {
-        query += ` AND v.name ILIKE $${paramIndex}`;
-        params.push(`%${search}%`);
-        paramIndex++;
-      }
-
       query += ` ORDER BY b.created_at ${sortBy === "oldest" ? "ASC" : "DESC"}`;
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
       const result = await pool.query(query, params);
+
+      // Fetch vehicle info for all bookings via gRPC
+      const vehicleIds = [...new Set(result.rows.map((row) => row.vehicle_id))];
+      let vehicles = {};
+
+      try {
+        const vehiclesList = await vehicleGrpcClient.getVehiclesInfo(
+          vehicleIds
+        );
+        vehiclesList.forEach((v) => {
+          vehicles[v.vehicle_id] = v;
+        });
+      } catch (error) {
+        console.warn("⚠️  Could not fetch vehicle info:", error.message);
+      }
 
       const countResult = await pool.query(
         "SELECT COUNT(*) FROM bookings WHERE customer_id = $1",
@@ -378,32 +378,38 @@ class BookingController {
       const now = new Date();
 
       res.json({
-        bookings: result.rows.map((row) => ({
-          id: row.booking_id,
-          status: row.status,
-          vehicle: {
-            id: row.vehicle_id,
-            name: row.vehicle_name,
-            photo: row.vehicle_photo,
-            ownerId: row.vehicle_owner_id,
-          },
-          startDate: row.start_date,
-          endDate: row.end_date,
-          duration: `${row.duration_days} days`,
-          pricing: {
-            total: row.total_amount,
-            deposit: row.deposit_amount,
-            remainingPayment: row.remaining_payment,
-            depositPaid: row.deposit_paid,
-          },
-          canCancel:
-            ["pending", "booking"].includes(row.status) &&
-            new Date(row.start_date) > now,
-          canReview:
-            row.status === "completed" &&
-            (!row.vehicle_reviewed || !row.owner_reviewed),
-          createdAt: row.created_at,
-        })),
+        bookings: result.rows.map((row) => {
+          const vehicle = vehicles[row.vehicle_id] || {
+            name: "Unknown Vehicle",
+            owner_id: null,
+          };
+
+          return {
+            id: row.booking_id,
+            status: row.status,
+            vehicle: {
+              id: row.vehicle_id,
+              name: vehicle.name,
+              ownerId: vehicle.owner_id,
+            },
+            startDate: row.start_date,
+            endDate: row.end_date,
+            duration: `${row.duration_days} days`,
+            pricing: {
+              total: row.total_amount,
+              deposit: row.deposit_amount,
+              remainingPayment: row.remaining_payment,
+              depositPaid: row.deposit_paid,
+            },
+            canCancel:
+              ["pending", "booking"].includes(row.status) &&
+              new Date(row.start_date) > now,
+            canReview:
+              row.status === "completed" &&
+              (!row.vehicle_reviewed || !row.owner_reviewed),
+            createdAt: row.created_at,
+          };
+        }),
         pagination: {
           total: parseInt(countResult.rows[0].count),
           page: parseInt(page),
@@ -416,28 +422,14 @@ class BookingController {
     }
   }
 
-  /**
-   * Get booking details - FIXED JSON parsing
-   */
   async getBookingById(req, res, next) {
     try {
       const userId = req.user.userId;
       const { id } = req.params;
 
       const result = await pool.query(
-        `SELECT 
-          b.*,
-          v.name as vehicle_name, 
-          v.photo as vehicle_photo, 
-          v.transmission, 
-          v.seats, 
-          v.fuel_type, 
-          v.location as vehicle_location,
-          v.user_id as vehicle_owner_id
-        FROM bookings b
-        JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        WHERE b.booking_id = $1 AND (b.customer_id = $2 OR v.user_id = $2)`,
-        [id, userId]
+        `SELECT b.* FROM bookings b WHERE b.booking_id = $1`,
+        [id]
       );
 
       if (result.rows.length === 0) {
@@ -445,10 +437,24 @@ class BookingController {
       }
 
       const booking = result.rows[0];
+
+      // Fetch vehicle info via gRPC
+      let vehicle;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+      } catch (error) {
+        vehicle = { name: "Unknown Vehicle", owner_id: null };
+      }
+
+      // Check authorization
+      if (booking.customer_id !== userId && vehicle.owner_id !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
       const now = new Date();
       const startDate = new Date(booking.start_date);
 
-      // Safely parse JSON fields
+      // Parse JSON safely
       let pickupLocation = null;
       let dropoffLocation = null;
       let pickupPhotos = null;
@@ -500,13 +506,8 @@ class BookingController {
           status: booking.status,
           vehicle: {
             id: booking.vehicle_id,
-            name: booking.vehicle_name,
-            photo: booking.vehicle_photo,
-            transmission: booking.transmission,
-            seats: booking.seats,
-            fuelType: booking.fuel_type,
-            location: booking.vehicle_location,
-            ownerId: booking.vehicle_owner_id,
+            name: vehicle.name,
+            ownerId: vehicle.owner_id,
           },
           customerId: booking.customer_id,
           timeline: {
@@ -557,11 +558,9 @@ class BookingController {
     }
   }
 
-  // ==================== BOOKING ACTIONS ====================
+  // ... rest of the methods (confirmPickup, confirmReturn, cancelBooking, signContract) remain the same
+  // They don't need vehicle info so no changes needed
 
-  /**
-   * Confirm car pickup - FIXED: Changes to picked_up status
-   */
   async confirmPickup(req, res, next) {
     const client = await pool.connect();
 
@@ -632,9 +631,6 @@ class BookingController {
     }
   }
 
-  /**
-   * Confirm car return - FIXED: Changes to return_submitted status
-   */
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -699,9 +695,6 @@ class BookingController {
     }
   }
 
-  /**
-   * Cancel booking
-   */
   async cancelBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -737,7 +730,6 @@ class BookingController {
         });
       }
 
-      // Calculate refund
       let refundAmount = 0;
       const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
 
@@ -777,9 +769,6 @@ class BookingController {
     }
   }
 
-  /**
-   * Sign contract
-   */
   async signContract(req, res, next) {
     const client = await pool.connect();
 

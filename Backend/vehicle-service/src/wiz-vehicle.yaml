@@ -1,0 +1,793 @@
+openapi: 3.0.3
+info:
+  title: Wiz Vehicle Service API
+  description: |
+    Vehicle listing and management service for Wiz Car Rental.
+    
+    **Features:**
+    - Public vehicle search and browsing
+    - Owner vehicle management
+    - Admin vehicle approval and moderation
+    
+    **Roles:**
+    - Public: Search and view vehicles
+    - Owner: Manage vehicle listings
+    - Admin: Approve/reject vehicles, moderate content
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+    description: Local development
+
+tags:
+  - name: Public
+    description: Public vehicle browsing and search
+  - name: Owner
+    description: Owner vehicle management
+  - name: Admin
+    description: Admin moderation and approval
+
+paths:
+  # ==================== PUBLIC ROUTES ====================
+  /vehicles/search:
+    get:
+      summary: Search vehicles
+      description: Search and filter available vehicles
+      tags: [Public]
+      parameters:
+        - name: vehicleType
+          in: query
+          schema:
+            type: string
+            enum: [sedan, suv, hatchback, van]
+          example: suv
+        - name: transmission
+          in: query
+          schema:
+            type: string
+            enum: [automatic, manual, semi-auto]
+          example: automatic
+        - name: fuelType
+          in: query
+          schema:
+            type: string
+            enum: [gasoline, diesel, electric, hybrid]
+        - name: minSeats
+          in: query
+          schema:
+            type: integer
+          example: 5
+        - name: minPrice
+          in: query
+          schema:
+            type: integer
+          example: 300000
+        - name: maxPrice
+          in: query
+          schema:
+            type: integer
+          example: 500000
+        - name: city
+          in: query
+          schema:
+            type: string
+          example: "Ho Chi Minh City"
+        - name: district
+          in: query
+          schema:
+            type: string
+          example: "District 1"
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2025-01-15"
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2025-01-20"
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [price, price-desc, rating, rentals, newest]
+            default: price
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VehicleSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /vehicles/{id}:
+    get:
+      summary: Get vehicle details
+      description: Get detailed information about a specific vehicle
+      tags: [Public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicle:
+                    $ref: '#/components/schemas/VehicleDetails'
+        '404':
+          description: Vehicle not found
+
+  /vehicles/{id}/availability:
+    get:
+      summary: Check vehicle availability
+      description: Check if vehicle is available for specific dates
+      tags: [Public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Availability status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicleId:
+                    type: string
+                  isAvailable:
+                    type: boolean
+                  message:
+                    type: string
+                  unavailablePeriods:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        startDate:
+                          type: string
+                          format: date
+                        endDate:
+                          type: string
+                          format: date
+                        reason:
+                          type: string
+
+  # ==================== OWNER ROUTES ====================
+  /vehicles/my-vehicles:
+    get:
+      summary: Get my vehicles
+      description: Get list of vehicles owned by authenticated user
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, active, stopped, banned]
+            default: all
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, rentals, rating, price]
+            default: name
+      responses:
+        '200':
+          description: List of owner's vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OwnerVehicleSummary'
+
+  /vehicles:
+    post:
+      summary: Create vehicle listing
+      description: Create a new vehicle listing (Owner only)
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVehicleRequest'
+      responses:
+        '201':
+          description: Vehicle created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vehicle created, pending approval"
+                  vehicleId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: "pending"
+        '403':
+          description: Not authorized (not an owner)
+
+  /vehicles/my-vehicles/{id}:
+    get:
+      summary: Get my vehicle details
+      description: Get detailed info of owned vehicle
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicle:
+                    $ref: '#/components/schemas/OwnerVehicleDetails'
+    
+    put:
+      summary: Update vehicle
+      description: Update vehicle information
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                pricePerDay:
+                  type: integer
+                features:
+                  type: array
+                  items:
+                    type: string
+                rules:
+                  type: object
+      responses:
+        '200':
+          description: Vehicle updated
+    
+    delete:
+      summary: Deactivate vehicle
+      description: Deactivate/stop vehicle listing
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle deactivated
+
+  /vehicles/my-vehicles/{id}/photos:
+    post:
+      summary: Upload vehicle photos
+      description: Upload additional photos for vehicle
+      tags: [Owner]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - photoUrls
+              properties:
+                photoUrls:
+                  type: array
+                  items:
+                    type: string
+                  example: ["https://cdn.com/photo1.jpg", "https://cdn.com/photo2.jpg"]
+      responses:
+        '201':
+          description: Photos uploaded
+
+  # ==================== ADMIN ROUTES ====================
+  /vehicles/admin/vehicles:
+    get:
+      summary: Get all vehicles (Admin)
+      description: Get all vehicles for moderation
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, active, stopped, banned]
+        - name: vehicleType
+          in: query
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, rentals, rating, price]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of all vehicles
+
+  /vehicles/admin/{id}/status:
+    patch:
+      summary: Update vehicle status
+      description: Update vehicle status (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, active, stopped, banned]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /vehicles/admin/{id}/approve:
+    post:
+      summary: Approve vehicle
+      description: Approve pending vehicle listing
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle approved
+
+  /vehicles/admin/{id}/reject:
+    post:
+      summary: Reject vehicle
+      description: Reject pending vehicle listing
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Vehicle rejected
+
+# ==================== COMPONENTS ====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    VehicleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "BMW X1 2020"
+        vehicleType:
+          type: string
+          enum: [sedan, suv, hatchback, van]
+        transmission:
+          type: string
+          enum: [automatic, manual, semi-auto]
+        fuelType:
+          type: string
+          enum: [gasoline, diesel, electric, hybrid]
+        seats:
+          type: integer
+          example: 7
+        year:
+          type: integer
+          example: 2020
+        pricePerDay:
+          type: integer
+          example: 390000
+        rating:
+          type: number
+          format: float
+          example: 4.8
+        totalRentals:
+          type: integer
+          example: 45
+        primaryPhoto:
+          type: string
+          example: "assets/images/Car.png"
+        location:
+          type: object
+          properties:
+            city:
+              type: string
+            district:
+              type: string
+        instantBooking:
+          type: boolean
+        driverSupported:
+          type: boolean
+        deliveryAvailable:
+          type: boolean
+        isAvailable:
+          type: boolean
+
+    VehicleDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        specifications:
+          type: object
+          properties:
+            vehicleType:
+              type: string
+            transmission:
+              type: string
+            fuelType:
+              type: string
+            seats:
+              type: integer
+            year:
+              type: integer
+            mileage:
+              type: integer
+            licensePlate:
+              type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              isPrimary:
+                type: boolean
+              order:
+                type: integer
+        features:
+          type: array
+          items:
+            type: string
+        pricing:
+          type: object
+          properties:
+            pricePerDay:
+              type: integer
+        location:
+          type: object
+        availability:
+          type: object
+          properties:
+            driverSupported:
+              type: boolean
+            instantBooking:
+              type: boolean
+            deliveryAvailable:
+              type: boolean
+            unavailablePeriods:
+              type: array
+              items:
+                type: object
+        performance:
+          type: object
+          properties:
+            totalRentals:
+              type: integer
+            rating:
+              type: number
+            reviewCount:
+              type: integer
+        rules:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    OwnerVehicleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, stopped, banned]
+        pricePerDay:
+          type: integer
+        rating:
+          type: number
+        totalRentals:
+          type: integer
+        primaryPhoto:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastVerified:
+          type: string
+          format: date-time
+        verificationStatus:
+          type: string
+          enum: [pending, approved, rejected]
+        nextVerificationDue:
+          type: string
+          format: date-time
+
+    OwnerVehicleDetails:
+      allOf:
+        - $ref: '#/components/schemas/VehicleDetails'
+        - type: object
+          properties:
+            status:
+              type: string
+            verificationStatus:
+              type: string
+            verificationNotes:
+              type: string
+            lastVerified:
+              type: string
+              format: date-time
+            nextVerificationDue:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CreateVehicleRequest:
+      type: object
+      required:
+        - name
+        - vehicleType
+        - transmission
+        - fuelType
+        - seats
+        - year
+        - mileage
+        - licensePlate
+        - pricePerDay
+        - location
+      properties:
+        name:
+          type: string
+          example: "BMW X1 2020"
+        description:
+          type: string
+          example: "Luxury SUV in excellent condition"
+        vehicleType:
+          type: string
+          enum: [sedan, suv, hatchback, van]
+        transmission:
+          type: string
+          enum: [automatic, manual, semi-auto]
+        fuelType:
+          type: string
+          enum: [gasoline, diesel, electric, hybrid]
+        seats:
+          type: integer
+          example: 7
+        year:
+          type: integer
+          example: 2020
+        mileage:
+          type: integer
+          example: 45000
+        licensePlate:
+          type: string
+          example: "51A-12345"
+        pricePerDay:
+          type: integer
+          example: 390000
+        location:
+          type: object
+          required:
+            - address
+            - city
+            - district
+          properties:
+            address:
+              type: string
+            city:
+              type: string
+            district:
+              type: string
+            coordinates:
+              type: object
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+        features:
+          type: array
+          items:
+            type: string
+          example: ["AC", "GPS", "Bluetooth"]
+        rules:
+          type: object
+        driverSupported:
+          type: boolean
+          default: false
+        instantBooking:
+          type: boolean
+          default: false
+        deliveryAvailable:
+          type: boolean
+          default: false
+        photoIds:
+          type: array
+          items:
+            type: string
+        documentIds:
+          type: array
+          items:
+            type: string
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer

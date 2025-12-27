@@ -1,17 +1,16 @@
 // Backend/booking-service/src/controllers/owner_booking_controller.js
 const pool = require("../config/database");
+const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
 class OwnerBookingController {
   /**
-   * Get owner's rental requests
-   * FIXED: Only owners can access this
+   * Get owner's rental requests - FIXED with gRPC
    */
   async getOwnerBookings(req, res, next) {
     try {
       const userId = req.user.userId;
       const userRole = req.user.role;
 
-      // SECURITY: Check if user is an owner
       if (userRole !== "owner") {
         return res.status(403).json({
           error: "Access denied. Only vehicle owners can view rental requests.",
@@ -28,18 +27,24 @@ class OwnerBookingController {
         limit = 10,
       } = req.query;
 
+      // Get all bookings for this owner's vehicles
       let query = `
         SELECT 
-          b.*,
-          v.name as vehicle_name, 
-          v.photo as vehicle_photo
+          b.booking_id,
+          b.vehicle_id,
+          b.customer_id,
+          b.status,
+          b.start_date,
+          b.end_date,
+          b.duration_days,
+          b.total_amount,
+          b.created_at
         FROM bookings b
-        JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        WHERE v.user_id = $1
+        WHERE 1=1
       `;
 
-      const params = [userId];
-      let paramIndex = 2;
+      const params = [];
+      let paramIndex = 1;
 
       if (status !== "all") {
         query += ` AND b.status = $${paramIndex}`;
@@ -59,22 +64,40 @@ class OwnerBookingController {
 
       const result = await pool.query(query, params);
 
+      // Fetch vehicle info and filter by owner
+      const vehicleIds = [...new Set(result.rows.map((row) => row.vehicle_id))];
+      let ownerVehicles = new Set();
+
+      try {
+        const vehicles = await vehicleGrpcClient.getVehiclesInfo(vehicleIds);
+        vehicles.forEach((v) => {
+          if (v.owner_id === userId) {
+            ownerVehicles.add(v.vehicle_id);
+          }
+        });
+      } catch (error) {
+        console.error("⚠️  Could not fetch vehicle info:", error.message);
+        return res.status(503).json({
+          error: "Vehicle service unavailable",
+        });
+      }
+
+      // Filter bookings to only owner's vehicles
+      const filteredBookings = result.rows.filter((row) =>
+        ownerVehicles.has(row.vehicle_id)
+      );
+
       const countResult = await pool.query(
-        `SELECT COUNT(*) 
-         FROM bookings b
-         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-         WHERE v.user_id = $1`,
-        [userId]
+        `SELECT COUNT(*) FROM bookings WHERE vehicle_id = ANY($1)`,
+        [Array.from(ownerVehicles)]
       );
 
       res.json({
-        bookings: result.rows.map((row) => ({
+        bookings: filteredBookings.map((row) => ({
           id: row.booking_id,
           status: row.status,
           vehicle: {
             id: row.vehicle_id,
-            name: row.vehicle_name,
-            photo: row.vehicle_photo,
           },
           customerId: row.customer_id,
           startDate: row.start_date,
@@ -97,10 +120,6 @@ class OwnerBookingController {
     }
   }
 
-  /**
-   * Accept booking request
-   * FIXED: Only owners can accept
-   */
   async acceptBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -111,7 +130,6 @@ class OwnerBookingController {
       const userRole = req.user.role;
       const { id } = req.params;
 
-      // SECURITY: Check if user is an owner
       if (userRole !== "owner") {
         return res.status(403).json({
           error: "Access denied. Only vehicle owners can accept bookings.",
@@ -120,20 +138,35 @@ class OwnerBookingController {
       }
 
       const bookingResult = await client.query(
-        `SELECT b.* 
-         FROM bookings b
-         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-         WHERE b.booking_id = $1 AND v.user_id = $2`,
-        [id, userId]
+        `SELECT * FROM bookings WHERE booking_id = $1`,
+        [id]
       );
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found or you don't own this vehicle",
+          error: "Booking not found",
         });
       }
 
       const booking = bookingResult.rows[0];
+
+      // Verify ownership via gRPC
+      try {
+        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+          booking.vehicle_id,
+          userId
+        );
+
+        if (!ownershipCheck.is_owner) {
+          return res.status(403).json({
+            error: "You don't own this vehicle",
+          });
+        }
+      } catch (error) {
+        return res.status(503).json({
+          error: "Could not verify vehicle ownership",
+        });
+      }
 
       if (booking.status !== "pending") {
         return res.status(400).json({
@@ -167,10 +200,6 @@ class OwnerBookingController {
     }
   }
 
-  /**
-   * Reject booking request
-   * FIXED: Only owners can reject
-   */
   async rejectBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -182,7 +211,6 @@ class OwnerBookingController {
       const { id } = req.params;
       const { reason, refundAmount } = req.body;
 
-      // SECURITY: Check if user is an owner
       if (userRole !== "owner") {
         return res.status(403).json({
           error: "Access denied. Only vehicle owners can reject bookings.",
@@ -203,20 +231,35 @@ class OwnerBookingController {
       }
 
       const bookingResult = await client.query(
-        `SELECT b.* 
-         FROM bookings b
-         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-         WHERE b.booking_id = $1 AND v.user_id = $2`,
-        [id, userId]
+        `SELECT * FROM bookings WHERE booking_id = $1`,
+        [id]
       );
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found or you don't own this vehicle",
+          error: "Booking not found",
         });
       }
 
       const booking = bookingResult.rows[0];
+
+      // Verify ownership via gRPC
+      try {
+        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+          booking.vehicle_id,
+          userId
+        );
+
+        if (!ownershipCheck.is_owner) {
+          return res.status(403).json({
+            error: "You don't own this vehicle",
+          });
+        }
+      } catch (error) {
+        return res.status(503).json({
+          error: "Could not verify vehicle ownership",
+        });
+      }
 
       if (booking.status !== "pending") {
         return res.status(400).json({
@@ -261,10 +304,6 @@ class OwnerBookingController {
     }
   }
 
-  /**
-   * Confirm vehicle return
-   * FIXED: Only owners can confirm return
-   */
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -282,7 +321,6 @@ class OwnerBookingController {
         action,
       } = req.body;
 
-      // SECURITY: Check if user is an owner
       if (userRole !== "owner") {
         return res.status(403).json({
           error: "Access denied. Only vehicle owners can confirm returns.",
@@ -307,20 +345,35 @@ class OwnerBookingController {
       }
 
       const bookingResult = await client.query(
-        `SELECT b.* 
-         FROM bookings b
-         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-         WHERE b.booking_id = $1 AND v.user_id = $2`,
-        [id, userId]
+        `SELECT * FROM bookings WHERE booking_id = $1`,
+        [id]
       );
 
       if (bookingResult.rows.length === 0) {
         return res.status(404).json({
-          error: "Booking not found or you don't own this vehicle",
+          error: "Booking not found",
         });
       }
 
       const booking = bookingResult.rows[0];
+
+      // Verify ownership via gRPC
+      try {
+        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+          booking.vehicle_id,
+          userId
+        );
+
+        if (!ownershipCheck.is_owner) {
+          return res.status(403).json({
+            error: "You don't own this vehicle",
+          });
+        }
+      } catch (error) {
+        return res.status(503).json({
+          error: "Could not verify vehicle ownership",
+        });
+      }
 
       if (booking.status !== "return_submitted") {
         return res.status(400).json({
