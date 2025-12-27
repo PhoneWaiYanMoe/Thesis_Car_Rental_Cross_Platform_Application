@@ -138,6 +138,35 @@ services:
     networks:
       - wiz-network
 
+    # ==================== VEHICLE SERVICE ====================
+  vehicle-service:
+    build: ./vehicle-service
+    container_name: wiz-vehicle-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+      - "50055:50055"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_vehicle
+      - PORT=3002
+      - GRPC_PORT=50055
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3002
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_GRPC_URL=user-service:50053
+      - REVIEW_SERVICE_GRPC_URL=review-service:50054
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./vehicle-service/src:/app/src
+    networks:
+      - wiz-network
+
   # ==================== BOOKING SERVICE ====================
   booking-service:
     build: ./booking-service
