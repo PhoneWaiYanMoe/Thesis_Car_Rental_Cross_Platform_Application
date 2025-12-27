@@ -1,3 +1,5 @@
+// Replace the content in bottom_nav_bar.dart
+
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/utils/app_routes.dart';
@@ -24,8 +26,9 @@ class ButtonNavBar extends StatelessWidget {
             AppRoutes.navigateTo(context, AppRoutes.home);
           } else if (index == 1) {
             AppRoutes.navigateTo(context, AppRoutes.rentalHistory);
-          }
-           else if (index == 3) {
+          } else if (index == 2) {
+            AppRoutes.navigateTo(context, AppRoutes.chatList);
+          } else if (index == 3) {
             AppRoutes.navigateTo(context, AppRoutes.profile);
           }
         },

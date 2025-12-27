@@ -378,22 +378,27 @@ class BookingData {
     return DateTime(year, month, day);
   }
 
+  // Replace the getSampleBookings method in booking_data.dart
+
   static List<BookingData> getSampleBookings() {
+    // Ensure we don't exceed the available cars
+    final availableCars = Car.sampleCars.length;
+
     return [
       BookingData(
         id: 1,
-        mode: 'Self Drive', // Assumed; adjust based on actual data
+        mode: 'Self Drive',
         withDriver: false,
-        location: 'Hanoi', // Assumed; adjust as needed
+        location: 'Hanoi',
         datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
         startDate: DateTime(2025, 10, 12),
         endDate: DateTime(2025, 10, 14),
         days: 3,
-        car: Car.sampleCars[0], // Assumes sampleCars[0] is 'BMW X1 2020'
+        car: Car.sampleCars[0],
         carIndex: 0,
         status: BookingStatus.completed,
         price: '2,000,000 VND',
-        date: 'Oct 25, 2025', // Kept as in original sample (note: doesn't match datetime; update if needed)
+        date: 'Oct 25, 2025',
         duration: '2 Days',
         rated: true,
         renterName: 'Jaes Myott',
@@ -411,14 +416,14 @@ class BookingData {
       ),
       BookingData(
         id: 2,
-        mode: 'Self Drive', // Assumed
+        mode: 'Self Drive',
         withDriver: false,
-        location: 'Hanoi', // Assumed
+        location: 'Hanoi',
         datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
         startDate: DateTime(2025, 10, 12),
         endDate: DateTime(2025, 10, 14),
         days: 3,
-        car: Car.sampleCars[1], // Assumes sampleCars[1] is 'Toyota RAV4 2020'
+        car: Car.sampleCars[1],
         carIndex: 1,
         status: BookingStatus.completed,
         price: '2,000,000 VND',
@@ -428,68 +433,72 @@ class BookingData {
       ),
       BookingData(
         id: 3,
-        mode: 'Self Drive', // Assumed
+        mode: 'Self Drive',
         withDriver: false,
-        location: 'Hanoi', // Assumed
+        location: 'Hanoi',
         datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
         startDate: DateTime(2025, 10, 12),
         endDate: DateTime(2025, 10, 14),
         days: 3,
-        car: Car.sampleCars[2], // Assumes sampleCars[2] is 'Honda HR-V 2020'
+        car: Car.sampleCars[2],
         carIndex: 2,
         status: BookingStatus.cancelled,
         price: '2,000,000 VND',
         date: 'Oct 25, 2025',
         duration: '2 Days',
       ),
-      BookingData(
-        id: 4,
-        mode: 'Self Drive', // Assumed
-        withDriver: false,
-        location: 'Hanoi', // Assumed
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[3], // Assumes sampleCars[3] is 'Honda HR-V 2020'
-        carIndex: 3,
-        status: BookingStatus.pending,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-      ),
-      BookingData(
-        id: 5,
-        mode: 'Self Drive', // Assumed
-        withDriver: false,
-        location: 'Hanoi', // Assumed
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[4], // Assumes sampleCars[4] is 'Hyundai Tucson'
-        carIndex: 4,
-        status: BookingStatus.confirmed,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-      ),
-      BookingData(
-        id: 6,
-        mode: 'Self Drive', // Assumed
-        withDriver: false,
-        location: 'Hanoi', // Assumed
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[5], // Assumes sampleCars[5] is 'Mercedes-Benz GLA'
-        carIndex: 5,
-        status: BookingStatus.onJourney,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-      ),
+      // Only add more if we have more cars available
+      if (availableCars > 3)
+        BookingData(
+          id: 4,
+          mode: 'Self Drive',
+          withDriver: false,
+          location: 'Hanoi',
+          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+          startDate: DateTime(2025, 10, 12),
+          endDate: DateTime(2025, 10, 14),
+          days: 3,
+          car: Car.sampleCars[3],
+          carIndex: 3,
+          status: BookingStatus.pending,
+          price: '2,000,000 VND',
+          date: 'Oct 25, 2025',
+          duration: '2 Days',
+        ),
+      if (availableCars > 4)
+        BookingData(
+          id: 5,
+          mode: 'Self Drive',
+          withDriver: false,
+          location: 'Hanoi',
+          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+          startDate: DateTime(2025, 10, 12),
+          endDate: DateTime(2025, 10, 14),
+          days: 3,
+          car: Car.sampleCars[4],
+          carIndex: 4,
+          status: BookingStatus.confirmed,
+          price: '2,000,000 VND',
+          date: 'Oct 25, 2025',
+          duration: '2 Days',
+        ),
+      if (availableCars > 5)
+        BookingData(
+          id: 6,
+          mode: 'Self Drive',
+          withDriver: false,
+          location: 'Hanoi',
+          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
+          startDate: DateTime(2025, 10, 12),
+          endDate: DateTime(2025, 10, 14),
+          days: 3,
+          car: Car.sampleCars[5],
+          carIndex: 5,
+          status: BookingStatus.onJourney,
+          price: '2,000,000 VND',
+          date: 'Oct 25, 2025',
+          duration: '2 Days',
+        ),
     ];
   }
 }

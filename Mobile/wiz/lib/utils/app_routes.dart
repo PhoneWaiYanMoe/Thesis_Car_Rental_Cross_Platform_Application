@@ -15,6 +15,9 @@ import 'package:wiz/screens/Booking/views/rental_history_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
+import 'package:wiz/screens/Chat/models/chat_data.dart';
+import 'package:wiz/screens/Chat/views/chat_detail_screen.dart';
+import 'package:wiz/screens/Chat/views/chat_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Location/views/location_search_screen.dart';
@@ -43,7 +46,8 @@ class AppRoutes {
   static const String photoSubmission = '/photo-submission';
   static const String rentalDetails = '/rental-details';
   static const String rateReview = '/rate-review';
-
+  static const String chatList = '/chat-list';
+  static const String chatDetail = '/chat-detail';
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
@@ -74,7 +78,6 @@ class AppRoutes {
         final args = settings.arguments as String?;
         return MaterialPageRoute(builder: (_) => LocationSearchScreen(title: args ?? 'Search Location'));
 
-  
       case cars:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
@@ -113,10 +116,7 @@ class AppRoutes {
               : BookingData.fromMap(args['booking'] as Map<String, dynamic>);
           final isStartJourney = args['isStartJourney'] as bool;
           return MaterialPageRoute(
-            builder: (_) => PhotoSubmissionScreen(
-              booking: booking,
-              isStartJourney: isStartJourney,
-            ),
+            builder: (_) => PhotoSubmissionScreen(booking: booking, isStartJourney: isStartJourney),
           );
         }
         return null;
@@ -131,9 +131,7 @@ class AppRoutes {
           } else {
             booking = BookingData.fromMap(args);
           }
-          return MaterialPageRoute(
-            builder: (_) => RentalDetailsScreen(booking: booking),
-          );
+          return MaterialPageRoute(builder: (_) => RentalDetailsScreen(booking: booking));
         }
         return null;
       case rateReview:
@@ -147,9 +145,18 @@ class AppRoutes {
           } else {
             booking = BookingData.fromMap(args);
           }
-          return MaterialPageRoute(
-            builder: (_) => RateReviewScreen(booking: booking),
-          );
+          return MaterialPageRoute(builder: (_) => RateReviewScreen(booking: booking));
+        }
+        return null;
+
+      case chatList:
+        return MaterialPageRoute(builder: (_) => const ChatListScreen());
+
+      case chatDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('chat')) {
+          final chat = args['chat'] is ChatData ? args['chat'] as ChatData : throw ArgumentError('Invalid chat data');
+          return MaterialPageRoute(builder: (_) => ChatDetailScreen(chat: chat));
         }
         return null;
 
@@ -172,11 +179,7 @@ class AppRoutes {
 
   // Helper methods for booking-related navigation
   static Future<BookingData?> navigateToRentalDetails(BuildContext context, BookingData booking) {
-    return Navigator.pushNamed<BookingData>(
-      context,
-      rentalDetails,
-      arguments: {'booking': booking},
-    );
+    return Navigator.pushNamed<BookingData>(context, rentalDetails, arguments: {'booking': booking});
   }
 
   static Future<BookingData?> navigateToPhotoSubmission(
@@ -187,18 +190,15 @@ class AppRoutes {
     return Navigator.pushNamed<BookingData>(
       context,
       photoSubmission,
-      arguments: {
-        'booking': booking,
-        'isStartJourney': isStartJourney,
-      },
+      arguments: {'booking': booking, 'isStartJourney': isStartJourney},
     );
   }
 
   static Future<BookingData?> navigateToRateReview(BuildContext context, BookingData booking) {
-    return Navigator.pushNamed<BookingData>(
-      context,
-      rateReview,
-      arguments: {'booking': booking},
-    );
+    return Navigator.pushNamed<BookingData>(context, rateReview, arguments: {'booking': booking});
+  }
+
+  static Future<dynamic> navigateToChatDetail(BuildContext context, ChatData chat) {
+    return Navigator.pushNamed(context, chatDetail, arguments: {'chat': chat});
   }
 }
