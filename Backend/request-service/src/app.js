@@ -1,25 +1,58 @@
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+
+const pool = require("./config/database");
+const rabbitmqConnection = require("./config/rabbitmq");
+const { Request, RequestAction } = require("./models/Request");
+const requestRoutes = require("./routes/request.routes");
 
 const app = express();
-const PORT = process.env.PORT || 3010;
 
-// Middleware to parse JSON
+// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Root route
-app.get("/", (req, res) => {
+app.use("/", requestRoutes);
+
+// Health check
+app.get("/health", (req, res) => {
   res.json({
-    message: "Request service is running on the server port 3010.",
+    status: "OK",
+    service: "request-service",
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Example API route
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "OK" });
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Create tables
+    await Request.createTable();
+    await RequestAction.createTable();
+
+    // Connect to RabbitMQ
+    await rabbitmqConnection.connect();
+
+    const PORT = process.env.PORT || 3010;
+    app.listen(PORT, () => {
+      console.log(`Request Service running on port ${PORT}`);
+      console.log(`Base URL: http://localhost:${PORT}/`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  console.log("SIGTERM received, closing connections...");
+  await pool.end();
+  await rabbitmqConnection.close();
+  process.exit(0);
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+startServer();
+
+module.exports = app;
