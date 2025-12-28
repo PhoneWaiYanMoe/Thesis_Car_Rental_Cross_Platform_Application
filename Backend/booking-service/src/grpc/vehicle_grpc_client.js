@@ -77,6 +77,67 @@ class VehicleGrpcClient {
       );
     });
   }
+
+  // ✅ NEW: Check vehicle availability for dates
+  checkAvailability(vehicleId, startDate, endDate) {
+    return new Promise((resolve, reject) => {
+      this.client.CheckAvailability(
+        {
+          vehicle_id: vehicleId,
+          start_date: startDate,
+          end_date: endDate,
+        },
+        (error, response) => {
+          if (error) {
+            console.error("❌ gRPC checkAvailability error:", error);
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  // ✅ NEW: Sync booking to vehicle unavailability
+  syncUnavailability(vehicleId, startDate, endDate, bookingId, action) {
+    return new Promise((resolve, reject) => {
+      this.client.SyncUnavailability(
+        {
+          vehicle_id: vehicleId,
+          start_date: startDate,
+          end_date: endDate,
+          booking_id: bookingId,
+          action: action, // 'add' or 'remove'
+        },
+        (error, response) => {
+          if (error) {
+            console.error("❌ gRPC syncUnavailability error:", error);
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  // ✅ NEW: Increment total rentals
+  incrementTotalRentals(vehicleId) {
+    return new Promise((resolve, reject) => {
+      this.client.IncrementTotalRentals(
+        { vehicle_id: vehicleId },
+        (error, response) => {
+          if (error) {
+            console.error("❌ gRPC incrementTotalRentals error:", error);
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
 }
 
 module.exports = new VehicleGrpcClient();

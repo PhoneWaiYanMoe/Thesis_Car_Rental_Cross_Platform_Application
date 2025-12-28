@@ -1,3 +1,6 @@
+
+// (Copy to both locations)
+
 syntax = "proto3";
 
 package vehicle;
@@ -14,6 +17,15 @@ service VehicleService {
   
   // Update vehicle rating after review
   rpc UpdateVehicleRating(UpdateVehicleRatingRequest) returns (UpdateVehicleRatingResponse);
+
+  // ✅ NEW: Check availability for dates
+  rpc CheckAvailability(CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
+
+  // ✅ NEW: Sync booking to unavailability
+  rpc SyncUnavailability(SyncUnavailabilityRequest) returns (SyncUnavailabilityResponse);
+
+  // ✅ NEW: Increment total rentals
+  rpc IncrementTotalRentals(IncrementTotalRentalsRequest) returns (IncrementTotalRentalsResponse);
 }
 
 message GetVehicleInfoRequest {
@@ -70,4 +82,48 @@ message UpdateVehicleRatingResponse {
   bool success = 1;
   string message = 2;
   double updated_rating = 3;
+}
+
+// ✅ NEW MESSAGES
+
+message CheckAvailabilityRequest {
+  string vehicle_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+message CheckAvailabilityResponse {
+  bool is_available = 1;
+  string message = 2;
+  repeated UnavailablePeriod unavailable_periods = 3;
+}
+
+message UnavailablePeriod {
+  string start_date = 1;
+  string end_date = 2;
+  string reason = 3;
+  string booking_id = 4;
+}
+
+message SyncUnavailabilityRequest {
+  string vehicle_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+  string booking_id = 4;
+  string action = 5; // "add" or "remove"
+}
+
+message SyncUnavailabilityResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message IncrementTotalRentalsRequest {
+  string vehicle_id = 1;
+}
+
+message IncrementTotalRentalsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 new_total = 3;
 }

@@ -5,6 +5,42 @@ const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
 class BookingController {
   // ==================== VERIFICATION MANAGEMENT ====================
+  async syncVehicleUnavailability(
+    vehicleId,
+    startDate,
+    endDate,
+    bookingId,
+    action = "add"
+  ) {
+    try {
+      const response = await vehicleGrpcClient.syncUnavailability(
+        vehicleId,
+        startDate,
+        endDate,
+        bookingId,
+        action
+      );
+      console.log(
+        `✅ Vehicle unavailability ${action}: ${vehicleId} (${startDate} to ${endDate})`
+      );
+      return response;
+    } catch (error) {
+      console.error(
+        `⚠️  Could not sync vehicle unavailability: ${error.message}`
+      );
+      // Don't fail the booking if sync fails
+      return null;
+    }
+  }
+
+  async incrementTotalRentals(vehicleId) {
+    try {
+      await vehicleGrpcClient.incrementTotalRentals(vehicleId);
+      console.log(`✅ Incremented total rentals for vehicle: ${vehicleId}`);
+    } catch (error) {
+      console.error(`⚠️  Could not increment total rentals: ${error.message}`);
+    }
+  }
 
   async getMyVerification(req, res, next) {
     try {
@@ -234,6 +270,25 @@ class BookingController {
         return res.status(400).json({ error: "Cannot book your own vehicle" });
       }
 
+      // ✅ FIX BUG 3: CHECK VEHICLE AVAILABILITY VIA GRPC
+      try {
+        const availability = await vehicleGrpcClient.checkAvailability(
+          vehicleId,
+          startDate,
+          endDate
+        );
+
+        if (!availability.is_available) {
+          return res.status(400).json({
+            error: "Vehicle is not available for selected dates",
+            unavailablePeriods: availability.unavailable_periods,
+          });
+        }
+      } catch (error) {
+        console.warn("⚠️  Could not check availability:", error.message);
+        // Continue - availability check is recommended but not blocking
+      }
+
       // Calculate pricing using vehicle info from gRPC
       const rentalPrice = vehicle.price_per_day * days;
       const insuranceFee = Math.round(rentalPrice * (insuranceCoverage / 100));
@@ -277,6 +332,15 @@ class BookingController {
       );
 
       await client.query("COMMIT");
+
+      // ✅ FIX BUG 3: SYNC TO VEHICLE UNAVAILABILITY
+      await this.syncVehicleUnavailability(
+        vehicleId,
+        startDate,
+        endDate,
+        bookingId,
+        "add"
+      );
 
       console.log(`✅ Booking created: ${bookingId}`);
 
@@ -630,7 +694,6 @@ class BookingController {
       client.release();
     }
   }
-
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -754,6 +817,15 @@ class BookingController {
       );
 
       await client.query("COMMIT");
+
+      // ✅ FIX BUG 3: REMOVE FROM VEHICLE UNAVAILABILITY
+      await this.syncVehicleUnavailability(
+        booking.vehicle_id,
+        booking.start_date,
+        booking.end_date,
+        id,
+        "remove"
+      );
 
       res.json({
         message: "Booking cancelled successfully",

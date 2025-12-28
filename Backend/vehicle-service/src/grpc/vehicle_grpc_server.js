@@ -1,3 +1,4 @@
+// Backend/vehicle-service/src/grpc/vehicle_grpc_server.js
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
@@ -18,6 +19,8 @@ class VehicleGrpcServer {
   constructor() {
     this.server = new grpc.Server();
   }
+
+  // ... existing methods (getVehicleInfo, getVehiclesInfo, checkVehicleOwnership) ...
 
   async getVehicleInfo(call, callback) {
     try {
@@ -158,12 +161,167 @@ class VehicleGrpcServer {
     }
   }
 
+  // ✅ NEW: Check availability
+  async checkAvailability(call, callback) {
+    try {
+      const { vehicle_id, start_date, end_date } = call.request;
+
+      // Check vehicle exists and is active
+      const vehicleResult = await pool.query(
+        "SELECT vehicle_id, name FROM vehicles WHERE vehicle_id = $1 AND status = 'active'",
+        [vehicle_id]
+      );
+
+      if (vehicleResult.rows.length === 0) {
+        return callback(null, {
+          is_available: false,
+          message: "Vehicle not found or not available",
+          unavailable_periods: [],
+        });
+      }
+
+      // Check unavailability periods
+      const unavailableResult = await pool.query(
+        `SELECT start_date, end_date, reason 
+         FROM vehicle_unavailability 
+         WHERE vehicle_id = $1 
+         AND (
+           (start_date <= $2 AND end_date >= $2) OR
+           (start_date <= $3 AND end_date >= $3) OR
+           (start_date >= $2 AND end_date <= $3)
+         )`,
+        [vehicle_id, start_date, end_date]
+      );
+
+      const isAvailable = unavailableResult.rows.length === 0;
+
+      callback(null, {
+        is_available: isAvailable,
+        message: isAvailable
+          ? "Vehicle is available"
+          : "Vehicle is not available for selected dates",
+        unavailable_periods: unavailableResult.rows.map((period) => ({
+          start_date: period.start_date.toISOString().split("T")[0],
+          end_date: period.end_date.toISOString().split("T")[0],
+          reason: period.reason || "Booked",
+          booking_id: "",
+        })),
+      });
+    } catch (error) {
+      console.error("❌ gRPC checkAvailability error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
+  // ✅ NEW: Sync unavailability
+  async syncUnavailability(call, callback) {
+    try {
+      const { vehicle_id, start_date, end_date, booking_id, action } =
+        call.request;
+
+      if (action === "add") {
+        // Add unavailability period
+        await pool.query(
+          `INSERT INTO vehicle_unavailability (vehicle_id, start_date, end_date, reason)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT DO NOTHING`,
+          [vehicle_id, start_date, end_date, `Booking: ${booking_id}`]
+        );
+
+        console.log(
+          `✅ Added unavailability for vehicle ${vehicle_id}: ${start_date} to ${end_date}`
+        );
+
+        callback(null, {
+          success: true,
+          message: "Unavailability period added",
+        });
+      } else if (action === "remove") {
+        // Remove unavailability period
+        await pool.query(
+          `DELETE FROM vehicle_unavailability 
+           WHERE vehicle_id = $1 
+           AND start_date = $2 
+           AND end_date = $3`,
+          [vehicle_id, start_date, end_date]
+        );
+
+        console.log(
+          `✅ Removed unavailability for vehicle ${vehicle_id}: ${start_date} to ${end_date}`
+        );
+
+        callback(null, {
+          success: true,
+          message: "Unavailability period removed",
+        });
+      } else {
+        callback({
+          code: grpc.status.INVALID_ARGUMENT,
+          message: "Action must be 'add' or 'remove'",
+        });
+      }
+    } catch (error) {
+      console.error("❌ gRPC syncUnavailability error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
+  // ✅ NEW: Increment total rentals
+  async incrementTotalRentals(call, callback) {
+    try {
+      const { vehicle_id } = call.request;
+
+      const result = await pool.query(
+        `UPDATE vehicles 
+         SET total_rentals = total_rentals + 1,
+             updated_at = NOW()
+         WHERE vehicle_id = $1
+         RETURNING total_rentals`,
+        [vehicle_id]
+      );
+
+      if (result.rows.length === 0) {
+        return callback({
+          code: grpc.status.NOT_FOUND,
+          message: "Vehicle not found",
+        });
+      }
+
+      const newTotal = result.rows[0].total_rentals;
+
+      console.log(
+        `✅ Incremented total rentals for vehicle ${vehicle_id} to ${newTotal}`
+      );
+
+      callback(null, {
+        success: true,
+        message: "Total rentals incremented",
+        new_total: newTotal,
+      });
+    } catch (error) {
+      console.error("❌ gRPC incrementTotalRentals error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
   start(port = 50055) {
     this.server.addService(vehicleProto.VehicleService.service, {
       GetVehicleInfo: this.getVehicleInfo.bind(this),
       GetVehiclesInfo: this.getVehiclesInfo.bind(this),
       CheckVehicleOwnership: this.checkVehicleOwnership.bind(this),
       UpdateVehicleRating: this.updateVehicleRating.bind(this),
+      CheckAvailability: this.checkAvailability.bind(this),
+      SyncUnavailability: this.syncUnavailability.bind(this),
+      IncrementTotalRentals: this.incrementTotalRentals.bind(this),
     });
 
     this.server.bindAsync(

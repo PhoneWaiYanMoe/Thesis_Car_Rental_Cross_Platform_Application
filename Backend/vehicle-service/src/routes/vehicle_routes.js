@@ -11,12 +11,10 @@ const {
 } = require("../middleware/auth");
 
 // ==================== PUBLIC ROUTES ====================
-// These MUST come first to avoid conflicts with /:id routes
 router.get("/search", vehicleController.searchVehicles);
 router.get("/:id/availability", vehicleController.checkAvailability);
 
 // ==================== OWNER ROUTES ====================
-// Prefixed with /owner to avoid conflicts
 router.get(
   "/owner/my-vehicles",
   authenticate,
@@ -54,6 +52,20 @@ router.post(
   ownerVehicleController.uploadPhotos
 );
 
+// ✅ NEW: Periodic verification routes for owners
+router.post(
+  "/owner/:id/verification",
+  authenticate,
+  requireOwner,
+  ownerVehicleController.submitVerificationPhotos
+);
+router.get(
+  "/owner/:id/verification-status",
+  authenticate,
+  requireOwner,
+  ownerVehicleController.getVerificationStatus
+);
+
 // ==================== ADMIN ROUTES ====================
 router.get(
   "/admin/vehicles",
@@ -80,9 +92,33 @@ router.post(
   adminVehicleController.rejectVehicle
 );
 
+// ✅ NEW: Periodic verification routes for admins
+router.get(
+  "/admin/verifications/due",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getVehiclesDueForVerification
+);
+router.get(
+  "/admin/verifications/pending",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getPendingVerifications
+);
+router.post(
+  "/admin/verifications/:id/approve",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.approveVerification
+);
+router.post(
+  "/admin/verifications/:id/reject",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.rejectVerification
+);
+
 // ==================== PUBLIC DETAIL ROUTE ====================
-// This MUST come LAST to avoid matching "search", "owner", "admin" as IDs
 router.get("/:id", vehicleController.getVehicleById);
 
 module.exports = router;
-  

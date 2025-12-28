@@ -304,7 +304,7 @@ class OwnerBookingController {
     }
   }
 
-  async confirmReturn(req, res, next) {
+async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
     try {
@@ -405,6 +405,31 @@ class OwnerBookingController {
 
       await client.query("COMMIT");
 
+      // ✅ FIX: INCREMENT TOTAL RENTALS WHEN COMPLETED
+      if (action === "complete") {
+        try {
+          await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
+          console.log(`✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`);
+        } catch (error) {
+          console.error(`⚠️  Could not increment total rentals: ${error.message}`);
+          // Don't fail the completion if increment fails
+        }
+
+        // Also remove from unavailability since rental is complete
+        try {
+          await vehicleGrpcClient.syncUnavailability(
+            booking.vehicle_id,
+            booking.start_date,
+            booking.end_date,
+            id,
+            'remove'
+          );
+          console.log(`✅ Removed completed booking from unavailability`);
+        } catch (error) {
+          console.error(`⚠️  Could not sync unavailability: ${error.message}`);
+        }
+      }
+
       console.log(
         `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`
       );
@@ -424,6 +449,7 @@ class OwnerBookingController {
       client.release();
     }
   }
+
 }
 
 module.exports = new OwnerBookingController();

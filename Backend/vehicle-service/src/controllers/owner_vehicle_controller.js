@@ -412,6 +412,141 @@ class OwnerVehicleController {
       client.release();
     }
   }
+   async submitVerificationPhotos(req, res, next) {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const userId = req.user.userId;
+      const { id } = req.params; // vehicle_id
+      const { photoUrls } = req.body;
+
+      if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length < 3) {
+        return res.status(400).json({
+          error: "Please provide at least 3 verification photos",
+        });
+      }
+
+      // Verify ownership
+      const vehicleResult = await client.query(
+        "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
+        [id, userId]
+      );
+
+      if (vehicleResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Vehicle not found or you don't own this vehicle",
+        });
+      }
+
+      const vehicle = vehicleResult.rows[0];
+
+      // Check if verification is needed
+      const now = new Date();
+      const nextDue = new Date(vehicle.next_verification_due);
+
+      if (nextDue > now) {
+        const daysUntilDue = Math.ceil((nextDue - now) / (1000 * 60 * 60 * 24));
+        return res.status(400).json({
+          error: `Verification not due yet. Next verification due in ${daysUntilDue} days.`,
+          nextVerificationDue: vehicle.next_verification_due,
+        });
+      }
+
+      // Insert verification submission
+      const verificationId = uuidv4();
+      await client.query(
+        `INSERT INTO vehicle_verification_photos 
+         (verification_id, vehicle_id, photo_urls, verification_status)
+         VALUES ($1, $2, $3, 'pending')`,
+        [verificationId, id, JSON.stringify(photoUrls)]
+      );
+
+      // Update vehicle verification status
+      await client.query(
+        `UPDATE vehicles 
+         SET verification_status = 'pending',
+             updated_at = NOW()
+         WHERE vehicle_id = $1`,
+        [id]
+      );
+
+      await client.query("COMMIT");
+
+      console.log(
+        `✅ Owner ${userId} submitted verification photos for vehicle: ${id}`
+      );
+
+      res.status(201).json({
+        message:
+          "Verification photos submitted successfully. Pending admin review.",
+        verificationId: verificationId,
+        status: "pending",
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Submit verification photos error:", error);
+      next(error);
+    } finally {
+      client.release();
+    }
+  }
+    async getVerificationStatus(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+
+      const vehicleResult = await pool.query(
+        "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
+        [id, userId]
+      );
+
+      if (vehicleResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Vehicle not found or you don't own this vehicle",
+        });
+      }
+
+      const vehicle = vehicleResult.rows[0];
+      const now = new Date();
+      const nextDue = new Date(vehicle.next_verification_due);
+      const daysUntilDue = Math.ceil((nextDue - now) / (1000 * 60 * 60 * 24));
+
+      // Get latest verification submission
+      const latestVerification = await pool.query(
+        `SELECT * FROM vehicle_verification_photos 
+         WHERE vehicle_id = $1 
+         ORDER BY submitted_at DESC 
+         LIMIT 1`,
+        [id]
+      );
+
+      res.json({
+        vehicleId: id,
+        verificationStatus: vehicle.verification_status,
+        lastVerified: vehicle.last_verified_at,
+        nextVerificationDue: vehicle.next_verification_due,
+        daysUntilDue: daysUntilDue,
+        isOverdue: daysUntilDue < 0,
+        needsVerification: daysUntilDue <= 7,
+        latestSubmission:
+          latestVerification.rows.length > 0
+            ? {
+                id: latestVerification.rows[0].verification_id,
+                submittedAt: latestVerification.rows[0].submitted_at,
+                status: latestVerification.rows[0].verification_status,
+                verifiedAt: latestVerification.rows[0].verified_at,
+                notes: latestVerification.rows[0].notes,
+              }
+            : null,
+      });
+    } catch (error) {
+      console.error("Get verification status error:", error);
+      next(error);
+    }
+  }
+
 }
 
 module.exports = new OwnerVehicleController();
