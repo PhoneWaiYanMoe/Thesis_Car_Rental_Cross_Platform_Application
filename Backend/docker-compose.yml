@@ -186,6 +186,7 @@ services:
       - NODE_ENV=development
       - BASE_URL=http://localhost:3004
       - JWT_SECRET=${JWT_SECRET}
+      # ✅ FIX: Use service names for gRPC URLs
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - USER_SERVICE_GRPC_URL=user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
@@ -219,11 +220,17 @@ services:
       - NODE_ENV=development
       - BASE_URL=http://localhost:3005
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
+      # ✅ FIX: Use service names for gRPC URLs
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
       - USER_SERVICE_GRPC_URL=user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
     depends_on:
       mongodb:
         condition: service_healthy
+      booking-service:
+        condition: service_started
+      vehicle-service:
+        condition: service_started
     volumes:
       - ./review-service/src:/app/src
     networks:

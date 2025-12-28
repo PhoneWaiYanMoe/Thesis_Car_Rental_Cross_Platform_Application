@@ -1,8 +1,8 @@
+// Backend/review-service/src/grpc/booking_grpc_client.js
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
 
-// You'll need to copy booking.proto from booking-service
 const PROTO_PATH = path.join(__dirname, "../../proto/booking.proto");
 
 class BookingGrpcClient {
@@ -16,10 +16,12 @@ class BookingGrpcClient {
         oneofs: true,
       });
 
-      const bookingProto = grpc.loadPackageDefinition(packageDefinition).booking;
+      const bookingProto =
+        grpc.loadPackageDefinition(packageDefinition).booking;
 
+      // ✅ FIX: Use environment variable with proper default
       const bookingServiceUrl =
-        process.env.BOOKING_SERVICE_GRPC_URL || "localhost:50052";
+        process.env.BOOKING_SERVICE_GRPC_URL || "booking-service:50052";
 
       this.client = new bookingProto.BookingService(
         bookingServiceUrl,
@@ -28,12 +30,15 @@ class BookingGrpcClient {
 
       console.log(`📡 Booking gRPC client connected to ${bookingServiceUrl}`);
     } catch (error) {
-      console.error("❌ Failed to initialize Booking gRPC client:", error.message);
+      console.error(
+        "❌ Failed to initialize Booking gRPC client:",
+        error.message
+      );
       this.client = null;
     }
   }
 
-  // Verify booking exists and is completed
+  // ✅ FIX: Rename to match the proto definition
   async verifyBooking(bookingId, userId) {
     if (!this.client) {
       console.warn("⚠️  Booking gRPC client not available");

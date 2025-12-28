@@ -4,7 +4,8 @@ const { v4: uuidv4 } = require("uuid");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
 class BookingController {
-  // ==================== VERIFICATION MANAGEMENT ====================
+  // ==================== HELPER FUNCTIONS ====================
+
   async syncVehicleUnavailability(
     vehicleId,
     startDate,
@@ -28,7 +29,6 @@ class BookingController {
       console.error(
         `⚠️  Could not sync vehicle unavailability: ${error.message}`
       );
-      // Don't fail the booking if sync fails
       return null;
     }
   }
@@ -41,6 +41,8 @@ class BookingController {
       console.error(`⚠️  Could not increment total rentals: ${error.message}`);
     }
   }
+
+  // ==================== VERIFICATION ROUTES ====================
 
   async getMyVerification(req, res, next) {
     try {
@@ -270,7 +272,7 @@ class BookingController {
         return res.status(400).json({ error: "Cannot book your own vehicle" });
       }
 
-      // ✅ FIX BUG 3: CHECK VEHICLE AVAILABILITY VIA GRPC
+      // CHECK VEHICLE AVAILABILITY VIA GRPC
       try {
         const availability = await vehicleGrpcClient.checkAvailability(
           vehicleId,
@@ -286,10 +288,9 @@ class BookingController {
         }
       } catch (error) {
         console.warn("⚠️  Could not check availability:", error.message);
-        // Continue - availability check is recommended but not blocking
       }
 
-      // Calculate pricing using vehicle info from gRPC
+      // Calculate pricing
       const rentalPrice = vehicle.price_per_day * days;
       const insuranceFee = Math.round(rentalPrice * (insuranceCoverage / 100));
       const total = rentalPrice + insuranceFee;
@@ -333,7 +334,7 @@ class BookingController {
 
       await client.query("COMMIT");
 
-      // ✅ FIX BUG 3: SYNC TO VEHICLE UNAVAILABILITY
+      // SYNC TO VEHICLE UNAVAILABILITY
       await this.syncVehicleUnavailability(
         vehicleId,
         startDate,
@@ -622,9 +623,6 @@ class BookingController {
     }
   }
 
-  // ... rest of the methods (confirmPickup, confirmReturn, cancelBooking, signContract) remain the same
-  // They don't need vehicle info so no changes needed
-
   async confirmPickup(req, res, next) {
     const client = await pool.connect();
 
@@ -694,6 +692,7 @@ class BookingController {
       client.release();
     }
   }
+
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -727,7 +726,7 @@ class BookingController {
 
       if (booking.status !== "picked_up") {
         return res.status(400).json({
-          error: `Cannot confirm return. Current status: ${booking.status}`,
+          error: `Cannot confirm return. Current status: ${booking.status}. Expected: picked_up`,
         });
       }
 
@@ -818,7 +817,7 @@ class BookingController {
 
       await client.query("COMMIT");
 
-      // ✅ FIX BUG 3: REMOVE FROM VEHICLE UNAVAILABILITY
+      // Remove from vehicle unavailability
       await this.syncVehicleUnavailability(
         booking.vehicle_id,
         booking.start_date,

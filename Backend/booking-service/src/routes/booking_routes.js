@@ -9,18 +9,37 @@ const { validateBooking } = require("../middleware/validation");
 router.use(authenticate);
 
 // ==================== VERIFICATION ROUTES ====================
-router.get("/verification/me", bookingController.getMyVerification);
-router.post("/verification", bookingController.uploadVerification);
+router.get("/verification/me", (req, res, next) =>
+  bookingController.getMyVerification(req, res, next)
+);
+router.post("/verification", (req, res, next) =>
+  bookingController.uploadVerification(req, res, next)
+);
 
 // ==================== BOOKING ROUTES ====================
-router.post("/", validateBooking, bookingController.createBooking);
-router.get("/my-bookings", bookingController.getMyBookings);
-router.get("/:id", bookingController.getBookingById);
+// ✅ FIX: Wrap in arrow functions to preserve 'this' context
+router.post("/", validateBooking, (req, res, next) =>
+  bookingController.createBooking(req, res, next)
+);
+router.get("/my-bookings", (req, res, next) =>
+  bookingController.getMyBookings(req, res, next)
+);
+router.get("/:id", (req, res, next) =>
+  bookingController.getBookingById(req, res, next)
+);
 
 // ==================== BOOKING ACTIONS ====================
-router.post("/:id/sign-contract", bookingController.signContract);
-router.post("/:id/confirm-pickup", bookingController.confirmPickup);
-router.post("/:id/confirm-return", bookingController.confirmReturn);
-router.post("/:id/cancel", bookingController.cancelBooking);
+router.post("/:id/sign-contract", (req, res, next) =>
+  bookingController.signContract(req, res, next)
+);
+router.post("/:id/confirm-pickup", (req, res, next) =>
+  bookingController.confirmPickup(req, res, next)
+);
+router.post("/:id/confirm-return", (req, res, next) =>
+  bookingController.confirmReturn(req, res, next)
+);
+router.post("/:id/cancel", (req, res, next) =>
+  bookingController.cancelBooking(req, res, next)
+);
 
 module.exports = router;

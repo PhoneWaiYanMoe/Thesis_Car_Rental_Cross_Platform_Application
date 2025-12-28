@@ -2,16 +2,6 @@
 const pool = require("../config/database");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
-// Helper function for incrementing total rentals
-async function incrementTotalRentals(vehicleId) {
-  try {
-    await vehicleGrpcClient.incrementTotalRentals(vehicleId);
-    console.log(`✅ Incremented total rentals for vehicle: ${vehicleId}`);
-  } catch (error) {
-    console.error(`⚠️  Could not increment total rentals: ${error.message}`);
-  }
-}
-
 class OwnerBookingController {
   async getOwnerBookings(req, res, next) {
     try {
@@ -412,9 +402,18 @@ class OwnerBookingController {
 
       await client.query("COMMIT");
 
-      // INCREMENT TOTAL RENTALS WHEN COMPLETED
+      // ✅ INCREMENT TOTAL RENTALS WHEN COMPLETED
       if (action === "complete") {
-        await incrementTotalRentals(booking.vehicle_id);
+        try {
+          await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
+          console.log(
+            `✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`
+          );
+        } catch (error) {
+          console.error(
+            `⚠️  Could not increment total rentals: ${error.message}`
+          );
+        }
 
         // Also remove from unavailability
         try {

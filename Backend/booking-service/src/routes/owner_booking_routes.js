@@ -7,12 +7,18 @@ const { authenticate } = require("../middleware/auth");
 // All routes require authentication
 router.use(authenticate);
 
-// Owner rental request endpoints
-router.get("/bookings", ownerBookingController.getOwnerBookings);
-router.post("/:id/accept", ownerBookingController.acceptBooking);
-router.post("/:id/reject", ownerBookingController.rejectBooking);
-
-// NEW: Owner confirms return (complete or dispute)
-router.post("/:id/confirm-return", ownerBookingController.confirmReturn);
+// ✅ FIX: Wrap in arrow functions to preserve 'this' context
+router.get("/bookings", (req, res, next) =>
+  ownerBookingController.getOwnerBookings(req, res, next)
+);
+router.post("/:id/accept", (req, res, next) =>
+  ownerBookingController.acceptBooking(req, res, next)
+);
+router.post("/:id/reject", (req, res, next) =>
+  ownerBookingController.rejectBooking(req, res, next)
+);
+router.post("/:id/confirm-return", (req, res, next) =>
+  ownerBookingController.confirmReturn(req, res, next)
+);
 
 module.exports = router;
