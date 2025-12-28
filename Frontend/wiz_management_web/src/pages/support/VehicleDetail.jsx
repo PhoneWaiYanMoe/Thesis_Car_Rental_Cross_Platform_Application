@@ -1,46 +1,44 @@
 import React, { useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Car,
   User,
   DollarSign,
-  Calendar,
   MapPin,
-  Settings,
   AlertCircle,
 } from "lucide-react";
-import ConfirmDialog from "../../components/ConfirmDialog";
 import ReviewList from "../../components/ReviewList";
 
-export default function CarDetail({
-  carData,
-  onUpdateCarStatus,
-  userData,
-  reviewData,
-}) {
+export default function VehicleDetail({ carData, userData, reviewData }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const car = carData.find((c) => c.id === id);
 
-  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  const [newStatus, setNewStatus] = useState("");
-  const [showConfirm, setShowConfirm] = useState(false);
-
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const carImages = car ? [car.image, car.image, car.image] : [];
+  const carImages = car ? car.images || [car.image] : [];
 
-  const handleStatusChange = (status) => {
-    setNewStatus(status);
-    setShowConfirm(true);
-  };
-
-  const handleConfirm = () => {
-    onUpdateCarStatus(car.id, newStatus);
-    setShowConfirm(false);
-    setShowStatusUpdate(false);
-  };
+  if (!car) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+            Vehicle Not Found
+          </h2>
+          <p className="text-[#717685] mb-6">
+            The vehicle you're looking for doesn't exist
+          </p>
+          <button
+            onClick={() => navigate("/support/vehicles")}
+            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+          >
+            Back to Vehicles
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -66,13 +64,6 @@ export default function CarDetail({
     <div>
       {/* header */}
       <div className="mb-8">
-        {/* <button
-          onClick={() => navigate("/admin/cars")}
-          className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Cars
-        </button> */}
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
@@ -180,6 +171,16 @@ export default function CarDetail({
                 <p className="text-sm text-[#717685] mb-1">Mileage</p>
                 <p className="font-semibold text-[#131A34]">{car.mileage} km</p>
               </div>
+              <div className="bg-[#F8F9FF] rounded-xl p-4">
+                <p className="text-sm text-[#717685] mb-1">Color</p>
+                <p className="font-semibold text-[#131A34]">{car.color}</p>
+              </div>
+              <div className="bg-[#F8F9FF] rounded-xl p-4">
+                <p className="text-sm text-[#717685] mb-1">License Plate</p>
+                <p className="font-semibold text-[#131A34]">
+                  {car.licensePlate}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -196,6 +197,14 @@ export default function CarDetail({
                 </span>
               ))}
             </div>
+          </div>
+
+          {/* description */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Description
+            </h2>
+            <p className="text-[#131A34] leading-relaxed">{car.description}</p>
           </div>
 
           {/* performance stats */}
@@ -218,7 +227,7 @@ export default function CarDetail({
               </div>
               <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
                 <p className="text-3xl font-bold text-[#6679C0] mb-1">
-                  ${car.price}
+                  {new Intl.NumberFormat("vi-VN").format(car.pricePerDay)} đ
                 </p>
                 <p className="text-sm text-[#717685]">Per Day</p>
               </div>
@@ -228,7 +237,6 @@ export default function CarDetail({
 
         {/* sidebar */}
         <div className="space-y-6">
-          {/* owner info */}
           {/* owner info */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
@@ -258,7 +266,7 @@ export default function CarDetail({
               <button
                 onClick={() => {
                   const owner = userData?.find((u) => u.name === car.ownerName);
-                  if (owner) navigate(`/admin/users/${owner.id}`);
+                  if (owner) navigate(`/support/users/${owner.id}`);
                 }}
                 className="w-full mt-2 px-4 py-2 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
@@ -273,7 +281,9 @@ export default function CarDetail({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[#717685]">Daily Rate</span>
-                <span className="font-bold text-[#131A34]">${car.price}</span>
+                <span className="font-bold text-[#131A34]">
+                  {new Intl.NumberFormat("vi-VN").format(car.pricePerDay)} đ
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#717685]">Insurance</span>
@@ -289,79 +299,10 @@ export default function CarDetail({
               </div>
             </div>
           </div>
-
-          {/* status update */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Update Status
-            </h2>
-
-            {!showStatusUpdate ? (
-              <button
-                onClick={() => setShowStatusUpdate(true)}
-                className="w-full px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-              >
-                Change Car Status
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleStatusChange("normal")}
-                  disabled={car.status === "normal"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    car.status === "normal"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-green-50 text-green-700 hover:bg-green-100"
-                  }`}
-                >
-                  Set as Normal
-                </button>
-                <button
-                  onClick={() => handleStatusChange("stopped")}
-                  disabled={car.status === "stopped"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    car.status === "stopped"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                  }`}
-                >
-                  Set as Stopped
-                </button>
-                <button
-                  onClick={() => handleStatusChange("banned")}
-                  disabled={car.status === "banned"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    car.status === "banned"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-50 text-red-700 hover:bg-red-100"
-                  }`}
-                >
-                  Ban This Car
-                </button>
-                <button
-                  onClick={() => setShowStatusUpdate(false)}
-                  className="w-full px-6 py-3 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* confirmation dialog */}
-      <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirm}
-        title={`Change Status to ${newStatus}?`}
-        message={`Are you sure you want to change this car's status to ${newStatus}? This action will affect the car's availability on the platform.`}
-        type="approve"
-      />
-
-      {/* Reviews Section - Add this new section */}
+      {/* Reviews Section */}
       {reviewData && (
         <div className="mt-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">

@@ -256,38 +256,71 @@ const generateBookings = (users, cars) => {
   });
 };
 
-const generateRequests = (users) => {
-  const titles = [
-    "Yêu cầu xóa tài khoản",
-    "Thay đổi phương thức thanh toán",
-    "Cập nhật tình trạng xe",
-    "Yêu cầu hoàn tiền cho booking đã hủy",
-    "Xác minh giấy tờ xe",
-    "Báo cáo hành vi không phù hợp",
-    "Yêu cầu bồi thường bảo hiểm",
-    "Thay đổi ngày thuê xe",
-    "Vấn đề xác minh tài khoản",
-    "Cần giải quyết tranh chấp",
-    "Không thể tải ảnh xe lên",
-    "Chưa nhận được thanh toán",
-    "Vấn đề đăng nhập ứng dụng",
-    "Yêu cầu cập nhật hồ sơ",
-    "Yêu cầu gia hạn thuê xe",
-  ];
-
-  const categories = [
-    "Xóa tài khoản",
-    "Thanh toán",
-    "Quản lý xe",
-    "Vấn đề booking",
-    "Xác minh",
-    "Báo cáo",
-    "Bảo hiểm",
-    "Thay đổi booking",
-    "Tài khoản",
-    "Tranh chấp",
-    "Kỹ thuật",
-    "Cập nhật hồ sơ",
+const generateRequests = (users, cars, bookings) => {
+  const requestTypes = [
+    {
+      type: "profile_update",
+      title: "Yêu cầu cập nhật hồ sơ",
+      category: "Cập nhật hồ sơ",
+      needsBooking: false,
+      needsVehicle: false,
+    },
+    {
+      type: "vehicle_update",
+      title: "Yêu cầu cập nhật thông tin xe",
+      category: "Quản lý xe",
+      needsBooking: false,
+      needsVehicle: true,
+    },
+    {
+      type: "monthly_confirmation",
+      title: "Xác nhận xe hàng tháng",
+      category: "Xác minh",
+      needsBooking: false,
+      needsVehicle: true,
+    },
+    {
+      type: "booking_photos",
+      title: "Upload ảnh xe trước khi thuê",
+      category: "Vấn đề booking",
+      needsBooking: true,
+      needsVehicle: true,
+    },
+    {
+      type: "booking_issue",
+      title: "Báo cáo vấn đề về booking",
+      category: "Vấn đề booking",
+      needsBooking: true,
+      needsVehicle: true,
+    },
+    {
+      type: "report_review",
+      title: "Báo cáo đánh giá không phù hợp",
+      category: "Báo cáo",
+      needsBooking: false,
+      needsVehicle: false,
+    },
+    {
+      type: "account_deletion",
+      title: "Yêu cầu xóa tài khoản",
+      category: "Xóa tài khoản",
+      needsBooking: false,
+      needsVehicle: false,
+    },
+    {
+      type: "vehicle_deactivate",
+      title: "Yêu cầu tạm ngưng xe",
+      category: "Quản lý xe",
+      needsBooking: false,
+      needsVehicle: true,
+    },
+    {
+      type: "other",
+      title: "Yêu cầu khác",
+      category: "Khác",
+      needsBooking: false, // optional
+      needsVehicle: false, // optional
+    },
   ];
 
   const statuses = ["pending", "approved", "denied"];
@@ -300,17 +333,18 @@ const generateRequests = (users) => {
     ],
     [
       "https://img1.wsimg.com/isteam/ip/6837e201-1f74-479e-8062-2a6019e79045/115.jpg",
-      "https://www.fabcars.in/assets/images/blog/luxury-car-for-your-indian-getaway.jpg",
     ],
     [],
   ];
 
-  return Array.from({ length: 80 }, (_, i) => {
+  return Array.from({ length: 100 }, (_, i) => {
+    const requestType =
+      requestTypes[Math.floor(Math.random() * requestTypes.length)];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     const customer = users[Math.floor(Math.random() * users.length)];
     const createdDate = new Date(
       Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000
-    ); // Last 60 days
+    );
     const handledDate =
       status !== "pending"
         ? new Date(
@@ -318,13 +352,82 @@ const generateRequests = (users) => {
           )
         : null;
 
+    // Get related data based on request type
+    let relatedBooking = null;
+    let relatedVehicle = null;
+    let relatedOwner = null;
+    let relatedCustomer = customer;
+    let reportedReview = null;
+
+    if (
+      requestType.needsBooking ||
+      (requestType.type === "other" && Math.random() > 0.5)
+    ) {
+      const userBookings = bookings.filter(
+        (b) => b.userId === customer.id || b.ownerId === customer.id
+      );
+      if (userBookings.length > 0) {
+        relatedBooking =
+          userBookings[Math.floor(Math.random() * userBookings.length)];
+        relatedVehicle = cars.find((c) => c.id === relatedBooking.carId);
+        relatedOwner = users.find((u) => u.id === relatedBooking.ownerId);
+        relatedCustomer = users.find((u) => u.id === relatedBooking.userId);
+      }
+    } else if (
+      requestType.needsVehicle ||
+      (requestType.type === "other" && Math.random() > 0.5)
+    ) {
+      const ownerCars = cars.filter((c) => c.ownerId === customer.id);
+      if (ownerCars.length > 0) {
+        relatedVehicle =
+          ownerCars[Math.floor(Math.random() * ownerCars.length)];
+        relatedOwner = customer;
+      }
+    }
+
+    if (requestType.type === "report_review") {
+      // This would be a review ID in real scenario
+      reportedReview = `REV-${String(
+        Math.floor(Math.random() * 100) + 1
+      ).padStart(4, "0")}`;
+    }
+
+    const bodyTemplates = {
+      profile_update:
+        "Tôi muốn cập nhật thông tin hồ sơ của mình bao gồm số điện thoại, địa chỉ email và địa chỉ nhà. Vui lòng xử lý yêu cầu này.",
+      vehicle_update: `Tôi cần cập nhật thông tin xe ${
+        relatedVehicle?.name || ""
+      } (${
+        relatedVehicle?.licensePlate || ""
+      }). Cần thay đổi giá thuê và mô tả xe.`,
+      monthly_confirmation: `Xác nhận xe ${relatedVehicle?.name || ""} (${
+        relatedVehicle?.licensePlate || ""
+      }) vẫn đang hoạt động và sẵn sàng cho thuê trong tháng này.`,
+      booking_photos: `Tôi đã nhận xe cho booking ${
+        relatedBooking?.id || ""
+      } và muốn upload ảnh xe trước khi bắt đầu sử dụng.`,
+      booking_issue: `Tôi gặp vấn đề với booking ${
+        relatedBooking?.id || ""
+      } cho xe ${relatedVehicle?.name || ""}. Cần hỗ trợ khẩn cấp.`,
+      report_review: `Tôi muốn báo cáo đánh giá ${
+        reportedReview || ""
+      } vì nội dung không phù hợp và vi phạm quy định.`,
+      account_deletion:
+        "Tôi muốn xóa vĩnh viễn tài khoản của mình và tất cả dữ liệu liên quan. Vui lòng xử lý yêu cầu này.",
+      vehicle_deactivate: `Tôi muốn tạm ngưng cho thuê xe ${
+        relatedVehicle?.name || ""
+      } (${relatedVehicle?.licensePlate || ""}) trong một thời gian.`,
+      other: `Tôi cần hỗ trợ về ${
+        relatedBooking ? `booking ${relatedBooking.id}` : "một vấn đề khác"
+      }. Vui lòng liên hệ lại với tôi.`,
+    };
+
     return {
       id: `REQ-${String(i + 1).padStart(4, "0")}`,
-      title: titles[Math.floor(Math.random() * titles.length)],
-      category: categories[Math.floor(Math.random() * categories.length)],
-      body: `Tôi muốn ${titles[
-        Math.floor(Math.random() * titles.length)
-      ].toLowerCase()}. Đây là vấn đề quan trọng đối với tôi vì nhiều lý do. Vui lòng xử lý yêu cầu này càng sớm càng tốt. Tôi đã đính kèm các tài liệu và ảnh liên quan để quý vị xem xét.`,
+      type: requestType.type,
+      title: requestType.title,
+      category: requestType.category,
+      body: bodyTemplates[requestType.type],
       status: status,
       priority: ["low", "medium", "high"][Math.floor(Math.random() * 3)],
       createdAt: createdDate.toISOString(),
@@ -338,10 +441,25 @@ const generateRequests = (users) => {
           ? "Yêu cầu này không thể được xử lý do vi phạm chính sách hoặc thiếu thông tin. Vui lòng cung cấp thêm tài liệu và gửi lại yêu cầu."
           : null,
       photos: photoSets[Math.floor(Math.random() * photoSets.length)],
-      customerId: customer.id,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
+
+      // Related entities
+      customerId: relatedCustomer?.id,
+      customerName: relatedCustomer?.name,
+      customerEmail: relatedCustomer?.email,
+      customerPhone: relatedCustomer?.phone,
+
+      ownerId: relatedOwner?.id,
+      ownerName: relatedOwner?.name,
+
+      vehicleId: relatedVehicle?.id,
+      vehicleName: relatedVehicle?.name,
+      vehicleLicensePlate: relatedVehicle?.licensePlate,
+
+      bookingId: relatedBooking?.id,
+      bookingTotal: relatedBooking?.total,
+      bookingStatus: relatedBooking?.status,
+
+      reportedReviewId: reportedReview,
     };
   });
 };
@@ -442,17 +560,96 @@ const calculateStaffStats = (staff, requests) => {
     };
   });
 };
+
+const generateReviews = (users, cars, bookings) => {
+  const reviewTexts = [
+    "Xe rất tốt, chủ xe nhiệt tình. Sẽ thuê lại lần sau!",
+    "Dịch vụ tuyệt vời, xe sạch sẽ và đúng mô tả.",
+    "Xe đẹp, chạy êm. Chủ xe thân thiện.",
+    "Rất hài lòng với chuyến đi. Xe chất lượng cao.",
+    "Xe tốt nhưng có một số vấn đề nhỏ về điều hòa.",
+    "Chủ xe rất dễ tính, xe trong tình trạng tốt.",
+    "Giá cả hợp lý, xe chạy tốt. Recommend!",
+    "Xe như mới, rất hài lòng với trải nghiệm thuê xe.",
+    "Giao xe đúng giờ, xe sạch sẽ. Sẽ giới thiệu cho bạn bè.",
+    "Tốt nhưng có thể cải thiện hơn về thời gian giao xe.",
+  ];
+
+  const replies = [
+    "Cảm ơn bạn đã tin tùng sử dụng dịch vụ! Rất vui khi bạn hài lòng.",
+    "Cảm ơn phản hồi của bạn. Chúng tôi sẽ cải thiện dịch vụ tốt hơn.",
+    "Rất vui được phục vụ bạn. Hẹn gặp lại!",
+    "Xin lỗi vì sự bất tiện. Chúng tôi sẽ khắc phục ngay.",
+    "Cảm ơn bạn rất nhiều! Chúc bạn có những chuyến đi an toàn.",
+  ];
+
+  const reviewImages = [
+    "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800",
+    "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800",
+    "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800",
+  ];
+
+  const completedBookings = bookings.filter((b) => b.status === "completed");
+
+  // Generate reviews for about 60% of completed bookings
+  return completedBookings
+    .filter(() => Math.random() > 0.4)
+    .map((booking, i) => {
+      const car = cars.find((c) => c.id === booking.carId);
+      const renter = users.find((u) => u.id === booking.userId);
+      const owner = users.find((u) => u.id === booking.ownerId);
+      const rating = Math.floor(Math.random() * 2) + 4; // 4-5 stars
+      const hasImages = Math.random() > 0.7;
+      const hasReply = Math.random() > 0.5;
+
+      return {
+        id: `REV-${String(i + 1).padStart(4, "0")}`,
+        bookingId: booking.id,
+        carId: booking.carId,
+        carName: car?.name,
+        ownerId: booking.ownerId,
+        ownerName: owner?.name,
+        userId: booking.userId,
+        userName: renter?.name,
+        rating: rating,
+        comment: reviewTexts[Math.floor(Math.random() * reviewTexts.length)],
+        images: hasImages
+          ? [
+              reviewImages[Math.floor(Math.random() * reviewImages.length)],
+              reviewImages[Math.floor(Math.random() * reviewImages.length)],
+            ]
+          : [],
+        helpful: Math.floor(Math.random() * 50),
+        createdAt: new Date(
+          new Date(booking.endDate).getTime() +
+            Math.random() * 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        reply: hasReply
+          ? {
+              comment: replies[Math.floor(Math.random() * replies.length)],
+              repliedAt: new Date(
+                Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+            }
+          : null,
+      };
+    });
+};
+
 // Main export function
 export const generateAllMockData = () => {
   const users = generateUsers();
   const cars = generateCars(users);
   const bookings = generateBookings(users, cars);
-  const requests = generateRequests(users);
+  const reviews = generateReviews(users, cars, bookings);
+  const requests = generateRequests(users, cars, bookings);
   const staff = generateStaff();
+
   return {
     users: calculateUserStats(users, bookings, cars),
     cars: cars,
     bookings: bookings,
+    reviews: reviews,
     requests: requests,
     staff: calculateStaffStats(staff, requests),
   };

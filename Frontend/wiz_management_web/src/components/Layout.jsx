@@ -1,6 +1,15 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, BarChart3, LogOut, User, Calendar } from "lucide-react";
+import {
+  Home,
+  FileText,
+  BarChart3,
+  LogOut,
+  User,
+  Calendar,
+  Users,
+  Car,
+} from "lucide-react";
 
 export default function Layout({ children, user, onLogout }) {
   const navigate = useNavigate();
@@ -10,6 +19,8 @@ export default function Layout({ children, user, onLogout }) {
     { icon: Home, label: "Dashboard", path: "/support/dashboard" },
     { icon: FileText, label: "All Requests", path: "/support/requests" },
     { icon: Calendar, label: "Bookings", path: "/support/bookings" },
+    { icon: Users, label: "Users", path: "/support/users" },
+    { icon: Car, label: "Vehicles", path: "/support/vehicles" },
     { icon: BarChart3, label: "My Statistics", path: "/support/stats" },
   ];
 

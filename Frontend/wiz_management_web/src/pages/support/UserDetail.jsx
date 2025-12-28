@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,17 +7,14 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Settings,
   AlertCircle,
   Car,
   CreditCard,
 } from "lucide-react";
-import ConfirmDialog from "../../components/ConfirmDialog";
 import ReviewList from "../../components/ReviewList";
 
 export default function UserDetail({
   userData,
-  onUpdateUserStatus,
   bookingData,
   carData,
   reviewData,
@@ -26,24 +23,31 @@ export default function UserDetail({
   const navigate = useNavigate();
   const user = userData.find((u) => u.id === id);
 
-  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  const [newStatus, setNewStatus] = useState("");
-  const [showConfirm, setShowConfirm] = useState(false);
-
   const userBookings = bookingData
-    ? bookingData.filter((b) => b.userId === user.id)
+    ? bookingData.filter((b) => b.userId === user?.id)
     : [];
 
-  const handleStatusChange = (status) => {
-    setNewStatus(status);
-    setShowConfirm(true);
-  };
-
-  const handleConfirm = () => {
-    onUpdateUserStatus(user.id, newStatus);
-    setShowConfirm(false);
-    setShowStatusUpdate(false);
-  };
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+            User Not Found
+          </h2>
+          <p className="text-[#717685] mb-6">
+            The user you're looking for doesn't exist
+          </p>
+          <button
+            onClick={() => navigate("/support/users")}
+            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+          >
+            Back to Users
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -70,11 +74,11 @@ export default function UserDetail({
       {/* header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/support/users")}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back
+          Back to Users
         </button>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -199,7 +203,7 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* additional info for car owners */}
+          {/* owner statistics */}
           {user.type === "owner" && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">
@@ -237,7 +241,6 @@ export default function UserDetail({
             </div>
           )}
 
-          {/* recent activity */}
           {/* booking history */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -246,7 +249,9 @@ export default function UserDetail({
               </h2>
               {userBookings.length > 3 && (
                 <button
-                  onClick={() => navigate(`/admin/bookings?userId=${user.id}`)}
+                  onClick={() =>
+                    navigate(`/support/bookings?userId=${user.id}`)
+                  }
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   See More →
@@ -261,19 +266,19 @@ export default function UserDetail({
                     completed: "bg-green-50 text-green-700",
                     ongoing: "bg-blue-50 text-blue-700",
                     cancelled: "bg-red-50 text-red-700",
+                    upcoming: "bg-purple-50 text-purple-700",
                   };
-                  const amount =
-                    typeof booking.amount === "string"
-                      ? booking.amount
-                      : new Intl.NumberFormat("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        }).format(booking.amount);
+                  const amount = new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(booking.total);
 
                   return (
                     <div
                       key={idx}
-                      onClick={() => navigate(`/admin/bookings/${booking.id}`)}
+                      onClick={() =>
+                        navigate(`/support/bookings/${booking.id}`)
+                      }
                       className="flex items-start gap-3 p-4 bg-[#F8F9FF] rounded-xl hover:bg-[#DBE3FF] cursor-pointer transition-all"
                     >
                       {car && (
@@ -299,7 +304,7 @@ export default function UserDetail({
                           </span>
                         </div>
                         <p className="text-sm text-[#717685]">
-                          {new Date(booking.date).toLocaleDateString()}
+                          {new Date(booking.startDate).toLocaleDateString()}
                         </p>
                         <p className="text-sm font-bold text-[#6679C0] mt-1">
                           {amount}
@@ -368,65 +373,6 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* status update */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Update Status
-            </h2>
-
-            {!showStatusUpdate ? (
-              <button
-                onClick={() => setShowStatusUpdate(true)}
-                className="w-full px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-              >
-                Change User Status
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleStatusChange("normal")}
-                  disabled={user.status === "normal"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "normal"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-green-50 text-green-700 hover:bg-green-100"
-                  }`}
-                >
-                  Set as Normal
-                </button>
-                <button
-                  onClick={() => handleStatusChange("stopped")}
-                  disabled={user.status === "stopped"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "stopped"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                  }`}
-                >
-                  Suspend Account
-                </button>
-                <button
-                  onClick={() => handleStatusChange("banned")}
-                  disabled={user.status === "banned"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "banned"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-50 text-red-700 hover:bg-red-100"
-                  }`}
-                >
-                  Ban User
-                </button>
-                <button
-                  onClick={() => setShowStatusUpdate(false)}
-                  className="w-full px-6 py-3 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* quick actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
@@ -434,14 +380,16 @@ export default function UserDetail({
             </h2>
             <div className="space-y-3">
               <button
-                onClick={() => navigate(`/admin/bookings?userId=${user.id}`)}
+                onClick={() => navigate(`/support/bookings?userId=${user.id}`)}
                 className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
                 View All Bookings
               </button>
               {user.type === "owner" && (
                 <button
-                  onClick={() => navigate(`/admin/cars?ownerId=${user.id}`)}
+                  onClick={() =>
+                    navigate(`/support/vehicles?ownerId=${user.id}`)
+                  }
                   className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
                 >
                   View Owner's Cars
@@ -451,16 +399,6 @@ export default function UserDetail({
           </div>
         </div>
       </div>
-
-      {/* confirmation dialog */}
-      <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirm}
-        title={`Change Status to ${newStatus}?`}
-        message={`Are you sure you want to change this user's status to ${newStatus}? This action will affect their access to the platform.`}
-        type="approve"
-      />
     </div>
   );
 }

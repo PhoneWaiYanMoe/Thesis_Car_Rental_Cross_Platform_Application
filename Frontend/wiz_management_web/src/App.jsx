@@ -9,6 +9,11 @@ import SupportDashboard from "./pages/support/Dashboard";
 import RequestList from "./pages/support/RequestList";
 import RequestDetail from "./pages/support/RequestDetail";
 
+import SupportUserManagement from "./pages/support/UserManagement";
+import SupportUserDetail from "./pages/support/UserDetail";
+import SupportVehicleManagement from "./pages/support/VehicleManagement";
+import SupportVehicleDetail from "./pages/support/VehicleDetail";
+
 // admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import CarManagement from "./pages/admin/CarManagement";
@@ -32,6 +37,7 @@ function App() {
   const [userData, setUserData] = useState(mockData.users);
   const [staffData, setStaffData] = useState(mockData.staff);
   const [bookingData] = useState(mockData.bookings);
+  const [reviewData] = useState(mockData.reviews);
 
   const handleLogin = (username, password, role) => {
     setUser({ username, role });
@@ -160,6 +166,7 @@ function App() {
                           carData={carData}
                           onUpdateCarStatus={handleUpdateCarStatus}
                           userData={userData}
+                          reviewData={reviewData}
                         />
                       }
                     />
@@ -180,6 +187,7 @@ function App() {
                           onUpdateUserStatus={handleUpdateUserStatus}
                           bookingData={bookingData}
                           carData={carData}
+                          reviewData={reviewData}
                         />
                       }
                     />
@@ -263,6 +271,9 @@ function App() {
                           onApprove={handleApprove}
                           onDeny={handleDeny}
                           currentUser={user.username}
+                          bookingData={bookingData}
+                          carData={carData}
+                          userData={userData}
                         />
                       }
                     />
@@ -292,6 +303,35 @@ function App() {
                           bookingData={bookingData}
                           carData={carData}
                           userData={userData}
+                        />
+                      }
+                    />
+                    <Route
+                      path="users"
+                      element={<SupportUserManagement userData={userData} />}
+                    />
+                    <Route
+                      path="users/:id"
+                      element={
+                        <SupportUserDetail
+                          userData={userData}
+                          bookingData={bookingData}
+                          carData={carData}
+                          reviewData={reviewData}
+                        />
+                      }
+                    />
+                    <Route
+                      path="vehicles"
+                      element={<SupportVehicleManagement carData={carData} />}
+                    />
+                    <Route
+                      path="vehicles/:id"
+                      element={
+                        <SupportVehicleDetail
+                          carData={carData}
+                          userData={userData}
+                          reviewData={reviewData}
                         />
                       }
                     />
