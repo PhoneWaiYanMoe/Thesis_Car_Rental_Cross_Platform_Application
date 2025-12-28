@@ -1,3 +1,4 @@
+// Backend/vehicle-service/src/routes/vehicle_routes.js
 const express = require("express");
 const router = express.Router();
 const vehicleController = require("../controllers/vehicle_controller");
@@ -10,43 +11,44 @@ const {
 } = require("../middleware/auth");
 
 // ==================== PUBLIC ROUTES ====================
+// These MUST come first to avoid conflicts with /:id routes
 router.get("/search", vehicleController.searchVehicles);
 router.get("/:id/availability", vehicleController.checkAvailability);
-router.get("/:id", vehicleController.getVehicleById);
 
 // ==================== OWNER ROUTES ====================
+// Prefixed with /owner to avoid conflicts
 router.get(
-  "/my-vehicles",
+  "/owner/my-vehicles",
   authenticate,
   requireOwner,
   ownerVehicleController.getMyVehicles
 );
 router.post(
-  "/",
+  "/owner",
   authenticate,
   requireOwner,
   ownerVehicleController.createVehicle
 );
 router.get(
-  "/my-vehicles/:id",
+  "/owner/:id",
   authenticate,
   requireOwner,
   ownerVehicleController.getMyVehicleById
 );
 router.put(
-  "/my-vehicles/:id",
+  "/owner/:id",
   authenticate,
   requireOwner,
   ownerVehicleController.updateVehicle
 );
 router.delete(
-  "/my-vehicles/:id",
+  "/owner/:id",
   authenticate,
   requireOwner,
   ownerVehicleController.deleteVehicle
 );
 router.post(
-  "/my-vehicles/:id/photos",
+  "/owner/:id/photos",
   authenticate,
   requireOwner,
   ownerVehicleController.uploadPhotos
@@ -78,4 +80,9 @@ router.post(
   adminVehicleController.rejectVehicle
 );
 
+// ==================== PUBLIC DETAIL ROUTE ====================
+// This MUST come LAST to avoid matching "search", "owner", "admin" as IDs
+router.get("/:id", vehicleController.getVehicleById);
+
 module.exports = router;
+  

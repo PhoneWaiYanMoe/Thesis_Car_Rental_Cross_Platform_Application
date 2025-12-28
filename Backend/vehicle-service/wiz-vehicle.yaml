@@ -198,7 +198,7 @@ paths:
                           type: string
 
   # ==================== OWNER ROUTES ====================
-  /vehicles/my-vehicles:
+  /vehicles/owner/my-vehicles:
     get:
       summary: Get my vehicles
       description: Get list of vehicles owned by authenticated user
@@ -231,7 +231,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/OwnerVehicleSummary'
 
-  /vehicles:
+  /vehicles/owner:
     post:
       summary: Create vehicle listing
       description: Create a new vehicle listing (Owner only)
@@ -264,7 +264,7 @@ paths:
         '403':
           description: Not authorized (not an owner)
 
-  /vehicles/my-vehicles/{id}:
+  /vehicles/owner/{id}:
     get:
       summary: Get my vehicle details
       description: Get detailed info of owned vehicle
@@ -342,7 +342,7 @@ paths:
         '200':
           description: Vehicle deactivated
 
-  /vehicles/my-vehicles/{id}/photos:
+  /vehicles/owner/{id}/photos:
     post:
       summary: Upload vehicle photos
       description: Upload additional photos for vehicle
