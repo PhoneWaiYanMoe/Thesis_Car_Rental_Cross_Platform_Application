@@ -2,10 +2,17 @@
 const pool = require("../config/database");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 
+// Helper function for incrementing total rentals
+async function incrementTotalRentals(vehicleId) {
+  try {
+    await vehicleGrpcClient.incrementTotalRentals(vehicleId);
+    console.log(`✅ Incremented total rentals for vehicle: ${vehicleId}`);
+  } catch (error) {
+    console.error(`⚠️  Could not increment total rentals: ${error.message}`);
+  }
+}
+
 class OwnerBookingController {
-  /**
-   * Get owner's rental requests - FIXED with gRPC
-   */
   async getOwnerBookings(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -27,7 +34,7 @@ class OwnerBookingController {
         limit = 10,
       } = req.query;
 
-      // Get all bookings for this owner's vehicles
+      // Get all bookings
       let query = `
         SELECT 
           b.booking_id,
@@ -304,7 +311,7 @@ class OwnerBookingController {
     }
   }
 
-async confirmReturn(req, res, next) {
+  async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
     try {
@@ -405,24 +412,18 @@ async confirmReturn(req, res, next) {
 
       await client.query("COMMIT");
 
-      // ✅ FIX: INCREMENT TOTAL RENTALS WHEN COMPLETED
+      // INCREMENT TOTAL RENTALS WHEN COMPLETED
       if (action === "complete") {
-        try {
-          await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
-          console.log(`✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`);
-        } catch (error) {
-          console.error(`⚠️  Could not increment total rentals: ${error.message}`);
-          // Don't fail the completion if increment fails
-        }
+        await incrementTotalRentals(booking.vehicle_id);
 
-        // Also remove from unavailability since rental is complete
+        // Also remove from unavailability
         try {
           await vehicleGrpcClient.syncUnavailability(
             booking.vehicle_id,
             booking.start_date,
             booking.end_date,
             id,
-            'remove'
+            "remove"
           );
           console.log(`✅ Removed completed booking from unavailability`);
         } catch (error) {
@@ -449,7 +450,6 @@ async confirmReturn(req, res, next) {
       client.release();
     }
   }
-
 }
 
 module.exports = new OwnerBookingController();

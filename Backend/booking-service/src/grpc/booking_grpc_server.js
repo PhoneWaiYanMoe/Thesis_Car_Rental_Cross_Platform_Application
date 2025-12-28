@@ -1,7 +1,9 @@
+// Backend/booking-service/src/grpc/booking_grpc_server.js
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
 const pool = require("../config/database");
+const vehicleGrpcClient = require("./vehicle_grpc_client");
 
 const PROTO_PATH = path.join(__dirname, "../../proto/booking.proto");
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -24,7 +26,7 @@ class BookingGrpcServer {
       const { booking_id, user_id } = call.request;
 
       const result = await pool.query(
-        `SELECT booking_id, customer_id, owner_id, status 
+        `SELECT booking_id, customer_id, vehicle_id, status 
          FROM bookings 
          WHERE booking_id = $1`,
         [booking_id]
@@ -61,24 +63,15 @@ class BookingGrpcServer {
     }
   }
 
-  // Backend/booking-service/src/grpc/booking_grpc_server.js
-  // Replace the getBookingDetails method with this fixed version
-
   async getBookingDetails(call, callback) {
     try {
       const { booking_id } = call.request;
 
-      // FIXED: Join with vehicles table to get owner_id (user_id)
+      // Get booking from bookings table
       const result = await pool.query(
-        `SELECT 
-        b.booking_id, 
-        b.customer_id, 
-        v.user_id as owner_id,  -- Get owner from vehicles table
-        b.vehicle_id, 
-        b.status 
-       FROM bookings b
-       JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-       WHERE b.booking_id = $1`,
+        `SELECT booking_id, customer_id, vehicle_id, status 
+         FROM bookings 
+         WHERE booking_id = $1`,
         [booking_id]
       );
 
@@ -91,14 +84,29 @@ class BookingGrpcServer {
 
       const booking = result.rows[0];
 
+      // Get vehicle owner ID via gRPC
+      let ownerId = null;
+      try {
+        const vehicle = await vehicleGrpcClient.getVehicleInfo(
+          booking.vehicle_id
+        );
+        ownerId = vehicle.owner_id;
+      } catch (error) {
+        console.error("⚠️  Could not fetch vehicle owner:", error.message);
+        return callback({
+          code: grpc.status.INTERNAL,
+          message: "Could not fetch vehicle owner information",
+        });
+      }
+
       console.log(
-        `✅ gRPC: Retrieved booking details for ${booking_id}, owner: ${booking.owner_id}`
+        `✅ gRPC: Retrieved booking details for ${booking_id}, owner: ${ownerId}`
       );
 
       callback(null, {
         booking_id: booking.booking_id,
         customer_id: booking.customer_id,
-        owner_id: booking.owner_id, // Now correctly populated!
+        owner_id: ownerId,
         vehicle_id: booking.vehicle_id,
         status: booking.status,
       });
