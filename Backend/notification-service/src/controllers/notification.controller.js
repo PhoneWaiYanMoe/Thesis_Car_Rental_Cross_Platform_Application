@@ -1,27 +1,29 @@
-const notificationService = require('../services/notification.service');
+const notificationService = require("../services/notification.service");
 
 class NotificationController {
-
   async getNotifications(req, res) {
     try {
       const filters = {
-        status: req.query.status || 'all',
-        type: req.query.type || 'all',
+        status: req.query.status || "all",
+        type: req.query.type || "all",
         page: req.query.page || 1,
-        limit: req.query.limit || 20
+        limit: req.query.limit || 20,
       };
 
-      const result = await notificationService.getUserNotifications(req.user.id, filters);
+      const result = await notificationService.getUserNotifications(
+        req.user.id,
+        filters
+      );
 
       res.status(200).json({
         success: true,
-        ...result
+        ...result,
       });
     } catch (error) {
-      console.error('Get notifications error:', error);
+      console.error("Get notifications error:", error);
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -33,13 +35,13 @@ class NotificationController {
 
       res.status(200).json({
         success: true,
-        message: 'Notification marked as read'
+        message: "Notification marked as read",
       });
     } catch (error) {
-      console.error('Mark as read error:', error);
+      console.error("Mark as read error:", error);
       res.status(404).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -50,13 +52,13 @@ class NotificationController {
 
       res.status(200).json({
         success: true,
-        message: 'All notifications marked as read'
+        message: "All notifications marked as read",
       });
     } catch (error) {
-      console.error('Mark all as read error:', error);
+      console.error("Mark all as read error:", error);
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -68,30 +70,32 @@ class NotificationController {
 
       res.status(200).json({
         success: true,
-        message: 'Notification deleted'
+        message: "Notification deleted",
       });
     } catch (error) {
-      console.error('Delete notification error:', error);
+      console.error("Delete notification error:", error);
       res.status(404).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
 
   async getPreferences(req, res) {
     try {
-      const preferences = await notificationService.getUserPreferences(req.user.id);
+      const preferences = await notificationService.getUserPreferences(
+        req.user.id
+      );
 
       res.status(200).json({
         success: true,
-        preferences: preferences.preferences
+        preferences: preferences.preferences,
       });
     } catch (error) {
-      console.error('Get preferences error:', error);
+      console.error("Get preferences error:", error);
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -99,18 +103,21 @@ class NotificationController {
   async updatePreferences(req, res) {
     try {
       const newPreferences = req.body;
-      const preferences = await notificationService.updatePreferences(req.user.id, newPreferences);
+      const preferences = await notificationService.updatePreferences(
+        req.user.id,
+        newPreferences
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Preferences updated',
-        preferences: preferences.preferences
+        message: "Preferences updated",
+        preferences: preferences.preferences,
       });
     } catch (error) {
-      console.error('Update preferences error:', error);
+      console.error("Update preferences error:", error);
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -118,11 +125,11 @@ class NotificationController {
   async updateFCMToken(req, res) {
     try {
       const { fcmToken } = req.body;
-      
+
       if (!fcmToken) {
         return res.status(400).json({
           success: false,
-          message: 'FCM token is required'
+          message: "FCM token is required",
         });
       }
 
@@ -130,13 +137,13 @@ class NotificationController {
 
       res.status(200).json({
         success: true,
-        message: 'FCM token updated'
+        message: "FCM token updated",
       });
     } catch (error) {
-      console.error('Update FCM token error:', error);
+      console.error("Update FCM token error:", error);
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
