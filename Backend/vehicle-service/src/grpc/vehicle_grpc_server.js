@@ -216,23 +216,29 @@ class VehicleGrpcServer {
     }
   }
 
-  // ✅ NEW: Sync unavailability
+  
   async syncUnavailability(call, callback) {
     try {
       const { vehicle_id, start_date, end_date, booking_id, action } =
         call.request;
 
       if (action === "add") {
-        // Add unavailability period
+        // Add unavailability period WITH booking_id
         await pool.query(
-          `INSERT INTO vehicle_unavailability (vehicle_id, start_date, end_date, reason)
-           VALUES ($1, $2, $3, $4)
-           ON CONFLICT DO NOTHING`,
-          [vehicle_id, start_date, end_date, `Booking: ${booking_id}`]
+          `INSERT INTO vehicle_unavailability (vehicle_id, start_date, end_date, reason, booking_id)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING`,
+          [
+            vehicle_id,
+            start_date,
+            end_date,
+            `Booking: ${booking_id}`,
+            booking_id,
+          ]
         );
 
         console.log(
-          `✅ Added unavailability for vehicle ${vehicle_id}: ${start_date} to ${end_date}`
+          `✅ Added unavailability for vehicle ${vehicle_id}: ${start_date} to ${end_date} (booking: ${booking_id})`
         );
 
         callback(null, {
@@ -240,17 +246,16 @@ class VehicleGrpcServer {
           message: "Unavailability period added",
         });
       } else if (action === "remove") {
-        // Remove unavailability period
-        await pool.query(
+        // Remove unavailability period by booking_id (more reliable than dates)
+        const result = await pool.query(
           `DELETE FROM vehicle_unavailability 
-           WHERE vehicle_id = $1 
-           AND start_date = $2 
-           AND end_date = $3`,
-          [vehicle_id, start_date, end_date]
+         WHERE vehicle_id = $1 
+         AND booking_id = $2`,
+          [vehicle_id, booking_id]
         );
 
         console.log(
-          `✅ Removed unavailability for vehicle ${vehicle_id}: ${start_date} to ${end_date}`
+          `✅ Removed unavailability for vehicle ${vehicle_id} (booking: ${booking_id}) - ${result.rowCount} rows affected`
         );
 
         callback(null, {

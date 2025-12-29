@@ -757,88 +757,95 @@ class BookingController {
     }
   }
 
-  async cancelBooking(req, res, next) {
-    const client = await pool.connect();
+ 
+async cancelBooking(req, res, next) {
+  const client = await pool.connect();
 
+  try {
+    await client.query("BEGIN");
+
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const bookingResult = await client.query(
+      "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+      [id, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingResult.rows[0];
+    const startDate = new Date(booking.start_date);
+    const now = new Date();
+
+    if (!["pending", "booking"].includes(booking.status)) {
+      return res.status(400).json({
+        error: `Cannot cancel booking with status: ${booking.status}`,
+      });
+    }
+
+    if (startDate <= now) {
+      return res.status(400).json({
+        error: "Cannot cancel booking on or after start date",
+      });
+    }
+
+    let refundAmount = 0;
+    const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
+
+    if (hoursUntilStart > 24) {
+      refundAmount = booking.deposit_paid ? booking.deposit_amount : 0;
+    } else if (hoursUntilStart > 12) {
+      refundAmount = booking.deposit_paid
+        ? Math.round(booking.deposit_amount * 0.5)
+        : 0;
+    }
+
+    await client.query(
+      `UPDATE bookings 
+       SET status = 'cancelled',
+           cancellation_reason = $1,
+           cancellation_date = NOW(),
+           refund_amount = $2,
+           refund_status = $3,
+           updated_at = NOW()
+       WHERE booking_id = $4`,
+      [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
+    );
+
+    await client.query("COMMIT");
+
+    // ✅ VERIFIED: Remove from vehicle unavailability (already present)
     try {
-      await client.query("BEGIN");
-
-      const userId = req.user.userId;
-      const { id } = req.params;
-      const { reason } = req.body;
-
-      const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
-      );
-
-      if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      const booking = bookingResult.rows[0];
-      const startDate = new Date(booking.start_date);
-      const now = new Date();
-
-      if (!["pending", "booking"].includes(booking.status)) {
-        return res.status(400).json({
-          error: `Cannot cancel booking with status: ${booking.status}`,
-        });
-      }
-
-      if (startDate <= now) {
-        return res.status(400).json({
-          error: "Cannot cancel booking on or after start date",
-        });
-      }
-
-      let refundAmount = 0;
-      const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
-
-      if (hoursUntilStart > 24) {
-        refundAmount = booking.deposit_paid ? booking.deposit_amount : 0;
-      } else if (hoursUntilStart > 12) {
-        refundAmount = booking.deposit_paid
-          ? Math.round(booking.deposit_amount * 0.5)
-          : 0;
-      }
-
-      await client.query(
-        `UPDATE bookings 
-         SET status = 'cancelled',
-             cancellation_reason = $1,
-             cancellation_date = NOW(),
-             refund_amount = $2,
-             refund_status = $3,
-             updated_at = NOW()
-         WHERE booking_id = $4`,
-        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
-      );
-
-      await client.query("COMMIT");
-
-      // Remove from vehicle unavailability
-      await this.syncVehicleUnavailability(
+      await vehicleGrpcClient.syncUnavailability(
         booking.vehicle_id,
         booking.start_date,
         booking.end_date,
         id,
         "remove"
       );
-
-      res.json({
-        message: "Booking cancelled successfully",
-        refundAmount,
-        refundStatus: refundAmount > 0 ? "processing" : "none",
-      });
+      console.log(`✅ Removed unavailability after customer cancellation: ${id}`);
     } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Cancel booking error:", error);
-      next(error);
-    } finally {
-      client.release();
+      console.error(`⚠️  Could not remove unavailability: ${error.message}`);
+      // Don't fail the cancellation - log and continue
     }
+
+    res.json({
+      message: "Booking cancelled successfully",
+      refundAmount,
+      refundStatus: refundAmount > 0 ? "processing" : "none",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Cancel booking error:", error);
+    next(error);
+  } finally {
+    client.release();
   }
+}
 
   async signContract(req, res, next) {
     const client = await pool.connect();

@@ -197,109 +197,125 @@ class OwnerBookingController {
     }
   }
 
-  async rejectBooking(req, res, next) {
-    const client = await pool.connect();
+  
+async rejectBooking(req, res, next) {
+  const client = await pool.connect();
 
-    try {
-      await client.query("BEGIN");
+  try {
+    await client.query("BEGIN");
 
-      const userId = req.user.userId;
-      const userRole = req.user.role;
-      const { id } = req.params;
-      const { reason, refundAmount } = req.body;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+    const { id } = req.params;
+    const { reason, refundAmount } = req.body;
 
-      if (userRole !== "owner") {
-        return res.status(403).json({
-          error: "Access denied. Only vehicle owners can reject bookings.",
-          requiredRole: "owner",
-        });
-      }
-
-      if (!reason || reason.trim() === "") {
-        return res.status(400).json({
-          error: "Please provide a reason for rejection",
-        });
-      }
-
-      if (refundAmount === undefined || refundAmount === null) {
-        return res.status(400).json({
-          error: "Refund amount is required",
-        });
-      }
-
-      const bookingResult = await client.query(
-        `SELECT * FROM bookings WHERE booking_id = $1`,
-        [id]
-      );
-
-      if (bookingResult.rows.length === 0) {
-        return res.status(404).json({
-          error: "Booking not found",
-        });
-      }
-
-      const booking = bookingResult.rows[0];
-
-      // Verify ownership via gRPC
-      try {
-        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
-          booking.vehicle_id,
-          userId
-        );
-
-        if (!ownershipCheck.is_owner) {
-          return res.status(403).json({
-            error: "You don't own this vehicle",
-          });
-        }
-      } catch (error) {
-        return res.status(503).json({
-          error: "Could not verify vehicle ownership",
-        });
-      }
-
-      if (booking.status !== "pending") {
-        return res.status(400).json({
-          error: `Cannot reject booking with status: ${booking.status}`,
-        });
-      }
-
-      const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
-      if (refundAmount > maxRefund) {
-        return res.status(400).json({
-          error: `Refund amount cannot exceed deposit: ${maxRefund}`,
-        });
-      }
-
-      await client.query(
-        `UPDATE bookings 
-         SET status = 'cancelled',
-             rejection_reason = $1,
-             rejected_at = NOW(),
-             refund_amount = $2,
-             refund_status = $3,
-             updated_at = NOW()
-         WHERE booking_id = $4`,
-        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
-      );
-
-      await client.query("COMMIT");
-
-      console.log(`❌ Owner ${userId} rejected booking: ${id}`);
-
-      res.json({
-        message: "Booking rejected",
-        refundAmount,
-        customerNotified: true,
+    if (userRole !== "owner") {
+      return res.status(403).json({
+        error: "Access denied. Only vehicle owners can reject bookings.",
+        requiredRole: "owner",
       });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Reject booking error:", error);
-      next(error);
-    } finally {
-      client.release();
     }
+
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({
+        error: "Please provide a reason for rejection",
+      });
+    }
+
+    if (refundAmount === undefined || refundAmount === null) {
+      return res.status(400).json({
+        error: "Refund amount is required",
+      });
+    }
+
+    const bookingResult = await client.query(
+      `SELECT * FROM bookings WHERE booking_id = $1`,
+      [id]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Booking not found",
+      });
+    }
+
+    const booking = bookingResult.rows[0];
+
+    // Verify ownership via gRPC
+    try {
+      const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+        booking.vehicle_id,
+        userId
+      );
+
+      if (!ownershipCheck.is_owner) {
+        return res.status(403).json({
+          error: "You don't own this vehicle",
+        });
+      }
+    } catch (error) {
+      return res.status(503).json({
+        error: "Could not verify vehicle ownership",
+      });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        error: `Cannot reject booking with status: ${booking.status}`,
+      });
+    }
+
+    const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
+    if (refundAmount > maxRefund) {
+      return res.status(400).json({
+        error: `Refund amount cannot exceed deposit: ${maxRefund}`,
+      });
+    }
+
+    await client.query(
+      `UPDATE bookings 
+       SET status = 'cancelled',
+           rejection_reason = $1,
+           rejected_at = NOW(),
+           refund_amount = $2,
+           refund_status = $3,
+           updated_at = NOW()
+       WHERE booking_id = $4`,
+      [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
+    );
+
+    await client.query("COMMIT");
+
+    // ✅ FIX: Remove unavailability when owner rejects booking
+    try {
+      await vehicleGrpcClient.syncUnavailability(
+        booking.vehicle_id,
+        booking.start_date,
+        booking.end_date,
+        id,
+        'remove'
+      );
+      console.log(`✅ Removed unavailability after owner rejection: ${id}`);
+    } catch (error) {
+      console.error(`⚠️  Could not remove unavailability after rejection: ${error.message}`);
+      // Don't fail the rejection - log and continue
+    }
+
+    console.log(`❌ Owner ${userId} rejected booking: ${id}`);
+
+    res.json({
+      message: "Booking rejected",
+      refundAmount,
+      customerNotified: true,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Reject booking error:", error);
+    next(error);
+  } finally {
+    client.release();
   }
+}
 
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
