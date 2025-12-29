@@ -10,6 +10,7 @@ class LocalStorageService {
   static const String _userEmailKey = 'user_email';
   static const String _userAvatarKey = 'user_avatar';
   static const String _licenseKey = 'license_number';
+  static const String _userRoleKey = 'user_role';
 
   // License Keys
   static const String _licenseVerifiedKey = 'license_verified';
@@ -52,6 +53,7 @@ class LocalStorageService {
     await prefs.setString(_userIdKey, user['id'] ?? '');
     await prefs.setString(_userNameKey, user['fullName'] ?? '');
     await prefs.setString(_userEmailKey, user['email'] ?? '');
+    await prefs.setString(_userRoleKey, user['role'] ?? 'customer'); // Save role
     if (user['avatarUrl'] != null) {
       await prefs.setString(_userAvatarKey, user['avatarUrl']);
     }
@@ -66,6 +68,7 @@ class LocalStorageService {
       'userEmail': prefs.getString(_userEmailKey),
       'userAvatar': prefs.getString(_userAvatarKey),
       'licenseNumber': prefs.getString(_licenseKey),
+      'role': prefs.getString(_userRoleKey),
     };
   }
 
@@ -79,6 +82,7 @@ class LocalStorageService {
     await prefs.remove(_userEmailKey);
     await prefs.remove(_userAvatarKey);
     await prefs.remove(_licenseKey);
+    await prefs.remove(_userRoleKey);
   }
 
   // ==================== LICENSE METHODS ====================
@@ -106,7 +110,7 @@ class LocalStorageService {
     await prefs.setString(_licenseBackImageKey, backImagePath);
 
     // Also update the short license number for display
-    final shortLicense = licenseNumber.length >= 2 
+    final shortLicense = licenseNumber.length >= 2
         ? '****${licenseNumber.substring(licenseNumber.length - 2)}'
         : '****00';
     await prefs.setString(_licenseKey, shortLicense);

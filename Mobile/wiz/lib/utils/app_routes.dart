@@ -24,6 +24,10 @@ import 'package:wiz/screens/Location/views/location_search_screen.dart';
 import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/screens/Profile/profile_screen.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
+import 'package:wiz/screens/Owner/views/owner_vehicles_screen.dart';
+import 'package:wiz/screens/Owner/views/create_vehicle_screen.dart';
+import 'package:wiz/screens/Owner/views/owner_vehicle_details_screen.dart';
+import 'package:wiz/screens/Owner/views/edit_vehicle_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -48,6 +52,13 @@ class AppRoutes {
   static const String rateReview = '/rate-review';
   static const String chatList = '/chat-list';
   static const String chatDetail = '/chat-detail';
+
+  // Owner routes
+  static const String ownerVehicles = '/owner/vehicles';
+  static const String ownerVehicleCreate = '/owner/vehicles/create';
+  static const String ownerVehicleDetails = '/owner/vehicles/details';
+  static const String ownerVehicleEdit = '/owner/vehicles/edit';
+
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
@@ -157,6 +168,27 @@ class AppRoutes {
         if (args != null && args.containsKey('chat')) {
           final chat = args['chat'] is ChatData ? args['chat'] as ChatData : throw ArgumentError('Invalid chat data');
           return MaterialPageRoute(builder: (_) => ChatDetailScreen(chat: chat));
+        }
+        return null;
+
+      // Owner routes
+      case ownerVehicles:
+        return MaterialPageRoute(builder: (_) => const OwnerVehiclesScreen());
+
+      case ownerVehicleCreate:
+        return MaterialPageRoute(builder: (_) => const CreateVehicleScreen());
+
+      case ownerVehicleDetails:
+        final vehicleId = settings.arguments as String?;
+        if (vehicleId != null) {
+          return MaterialPageRoute(builder: (_) => OwnerVehicleDetailsScreen(vehicleId: vehicleId));
+        }
+        return null;
+
+      case ownerVehicleEdit:
+        final vehicleId = settings.arguments as String?;
+        if (vehicleId != null) {
+          return MaterialPageRoute(builder: (_) => EditVehicleScreen(vehicleId: vehicleId));
         }
         return null;
 
