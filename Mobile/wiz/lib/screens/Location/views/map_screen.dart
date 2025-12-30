@@ -108,11 +108,11 @@ class _MapScreenState extends State<MapScreen> {
     print('📍 Received search result: displayName=${result.displayName}, shortName=${result.shortName}');
 
     // Use displayName if available, otherwise fallback to shortName
-    final address = result.displayName.trim().isNotEmpty 
-        ? result.displayName 
-        : result.shortName.trim().isNotEmpty 
-            ? result.shortName 
-            : 'Unknown Location';
+    final address = result.displayName.trim().isNotEmpty
+        ? result.displayName
+        : result.shortName.trim().isNotEmpty
+        ? result.shortName
+        : 'Unknown Location';
 
     setState(() {
       _selectedPosition = result.position;
@@ -124,12 +124,12 @@ class _MapScreenState extends State<MapScreen> {
 
     // Save to backend history
     // Ensure displayName is not empty - use shortName as fallback
-    final displayName = result.displayName.trim().isNotEmpty 
-        ? result.displayName 
-        : result.shortName.trim().isNotEmpty 
-            ? result.shortName 
-            : 'Unknown Location';
-    
+    final displayName = result.displayName.trim().isNotEmpty
+        ? result.displayName
+        : result.shortName.trim().isNotEmpty
+        ? result.shortName
+        : 'Unknown Location';
+
     final saved = await _locationApiService.saveToHistory(
       displayName: displayName,
       shortName: result.shortName,
@@ -148,8 +148,30 @@ class _MapScreenState extends State<MapScreen> {
   void _confirmSelection() {
     if (_selectedPosition != null && _selectedAddress != null) {
       print('✅ Confirming location: $_selectedAddress');
+
+      // ✅ FIXED: Extract city and district from address
+      // Format: "Street, District, City, Country"
+      final parts = _selectedAddress!.split(',').map((e) => e.trim()).toList();
+
+      String city = 'Ho Chi Minh City'; // Default
+      String district = '';
+
+      if (parts.length >= 3) {
+        district = parts[1]; // Second part is usually district
+        city = parts[2]; // Third part is usually city
+      } else if (parts.length == 2) {
+        district = parts[0];
+        city = parts[1];
+      } else if (parts.length == 1) {
+        city = parts[0];
+      }
+
+      print('📍 Extracted - City: $city, District: $district');
+
       Navigator.pop(context, {
         'address': _selectedAddress,
+        'city': city,
+        'district': district,
         'latitude': _selectedPosition!.latitude,
         'longitude': _selectedPosition!.longitude,
       });

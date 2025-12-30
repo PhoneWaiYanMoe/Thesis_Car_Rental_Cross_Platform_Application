@@ -47,24 +47,23 @@ class _CarListScreenState extends State<CarListScreen> {
     });
 
     try {
-      final location = widget.tripData['location'] as String?;
-      final pickup = widget.tripData['pickup'] as String?;
-      final datetime = widget.tripData['datetime'] as String?;
+      // ✅ Get city and district directly from tripData
+      String? city = widget.tripData['city'] as String?;
+      String? district = widget.tripData['district'] as String?;
 
-      // Extract city/district
-      String? city;
-      String? district;
-
-      if (location != null && location.isNotEmpty) {
-        final parts = location.split(',').map((e) => e.trim()).toList();
-        if (parts.length >= 2) {
-          district = parts[0];
-          city = parts[1];
-        } else {
-          city = parts[0];
-        }
+      // For with-driver mode, use pickup location
+      if (city == null && widget.tripData['pickupCity'] != null) {
+        city = widget.tripData['pickupCity'] as String?;
+        district = widget.tripData['pickupDistrict'] as String?;
       }
 
+      final location = widget.tripData['location'] as String?;
+      final datetime = widget.tripData['datetime'] as String?;
+
+      print('🔍 Searching with filters:');
+      print('   - City: $city');
+      print('   - District: $district');
+      print('   - Location (display): $location');
       // ✅ FIXED: Parse dates with year rollover handling
       String? startDate;
       String? endDate;

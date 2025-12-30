@@ -26,10 +26,27 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = '';
   String _userAvatar = 'assets/images/article_2.png';
 
-  // Form data
+  // Form data - location
   String? _location;
+  String? _locationCity;
+  String? _locationDistrict;
+  double? _locationLatitude;
+  double? _locationLongitude;
+
+  // Form data - pickup/destination (for with-driver mode)
   String? _pickup;
+  String? _pickupCity;
+  String? _pickupDistrict;
+  double? _pickupLatitude;
+  double? _pickupLongitude;
+
   String? _destination;
+  String? _destinationCity;
+  String? _destinationDistrict;
+  double? _destinationLatitude;
+  double? _destinationLongitude;
+
+  // Form data - datetime
   Map<String, String>? _dateTime;
 
   final List<Map<String, String>> _articles = [
@@ -76,7 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTabChanged: (index) {
                   setState(() {
                     _selectedTab = index;
-                    _location = _pickup = _destination = null;
+                    // Clear all location data when switching tabs
+                    _location = _locationCity = _locationDistrict = null;
+                    _locationLatitude = _locationLongitude = null;
+                    _pickup = _pickupCity = _pickupDistrict = null;
+                    _pickupLatitude = _pickupLongitude = null;
+                    _destination = _destinationCity = _destinationDistrict = null;
+                    _destinationLatitude = _destinationLongitude = null;
                     _dateTime = null;
                   });
                 },
@@ -113,14 +136,45 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleSearch() {
+    print('🚗 Searching cars with:');
+    print('   - Mode: ${_selectedTab == 0 ? "Self Drive" : "With Driver"}');
+    print('   - Location: $_location');
+    print('   - City: ${_selectedTab == 0 ? _locationCity : _pickupCity}');
+    print('   - District: ${_selectedTab == 0 ? _locationDistrict : _pickupDistrict}');
+    print('   - DateTime: ${_dateTime!['start']} - ${_dateTime!['end']}');
+
     final data = {
       'mode': _selectedTab == 0 ? 'Self Drive' : 'With Driver',
       'withDriver': _selectedTab == 1,
+
+      // Location data (for self-drive)
       'location': _location,
+      'city': _locationCity,
+      'district': _locationDistrict,
+      'latitude': _locationLatitude,
+      'longitude': _locationLongitude,
+
+      // Pickup data (for with-driver)
       'pickup': _pickup,
+      'pickupCity': _pickupCity,
+      'pickupDistrict': _pickupDistrict,
+      'pickupLatitude': _pickupLatitude,
+      'pickupLongitude': _pickupLongitude,
+
+      // Destination data (for with-driver)
       'destination': _destination,
+      'destinationCity': _destinationCity,
+      'destinationDistrict': _destinationDistrict,
+      'destinationLatitude': _destinationLatitude,
+      'destinationLongitude': _destinationLongitude,
+
+      // DateTime
       'datetime': '${_dateTime!['start']} - ${_dateTime!['end']}',
+
+      // Legacy field for backward compatibility
+      'allCars': [],
     };
+
     AppRoutes.navigateTo(context, AppRoutes.cars, arguments: data);
   }
 
@@ -128,11 +182,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.location_on_outlined,
       hint: _location ?? 'Select Location',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Select Location').then((result) {
+      onTap: () async {
+        final result = await AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Select Location');
+
         if (result != null && result is Map<String, dynamic>) {
-          setState(() => _location = result['address']);
+          print('📍 Location result: $result');
+
+          setState(() {
+            _location = result['address'] as String?;
+            _locationCity = result['city'] as String?;
+            _locationDistrict = result['district'] as String?;
+            _locationLatitude = result['latitude'] as double?;
+            _locationLongitude = result['longitude'] as double?;
+          });
+
+          print('✅ Saved location - City: $_locationCity, District: $_locationDistrict');
         }
-      }),
+      },
     );
   }
 
@@ -140,11 +206,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.pin_drop_outlined,
       hint: _pickup ?? 'Pickup Location',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Pickup Location').then((result) {
+      onTap: () async {
+        final result = await AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Pickup Location');
+
         if (result != null && result is Map<String, dynamic>) {
-          setState(() => _pickup = result['address']);
+          print('📍 Pickup result: $result');
+
+          setState(() {
+            _pickup = result['address'] as String?;
+            _pickupCity = result['city'] as String?;
+            _pickupDistrict = result['district'] as String?;
+            _pickupLatitude = result['latitude'] as double?;
+            _pickupLongitude = result['longitude'] as double?;
+          });
+
+          print('✅ Saved pickup - City: $_pickupCity, District: $_pickupDistrict');
         }
-      }),
+      },
     );
   }
 
@@ -152,11 +230,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return ClickableField(
       icon: Icons.flag_outlined,
       hint: _destination ?? 'Destination',
-      onTap: () => AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Destination').then((result) {
+      onTap: () async {
+        final result = await AppRoutes.navigateTo(context, AppRoutes.map, arguments: 'Destination');
+
         if (result != null && result is Map<String, dynamic>) {
-          setState(() => _destination = result['address']);
+          print('📍 Destination result: $result');
+
+          setState(() {
+            _destination = result['address'] as String?;
+            _destinationCity = result['city'] as String?;
+            _destinationDistrict = result['district'] as String?;
+            _destinationLatitude = result['latitude'] as double?;
+            _destinationLongitude = result['longitude'] as double?;
+          });
+
+          print('✅ Saved destination - City: $_destinationCity, District: $_destinationDistrict');
         }
-      }),
+      },
     );
   }
 
@@ -167,7 +257,10 @@ class _HomeScreenState extends State<HomeScreen> {
       hint: text,
       onTap: () async {
         final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const DateTimeScreen()));
-        if (result != null) setState(() => _dateTime = result);
+        if (result != null) {
+          setState(() => _dateTime = result);
+          print('✅ DateTime selected: ${_dateTime!['start']} - ${_dateTime!['end']}');
+        }
       },
     );
   }
