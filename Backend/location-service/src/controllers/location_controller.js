@@ -4,28 +4,53 @@ const nominatimService = require("../services/nominatim_service");
 const cacheService = require("../services/cache_service");
 const pool = require("../config/database");
 
-// ✅ Try to load LocationIQ service, fallback to Nominatim if not available
+// ✅ Load all available geocoding services
+let geoapifyService;
 let locationiqService;
+
+try {
+  geoapifyService = require("../services/geoapify_service");
+} catch (error) {
+  console.log("ℹ️  Geoapify service not available");
+  geoapifyService = null;
+}
+
 try {
   locationiqService = require("../services/locationiq_service");
 } catch (error) {
-  console.log("ℹ️  LocationIQ service not available, using Nominatim");
+  console.log("ℹ️  LocationIQ service not available");
   locationiqService = null;
 }
 
-// ✅ Smart service selection: Use LocationIQ if API key available and service exists, fallback to Nominatim
-const geocodingService =
-  locationiqService && process.env.LOCATIONIQ_API_KEY
-    ? locationiqService
-    : nominatimService;
+// ✅ Smart service selection priority:
+// 1. Geoapify (best for Asian addresses, 3000/day free)
+// 2. LocationIQ (good alternative, paid)
+// 3. Nominatim (free fallback, rate limited)
+function getGeocodingService() {
+  if (geoapifyService && process.env.GEOAPIFY_API_KEY) {
+    return geoapifyService;
+  } else if (locationiqService && process.env.LOCATIONIQ_API_KEY) {
+    return locationiqService;
+  } else {
+    return nominatimService;
+  }
+}
 
-console.log(
-  `🗺️  Using geocoding service: ${
-    locationiqService && process.env.LOCATIONIQ_API_KEY
-      ? "LocationIQ"
-      : "Nominatim"
-  }`
-);
+const geocodingService = getGeocodingService();
+
+// Log which service is being used
+const serviceName =
+  geoapifyService && process.env.GEOAPIFY_API_KEY
+    ? "Geoapify"
+    : locationiqService && process.env.LOCATIONIQ_API_KEY
+    ? "LocationIQ"
+    : "Nominatim";
+
+console.log(`🗺️  Using geocoding service: ${serviceName}`);
+console.log(`🔑 API Keys configured:`, {
+  Geoapify: !!process.env.GEOAPIFY_API_KEY,
+  LocationIQ: !!process.env.LOCATIONIQ_API_KEY,
+});
 
 class LocationController {
   async searchLocation(req, res, next) {
@@ -42,23 +67,23 @@ class LocationController {
       const cached = await cacheService.get(cacheKey);
 
       if (cached) {
-        console.log("✅ Cache hit for:", q);
+        console.log("✅ [SEARCH] Cache hit for:", q);
         return res.json(JSON.parse(cached));
       }
 
       console.log(
-        `🔍 Searching location: "${q}" using ${geocodingService.constructor.name}`
+        `🔍 [SEARCH ENDPOINT] Query: "${q}" | Service: ${serviceName} | Class: ${geocodingService.constructor.name}`
       );
 
       const results = await geocodingService.search(q, limit);
 
       await cacheService.set(cacheKey, JSON.stringify(results), 3600);
 
-      console.log(`✅ Found ${results.length} results for: "${q}"`);
+      console.log(`✅ [SEARCH] Found ${results.length} results for: "${q}"`);
 
       res.json(results);
     } catch (error) {
-      console.error("❌ Search error:", error);
+      console.error("❌ [SEARCH] Error:", error);
 
       // Provide user-friendly error messages
       if (error.message.includes("Rate limit")) {
@@ -109,21 +134,23 @@ class LocationController {
       const cached = await cacheService.get(cacheKey);
 
       if (cached) {
-        console.log("✅ Cache hit for reverse geocode");
+        console.log("✅ [REVERSE] Cache hit");
         return res.json(JSON.parse(cached));
       }
 
-      console.log(`📍 Reverse geocoding: (${latitude}, ${longitude})`);
+      console.log(
+        `📍 [REVERSE ENDPOINT] Coords: (${latitude}, ${longitude}) | Service: ${serviceName}`
+      );
 
       const result = await geocodingService.reverse(latitude, longitude);
 
       await cacheService.set(cacheKey, JSON.stringify(result), 86400);
 
-      console.log(`✅ Reverse geocode result: ${result.displayName}`);
+      console.log(`✅ [REVERSE] Result: ${result.displayName}`);
 
       res.json(result);
     } catch (error) {
-      console.error("❌ Reverse geocode error:", error);
+      console.error("❌ [REVERSE] Error:", error);
       next(error);
     }
   }
@@ -140,21 +167,34 @@ class LocationController {
       const cached = await cacheService.get(cacheKey);
 
       if (cached) {
-        console.log("✅ Cache hit for place details");
+        console.log("✅ [DETAILS] Cache hit");
         return res.json(JSON.parse(cached));
       }
 
-      console.log(`🏢 Getting place details: ${placeId}`);
+      console.log(
+        `🏢 [DETAILS ENDPOINT] PlaceId: ${placeId} | Service: ${serviceName}`
+      );
 
-      const result = (await geocodingService.getDetails)
-        ? await geocodingService.getDetails(placeId)
-        : await nominatimService.getDetails(placeId);
+      // Try to use getDetails if available, otherwise fallback to Nominatim
+      let result;
+      if (geocodingService.getDetails) {
+        try {
+          result = await geocodingService.getDetails(placeId);
+        } catch (error) {
+          console.log(
+            "⚠️  Primary service doesn't support details, using Nominatim"
+          );
+          result = await nominatimService.getDetails(placeId);
+        }
+      } else {
+        result = await nominatimService.getDetails(placeId);
+      }
 
       await cacheService.set(cacheKey, JSON.stringify(result), 86400);
 
       res.json(result);
     } catch (error) {
-      console.error("❌ Get details error:", error);
+      console.error("❌ [DETAILS] Error:", error);
       next(error);
     }
   }
@@ -164,7 +204,7 @@ class LocationController {
       const userId = req.user.userId;
       const { limit = 10 } = req.query;
 
-      console.log(`📚 Loading history for user: ${userId} (limit: ${limit})`);
+      console.log(`📚 [HISTORY] Loading for user: ${userId} (limit: ${limit})`);
 
       const result = await pool.query(
         `SELECT id, display_name, short_name, subtitle, latitude, longitude, created_at 
@@ -175,13 +215,11 @@ class LocationController {
         [userId, limit]
       );
 
-      console.log(
-        `✅ Loaded ${result.rows.length} history items for user ${userId}`
-      );
+      console.log(`✅ [HISTORY] Loaded ${result.rows.length} items`);
 
       res.json(result.rows);
     } catch (error) {
-      console.error("❌ Get history error:", error);
+      console.error("❌ [HISTORY] Error:", error);
       next(error);
     }
   }
@@ -212,7 +250,9 @@ class LocationController {
           .json({ error: "Coordinates out of valid range" });
       }
 
-      console.log(`💾 Saving to history for user ${userId}: ${displayName}`);
+      console.log(
+        `💾 [SAVE HISTORY] User: ${userId} | Location: ${displayName}`
+      );
 
       // Check if location already exists
       const existing = await pool.query(
@@ -238,7 +278,9 @@ class LocationController {
           ]
         );
 
-        console.log(`✅ Updated existing history item: ${existing.rows[0].id}`);
+        console.log(
+          `✅ [SAVE HISTORY] Updated existing item: ${existing.rows[0].id}`
+        );
 
         return res.json({
           message: "History updated",
@@ -275,14 +317,14 @@ class LocationController {
         [userId]
       );
 
-      console.log(`✅ Saved new history item: ${result.rows[0].id}`);
+      console.log(`✅ [SAVE HISTORY] Saved new item: ${result.rows[0].id}`);
 
       res.status(201).json({
         message: "Location saved to history",
         id: result.rows[0].id,
       });
     } catch (error) {
-      console.error("❌ Save history error:", error);
+      console.error("❌ [SAVE HISTORY] Error:", error);
       next(error);
     }
   }
@@ -292,7 +334,7 @@ class LocationController {
       const userId = req.user.userId;
       const { id } = req.params;
 
-      console.log(`🗑️  Deleting history item ${id} for user ${userId}`);
+      console.log(`🗑️  [DELETE HISTORY] Item: ${id} | User: ${userId}`);
 
       const result = await pool.query(
         `DELETE FROM location_history 
@@ -308,11 +350,11 @@ class LocationController {
         });
       }
 
-      console.log(`✅ Deleted history item: ${id}`);
+      console.log(`✅ [DELETE HISTORY] Deleted item: ${id}`);
 
       res.json({ message: "Location deleted from history" });
     } catch (error) {
-      console.error("❌ Delete history error:", error);
+      console.error("❌ [DELETE HISTORY] Error:", error);
       next(error);
     }
   }
@@ -321,23 +363,21 @@ class LocationController {
     try {
       const userId = req.user.userId;
 
-      console.log(`🗑️  Clearing all history for user ${userId}`);
+      console.log(`🗑️  [CLEAR HISTORY] User: ${userId}`);
 
       const result = await pool.query(
         `DELETE FROM location_history WHERE user_id = $1 RETURNING id`,
         [userId]
       );
 
-      console.log(
-        `✅ Cleared ${result.rowCount} history items for user ${userId}`
-      );
+      console.log(`✅ [CLEAR HISTORY] Cleared ${result.rowCount} items`);
 
       res.json({
         message: "History cleared",
         deletedCount: result.rowCount,
       });
     } catch (error) {
-      console.error("❌ Clear history error:", error);
+      console.error("❌ [CLEAR HISTORY] Error:", error);
       next(error);
     }
   }
@@ -359,7 +399,7 @@ class LocationController {
         return res.status(400).json({ error: "Invalid coordinates" });
       }
 
-      console.log(`📍 Checking service area for: (${lat}, ${lon})`);
+      console.log(`📍 [SERVICE AREA] Checking: (${lat}, ${lon})`);
 
       // Check against defined service areas from database
       const serviceAreas = await pool.query(
@@ -383,9 +423,9 @@ class LocationController {
         const inServiceArea = distance <= maxDistance;
 
         console.log(
-          `✅ Distance from HCM center: ${distance.toFixed(2)}km - ${
-            inServiceArea ? "IN" : "OUT OF"
-          } service area`
+          `✅ [SERVICE AREA] Distance: ${distance.toFixed(2)}km - ${
+            inServiceArea ? "IN" : "OUT"
+          }`
         );
 
         return res.json({
@@ -420,7 +460,7 @@ class LocationController {
       }
 
       console.log(
-        `✅ Closest service area: ${closestArea.name} (${minDistance.toFixed(
+        `✅ [SERVICE AREA] Closest: ${closestArea.name} (${minDistance.toFixed(
           2
         )}km)`
       );
@@ -434,7 +474,7 @@ class LocationController {
           : `Location is ${Math.round(minDistance)}km from ${closestArea.name}`,
       });
     } catch (error) {
-      console.error("❌ Check service area error:", error);
+      console.error("❌ [SERVICE AREA] Error:", error);
       next(error);
     }
   }
@@ -456,19 +496,19 @@ class LocationController {
         parseFloat(lon2)
       );
 
-      console.log(`📏 Calculated distance: ${distance.toFixed(2)}km`);
+      console.log(`📏 [DISTANCE] Calculated: ${distance.toFixed(2)}km`);
 
       res.json({
         distance: Math.round(distance * 100) / 100,
         unit: "km",
       });
     } catch (error) {
-      console.error("❌ Calculate distance error:", error);
+      console.error("❌ [DISTANCE] Error:", error);
       next(error);
     }
   }
 
-  // ✅ NEW: Autocomplete endpoint for faster search
+  // ✅ AUTOCOMPLETE endpoint - THIS IS WHAT YOUR FRONTEND IS USING!
   async autocomplete(req, res, next) {
     try {
       const { q, limit = 5 } = req.query;
@@ -481,23 +521,39 @@ class LocationController {
       const cached = await cacheService.get(cacheKey);
 
       if (cached) {
+        console.log(`✅ [AUTOCOMPLETE] Cache hit for: "${q}"`);
         return res.json(JSON.parse(cached));
       }
 
-      // Only use autocomplete if LocationIQ is available
+      console.log(
+        `🔍 [AUTOCOMPLETE ENDPOINT] Query: "${q}" | Service: ${serviceName} | Class: ${geocodingService.constructor.name}`
+      );
+
+      // Use autocomplete if available
       if (geocodingService.autocomplete) {
-        console.log(`🔍 Autocomplete: "${q}"`);
+        console.log(
+          `✅ [AUTOCOMPLETE] Using ${serviceName} native autocomplete`
+        );
         const results = await geocodingService.autocomplete(q, limit);
-        await cacheService.set(cacheKey, JSON.stringify(results), 1800); // 30 min cache
+        await cacheService.set(cacheKey, JSON.stringify(results), 1800);
+        console.log(
+          `✅ [AUTOCOMPLETE] ${serviceName} returned ${results.length} results`
+        );
         return res.json(results);
       }
 
       // Fallback to regular search
+      console.log(
+        `⚠️  [AUTOCOMPLETE] ${serviceName} has no autocomplete, using search`
+      );
       const results = await geocodingService.search(q, limit);
       await cacheService.set(cacheKey, JSON.stringify(results), 1800);
+      console.log(
+        `✅ [AUTOCOMPLETE] ${serviceName} search returned ${results.length} results`
+      );
       res.json(results);
     } catch (error) {
-      console.error("❌ Autocomplete error:", error);
+      console.error("❌ [AUTOCOMPLETE] Error:", error);
       next(error);
     }
   }
