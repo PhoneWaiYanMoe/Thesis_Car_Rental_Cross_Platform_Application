@@ -1,3 +1,4 @@
+// Backend/user-service/src/app.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -7,6 +8,7 @@ const path = require("path");
 const passport = require("./config/passport");
 
 const authRoutes = require("./routes/auth_routes");
+const userRoutes = require("./routes/user_routes"); // ✅ NEW
 const locationRoutes = require("./routes/location_routes");
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -42,6 +44,7 @@ try {
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes); // ✅ NEW: User profile routes
 app.use("/location", locationRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/", (req, res) => res.redirect("/api-docs"));

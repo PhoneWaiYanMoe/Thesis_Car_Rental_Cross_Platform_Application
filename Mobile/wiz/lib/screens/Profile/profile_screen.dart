@@ -1,347 +1,303 @@
-// lib/screens/Profile/profile_screen.dart
+// lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/services/local_storage_service.dart';
-import 'package:wiz/utils/app_routes.dart';
-import 'package:wiz/utils/bottom_nav_bar.dart';
+import '../../services/auth_services.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final LocalStorageService _localStorage = LocalStorageService();
+  final AuthService _authService = AuthService();
 
+  Map<String, String?> _userInfo = {};
   bool _isLoading = true;
-  String _userName = 'User';
-  String _userEmail = '';
-  String _userRole = 'customer';
-  String _activeRole = 'customer'; // Current active role (for display/navigation)
-  String? _licenseNumber;
+  bool _canSwitchRoles = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
+    _loadUserProfile();
   }
 
-  Future<void> _loadUserInfo() async {
+  Future<void> _loadUserProfile() async {
     setState(() => _isLoading = true);
 
     try {
-      final userInfo = await _localStorage.getUserInfo();
+      // Fetch fresh profile from backend
+      final profile = await _authService.getUserProfile();
 
-      final role = userInfo['role'] ?? 'customer';
+      // Get updated user info
+      _userInfo = await _authService.getUserInfo();
 
-      setState(() {
-        _userName = userInfo['userName'] ?? 'User';
-        _userEmail = userInfo['userEmail'] ?? '';
-        _userRole = role;
-        // Start in owner mode if user is owner
-        _activeRole = role == 'owner' ? 'owner' : 'customer';
-        _licenseNumber = userInfo['licenseNumber'];
-        _isLoading = false;
-      });
+      // Check if user can switch roles
+      _canSwitchRoles = await _authService.canSwitchRoles();
 
-      print('✅ Profile loaded: role=$_userRole, activeRole=$_activeRole');
-      print('📦 Full user info: $userInfo');
+      print('✅ Profile loaded: role=${_userInfo['role']}, activeRole=${_userInfo['activeRole']}');
+      print('📦 Full user info: $_userInfo');
+      print('🔄 Can switch roles: $_canSwitchRoles');
     } catch (e) {
-      print('❌ Error loading user info: $e');
+      print('❌ Error loading profile: $e');
+    } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _switchRole() async {
+    final currentActiveRole = _userInfo['activeRole'] ?? 'customer';
+    final newRole = currentActiveRole == 'owner' ? 'customer' : 'owner';
 
-    if (confirm != true) return;
+    await _authService.setActiveRole(newRole);
 
-    await _localStorage.clearAuthData();
+    // Show snackbar
     if (mounted) {
-      AppRoutes.navigateAndRemoveUntil(context, AppRoutes.login);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Switched to ${newRole.toUpperCase()} mode'), duration: const Duration(seconds: 2)),
+      );
     }
-  }
 
-  // Toggle between owner and customer roles
-  void _toggleRole() {
-    setState(() {
-      _activeRole = _activeRole == 'owner' ? 'customer' : 'owner';
-    });
+    // Reload profile
+    _loadUserProfile();
 
-    print('🔄 Switched active role to: $_activeRole');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_activeRole == 'owner' ? 'Switched to Owner mode' : 'Switched to Customer mode'),
-        backgroundColor: AppStyles.primary,
-      ),
-    );
+    // You might want to trigger a full app reload or navigation reset here
+    // For example: Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppStyles.background(context),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final actualRole = _userInfo['role'] ?? 'customer';
+    final activeRole = _userInfo['activeRole'] ?? 'customer';
+    final isOwnerViewingAsCustomer = actualRole == 'owner' && activeRole == 'customer';
+    final isOwnerViewingAsOwner = actualRole == 'owner' && activeRole == 'owner';
+
     return Scaffold(
-      backgroundColor: AppStyles.background(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with role badge
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppStyles.primary, AppStyles.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          // ✅ Role indicator badge
+          if (_canSwitchRoles)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Chip(
+                  avatar: Icon(activeRole == 'owner' ? Icons.car_rental : Icons.person, size: 16),
+                  label: Text(
+                    activeRole.toUpperCase(),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  backgroundColor: activeRole == 'owner' ? Colors.blue.shade100 : Colors.green.shade100,
                 ),
               ),
-              child: Column(
-                children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      _activeRole == 'owner' ? Icons.business : Icons.person,
-                      size: 50,
-                      color: AppStyles.primary,
+            ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Info Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage: _userInfo['userAvatar'] != null ? NetworkImage(_userInfo['userAvatar']!) : null,
+                      child: _userInfo['userAvatar'] == null ? const Icon(Icons.person, size: 40) : null,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Name
-                  Text(
-                    _userName,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Email
-                  Text(_userEmail, style: const TextStyle(fontSize: 14, color: Colors.white70)),
-                  const SizedBox(height: 12),
-
-                  // Role Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.5)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _userInfo['userName'] ?? 'User',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(_userInfo['userEmail'] ?? '', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                          const SizedBox(height: 8),
+                          // Role badges
+                          Row(
+                            children: [
+                              Chip(
+                                label: Text(
+                                  'Account: ${actualRole.toUpperCase()}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                backgroundColor: Colors.orange.shade100,
+                                padding: EdgeInsets.zero,
+                              ),
+                              if (_canSwitchRoles) ...[
+                                const SizedBox(width: 8),
+                                Chip(
+                                  label: Text(
+                                    'Viewing as: ${activeRole.toUpperCase()}',
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  backgroundColor: activeRole == 'owner' ? Colors.blue.shade100 : Colors.green.shade100,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(_activeRole == 'owner' ? Icons.business : Icons.person, size: 16, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text(
-                          _activeRole.toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            // Role Switcher (only for owners)
-            if (_userRole == 'owner') ...[
-              Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppStyles.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppStyles.primary),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.swap_horiz, color: AppStyles.primary),
-                  title: Text(
-                    'Switch to ${_activeRole == 'owner' ? 'Customer' : 'Owner'} Mode',
-                    style: TextStyle(color: AppStyles.primary, fontWeight: FontWeight.w600),
+            const SizedBox(height: 24),
+
+            // ✅ Role Switching Card (only for owners)
+            if (_canSwitchRoles) ...[
+              Card(
+                color: Colors.blue.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.swap_horiz, color: Colors.blue.shade700),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Role Switching',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'You have an OWNER account. Switch between owner and customer views:',
+                        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: isOwnerViewingAsOwner ? null : _switchRole,
+                              icon: const Icon(Icons.car_rental),
+                              label: const Text('Owner Mode'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isOwnerViewingAsOwner ? Colors.blue : Colors.grey,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: isOwnerViewingAsCustomer ? null : _switchRole,
+                              icon: const Icon(Icons.person),
+                              label: const Text('Customer Mode'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isOwnerViewingAsCustomer ? Colors.green : Colors.grey,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 20, color: Colors.amber.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                activeRole == 'owner'
+                                    ? 'Owner mode: Manage your vehicles and bookings'
+                                    : 'Customer mode: Browse and book vehicles',
+                                style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  subtitle: Text(
-                    _activeRole == 'owner' ? 'Manage your vehicles and bookings' : 'Browse and rent vehicles',
-                    style: AppStyles.caption(context),
-                  ),
-                  trailing: Switch(
-                    value: _activeRole == 'owner',
-                    activeColor: AppStyles.primary,
-                    onChanged: (_) => _toggleRole(),
-                  ),
-                  onTap: _toggleRole,
                 ),
               ),
+              const SizedBox(height: 24),
             ],
 
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  const SizedBox(height: 8),
-
-                  // Owner-specific options (only when in owner mode)
-                  if (_userRole == 'owner' && _activeRole == 'owner') ...[
-                    Text('Owner Dashboard', style: AppStyles.h3(context)),
-                    const SizedBox(height: 12),
-
-                    _buildMenuItem(
-                      icon: Icons.directions_car,
-                      title: 'My Vehicles',
-                      subtitle: 'Manage your vehicle listings',
-                      onTap: () => AppRoutes.navigateTo(context, AppRoutes.ownerVehicles),
-                    ),
-
-                    _buildMenuItem(
-                      icon: Icons.add_circle_outline,
-                      title: 'Add New Vehicle',
-                      subtitle: 'List a new vehicle for rent',
-                      onTap: () => AppRoutes.navigateTo(context, AppRoutes.ownerVehicleCreate),
-                    ),
-
-                    _buildMenuItem(
-                      icon: Icons.history,
-                      title: 'Booking Requests',
-                      subtitle: 'View and manage booking requests',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Common options
-                  Text('Account', style: AppStyles.h3(context)),
-                  const SizedBox(height: 12),
-
-                  _buildMenuItem(
-                    icon: Icons.person,
-                    title: 'Edit Profile',
-                    subtitle: 'Update your information',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
-                    },
-                  ),
-
-                  _buildMenuItem(
-                    icon: Icons.credit_card,
-                    title: 'Driver License',
-                    subtitle: _licenseNumber != null ? 'License: $_licenseNumber' : 'Not uploaded yet',
-                    onTap: () =>
-                        AppRoutes.navigateTo(context, AppRoutes.licenseUpload, arguments: {'fromBooking': false}),
-                  ),
-
-                  _buildMenuItem(
-                    icon: Icons.history,
-                    title: 'Rental History',
-                    subtitle: 'View your past rentals',
-                    onTap: () => AppRoutes.navigateTo(context, AppRoutes.rentalHistory),
-                  ),
-
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 12),
-
-                  Text('Settings', style: AppStyles.h3(context)),
-                  const SizedBox(height: 12),
-
-                  _buildMenuItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    subtitle: 'Manage notification preferences',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
-                    },
-                  ),
-
-                  _buildMenuItem(
-                    icon: Icons.help,
-                    title: 'Help & Support',
-                    subtitle: 'Get help with the app',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Logout Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: ElevatedButton.icon(
-                      onPressed: _handleLogout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      label: const Text(
-                        'Logout',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+            // Profile Actions
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Profile'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // Navigate to edit profile
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.security),
+              title: const Text('Security'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // Navigate to security settings
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Booking History'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // Navigate to booking history
+              },
+            ),
+            if (isOwnerViewingAsOwner) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.directions_car),
+                title: const Text('My Vehicles'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  // Navigate to vehicles
+                },
               ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Rental Requests'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  // Navigate to rental requests
+                },
+              ),
+            ],
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                await _authService.logout();
+                if (mounted) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: const ButtonNavBar(),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      color: AppStyles.surface(context),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppStyles.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: AppStyles.primary),
-        ),
-        title: Text(title, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle, style: AppStyles.caption(context)),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }
