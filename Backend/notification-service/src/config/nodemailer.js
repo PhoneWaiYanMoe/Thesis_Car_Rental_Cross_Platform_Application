@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// Create transporter for sending emails
+// create transporter for sending emails
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT),
@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify connection configuration
+// verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
     console.error("Email configuration error:", error);

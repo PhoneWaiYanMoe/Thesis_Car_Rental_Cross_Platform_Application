@@ -2,61 +2,36 @@ const { getMessaging, isFirebaseEnabled } = require("../config/firebase");
 
 class PushService {
   /**
-   * Send push notification to device
-   * @param {string} fcmToken - Firebase Cloud Messaging token
+   * Send push notification to multiple devices with invalid token handling
+   * @param {Array} devices - Array of devices [{id, fcmToken, platform}]
    * @param {string} title - Notification title
    * @param {string} body - Notification body
    * @param {object} data - Additional data payload
    * @returns {Promise}
    */
-  async sendPushNotification(fcmToken, title, body, data = {}) {
-    if (!isFirebaseEnabled()) {
-      console.log("Push notification skipped (Firebase not configured)");
-      return { success: false, message: "Firebase not configured" };
-    }
-
-    try {
-      const message = {
-        notification: {
-          title: title,
-          body: body,
-        },
-        data: {
-          ...data,
-          clickAction: "FLUTTER_NOTIFICATION_CLICK",
-        },
-        token: fcmToken,
-      };
-
-      const response = await getMessaging().send(message);
-
-      console.log(`Push notification sent: ${response}`);
-
-      return {
-        success: true,
-        messageId: response,
-      };
-    } catch (error) {
-      console.error("Push notification failed:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send push notification to multiple devices
-   * @param {string[]} fcmTokens - Array of FCM tokens
-   * @param {string} title - Notification title
-   * @param {string} body - Notification body
-   * @param {object} data - Additional data payload
-   * @returns {Promise}
-   */
-  async sendMulticastNotification(fcmTokens, title, body, data = {}) {
+  async sendMulticastNotification(devices, title, body, data = {}) {
     if (!isFirebaseEnabled()) {
       console.log("Multicast notification skipped (Firebase not configured)");
-      return { success: false, message: "Firebase not configured" };
+      return {
+        success: false,
+        message: "Firebase not configured",
+        invalidDevices: [],
+      };
+    }
+
+    if (!devices || devices.length === 0) {
+      console.log("No devices to send notification to");
+      return {
+        success: true,
+        successCount: 0,
+        failureCount: 0,
+        invalidDevices: [],
+      };
     }
 
     try {
+      const fcmTokens = devices.map((d) => d.fcmToken);
+
       const message = {
         notification: {
           title: title,
@@ -75,58 +50,36 @@ class PushService {
         `Multicast sent - Success: ${response.successCount}, Failure: ${response.failureCount}`
       );
 
+      // detect invalid tokens
+      const invalidDevices = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const errorCode = resp.error?.code;
+
+          // check for invalid/unregistered tokens
+          if (
+            errorCode === "messaging/invalid-registration-token" ||
+            errorCode === "messaging/registration-token-not-registered"
+          ) {
+            invalidDevices.push(devices[idx].id);
+            console.log(
+              `Invalid token detected for device: ${devices[idx].id}`
+            );
+          }
+        }
+      });
+
       return {
         success: true,
         successCount: response.successCount,
         failureCount: response.failureCount,
+        invalidDevices: invalidDevices, // return invalid device IDs
         responses: response.responses,
       };
     } catch (error) {
       console.error("Multicast notification failed:", error);
       throw error;
     }
-  }
-
-  /**
-   * Send booking notification
-   */
-  async sendBookingNotification(fcmToken, bookingData) {
-    const title = "🎉 Booking Confirmed";
-    const body = `Your booking for ${bookingData.vehicleName} has been confirmed!`;
-
-    return await this.sendPushNotification(fcmToken, title, body, {
-      type: "booking",
-      bookingId: bookingData.bookingId,
-      screen: "BookingDetails",
-    });
-  }
-
-  /**
-   * Send payment notification
-   */
-  async sendPaymentNotification(fcmToken, paymentData) {
-    const title = "Payment Successful";
-    const body = `Payment of ${paymentData.amount} VND received`;
-
-    return await this.sendPushNotification(fcmToken, title, body, {
-      type: "payment",
-      transactionId: paymentData.transactionId,
-      screen: "PaymentReceipt",
-    });
-  }
-
-  /**
-   * Send review notification
-   */
-  async sendReviewNotification(fcmToken, reviewData) {
-    const title = "New Review";
-    const body = `You received a ${reviewData.rating}-star review`;
-
-    return await this.sendPushNotification(fcmToken, title, body, {
-      type: "review",
-      reviewId: reviewData.reviewId,
-      screen: "Reviews",
-    });
   }
 }
 

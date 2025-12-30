@@ -1,5 +1,6 @@
 const emailService = require("./email.service");
 const pushService = require("./push.service");
+const userServiceClient = require("./userService.client");
 
 class NotificationService {
   /**
@@ -31,7 +32,7 @@ class NotificationService {
     return results;
   }
 
-  // send email notifications
+  // send email notification
   async sendEmailNotification(type, title, message, data) {
     const userEmail = data.email;
 
@@ -64,15 +65,45 @@ class NotificationService {
     }
   }
 
-  // send push notifications
+  // send push notification to user's devices
   async sendPushNotification(title, message, data) {
-    const fcmToken = data.fcmToken;
+    const userId = data.userId;
 
-    if (!fcmToken) {
-      throw new Error("FCM token not provided");
+    if (!userId) {
+      console.log("Push notification skipped: userId not provided");
+      return;
     }
 
-    await pushService.sendPushNotification(fcmToken, title, message, data);
+    // get user's devices from user-service
+    const devices = await userServiceClient.getUserDevices(userId);
+
+    if (!devices || devices.length === 0) {
+      console.log(`No devices found for user ${userId}`);
+      return;
+    }
+
+    console.log(
+      `Sending push to ${devices.length} device(s) for user ${userId}`
+    );
+
+    // send to all devices
+    const result = await pushService.sendMulticastNotification(
+      devices,
+      title,
+      message,
+      data
+    );
+
+    // handle invalid tokens
+    if (result.invalidDevices && result.invalidDevices.length > 0) {
+      console.log(
+        `Cleaning up ${result.invalidDevices.length} invalid device(s)`
+      );
+
+      for (const deviceId of result.invalidDevices) {
+        await userServiceClient.deleteDevice(deviceId);
+      }
+    }
   }
 }
 

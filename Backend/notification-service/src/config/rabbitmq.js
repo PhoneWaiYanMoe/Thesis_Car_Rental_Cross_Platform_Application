@@ -9,7 +9,7 @@ const connectRabbitMQ = async () => {
     connection = await amqp.connect(process.env.RABBITMQ_URL);
     channel = await connection.createChannel();
 
-    // Create exchange
+    // create exchange
     await channel.assertExchange("wiz.events", "topic", { durable: true });
 
     console.log("Notification Service: RabbitMQ connected");
@@ -17,7 +17,7 @@ const connectRabbitMQ = async () => {
     return { connection, channel };
   } catch (error) {
     console.error("Notification Service: RabbitMQ connection failed:", error);
-    // Retry after 5 seconds
+    // retry after 5 seconds
     setTimeout(connectRabbitMQ, 5000);
   }
 };
