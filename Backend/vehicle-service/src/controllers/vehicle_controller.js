@@ -6,6 +6,7 @@ class VehicleController {
    * Search vehicles (public)
    * Filter by location, type, price, dates, etc.
    */
+
   async searchVehicles(req, res, next) {
     try {
       const {
@@ -25,17 +26,17 @@ class VehicleController {
       } = req.query;
 
       let query = `
-        SELECT 
-          v.*,
-          (SELECT photo_url FROM vehicle_photos 
-           WHERE vehicle_id = v.vehicle_id AND is_primary = true 
-           LIMIT 1) as primary_photo,
-          (SELECT COUNT(*) FROM vehicle_unavailability 
-           WHERE vehicle_id = v.vehicle_id 
-           AND start_date <= $1 AND end_date >= $2) as unavailable_count
-        FROM vehicles v
-        WHERE v.status = 'active'
-      `;
+      SELECT 
+        v.*,
+        (SELECT photo_url FROM vehicle_photos 
+         WHERE vehicle_id = v.vehicle_id AND is_primary = true 
+         LIMIT 1) as primary_photo,
+        (SELECT COUNT(*) FROM vehicle_unavailability 
+         WHERE vehicle_id = v.vehicle_id 
+         AND start_date <= $1 AND end_date >= $2) as unavailable_count
+      FROM vehicles v
+      WHERE v.status = 'active'
+    `;
 
       const params = [];
       let paramIndex = 1;
@@ -86,17 +87,29 @@ class VehicleController {
         paramIndex++;
       }
 
+      // ✅ IMPROVED: Use partial matching for city/district
       if (city) {
-        query += ` AND v.location->>'city' ILIKE $${paramIndex}`;
+        // Search in both city AND address fields for flexibility
+        query += ` AND (
+        v.location->>'city' ILIKE $${paramIndex} OR 
+        v.location->>'address' ILIKE $${paramIndex}
+      )`;
         params.push(`%${city}%`);
         paramIndex++;
       }
 
       if (district) {
-        query += ` AND v.location->>'district' ILIKE $${paramIndex}`;
+        // Search in both district AND address fields
+        query += ` AND (
+        v.location->>'district' ILIKE $${paramIndex} OR 
+        v.location->>'address' ILIKE $${paramIndex}
+      )`;
         params.push(`%${district}%`);
         paramIndex++;
       }
+
+      // ✅ NEW: If no location filters, or no results, include all vehicles in Ho Chi Minh City
+      const isLocationSearchEmpty = !city && !district;
 
       // Sorting
       const sortFields = {
@@ -111,12 +124,39 @@ class VehicleController {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
+      console.log("🔍 Search query:", { city, district, startDate, endDate });
+      console.log("📝 SQL params:", params);
+
       const result = await pool.query(query, params);
 
+      console.log(`✅ Found ${result.rows.length} vehicles`);
+
       // Count total
-      const countResult = await pool.query(
-        "SELECT COUNT(*) FROM vehicles WHERE status = 'active'"
-      );
+      let countQuery = "SELECT COUNT(*) FROM vehicles WHERE status = 'active'";
+      const countParams = [];
+
+      if (city || district) {
+        countQuery += " AND (";
+        const conditions = [];
+
+        if (city) {
+          conditions.push(
+            `(location->>'city' ILIKE $1 OR location->>'address' ILIKE $1)`
+          );
+          countParams.push(`%${city}%`);
+        }
+        if (district) {
+          const paramIdx = countParams.length + 1;
+          conditions.push(
+            `(location->>'district' ILIKE $${paramIdx} OR location->>'address' ILIKE $${paramIdx})`
+          );
+          countParams.push(`%${district}%`);
+        }
+
+        countQuery += conditions.join(" AND ") + ")";
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
 
       res.json({
         vehicles: result.rows.map((vehicle) => ({

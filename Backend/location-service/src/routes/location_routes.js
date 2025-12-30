@@ -5,13 +5,18 @@ const { authenticate } = require("../middleware/auth");
 
 // Public routes
 router.get("/search", locationController.searchLocation);
+router.get("/autocomplete", locationController.autocomplete);
 router.get("/reverse", locationController.reverseGeocode);
 router.get("/details/:placeId", locationController.getPlaceDetails);
 
 // Protected routes (require authentication)
 router.get("/history", authenticate, locationController.getSearchHistory);
 router.post("/history", authenticate, locationController.saveToHistory);
-router.delete("/history/:id", authenticate, locationController.deleteFromHistory);
+router.delete(
+  "/history/:id",
+  authenticate,
+  locationController.deleteFromHistory
+);
 router.delete("/history", authenticate, locationController.clearHistory);
 
 // Service area check

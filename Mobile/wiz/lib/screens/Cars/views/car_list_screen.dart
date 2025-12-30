@@ -47,55 +47,73 @@ class _CarListScreenState extends State<CarListScreen> {
     });
 
     try {
-      // Extract location and dates from tripData
       final location = widget.tripData['location'] as String?;
       final pickup = widget.tripData['pickup'] as String?;
       final datetime = widget.tripData['datetime'] as String?;
 
-      // Parse city/district from location
+      // Extract city/district
       String? city;
       String? district;
 
       if (location != null && location.isNotEmpty) {
-        final parts = location.split(',');
+        final parts = location.split(',').map((e) => e.trim()).toList();
         if (parts.length >= 2) {
-          district = parts[0].trim();
-          city = parts[1].trim();
+          district = parts[0];
+          city = parts[1];
         } else {
-          city = location.trim();
-        }
-      } else if (pickup != null && pickup.isNotEmpty) {
-        final parts = pickup.split(',');
-        if (parts.length >= 2) {
-          district = parts[0].trim();
-          city = parts[1].trim();
-        } else {
-          city = pickup.trim();
+          city = parts[0];
         }
       }
 
-      // Parse dates (format: "HH:MM, DD/MM - HH:MM, DD/MM")
+      // ✅ FIXED: Parse dates with year rollover handling
       String? startDate;
       String? endDate;
 
       if (datetime != null && datetime.contains(' - ')) {
+        final now = DateTime.now();
+        final currentYear = now.year;
+
         final parts = datetime.split(' - ');
         if (parts.length == 2) {
-          // Extract DD/MM from "HH:MM, DD/MM"
+          // Parse start date: "HH:MM, DD/MM"
           final startParts = parts[0].split(', ');
-          final endParts = parts[1].split(', ');
-
           if (startParts.length == 2) {
             final startDayMonth = startParts[1].split('/');
             if (startDayMonth.length == 2) {
-              startDate = '2025-${startDayMonth[1].padLeft(2, '0')}-${startDayMonth[0].padLeft(2, '0')}';
+              final startDay = int.parse(startDayMonth[0]);
+              final startMonth = int.parse(startDayMonth[1]);
+
+              // Determine year based on current date
+              int startYear = currentYear;
+              if (startMonth < now.month || (startMonth == now.month && startDay < now.day)) {
+                startYear = currentYear + 1;
+              }
+
+              startDate = '$startYear-${startMonth.toString().padLeft(2, '0')}-${startDay.toString().padLeft(2, '0')}';
             }
           }
 
+          // Parse end date: "HH:MM, DD/MM"
+          final endParts = parts[1].split(', ');
           if (endParts.length == 2) {
             final endDayMonth = endParts[1].split('/');
             if (endDayMonth.length == 2) {
-              endDate = '2025-${endDayMonth[1].padLeft(2, '0')}-${endDayMonth[0].padLeft(2, '0')}';
+              final endDay = int.parse(endDayMonth[0]);
+              final endMonth = int.parse(endDayMonth[1]);
+
+              // Determine year - if end month < start month, it's next year
+              int endYear = currentYear;
+              if (startDate != null) {
+                final parsedStartDate = DateTime.parse(startDate);
+                if (endMonth < parsedStartDate.month ||
+                    (endMonth == parsedStartDate.month && endDay < parsedStartDate.day)) {
+                  endYear = parsedStartDate.year + 1;
+                } else {
+                  endYear = parsedStartDate.year;
+                }
+              }
+
+              endDate = '$endYear-${endMonth.toString().padLeft(2, '0')}-${endDay.toString().padLeft(2, '0')}';
             }
           }
         }
@@ -107,7 +125,16 @@ class _CarListScreenState extends State<CarListScreen> {
       print('   - Start Date: $startDate');
       print('   - End Date: $endDate');
 
-      // Call API with filters
+      // Validate dates
+      if (startDate != null && endDate != null) {
+        final start = DateTime.parse(startDate);
+        final end = DateTime.parse(endDate);
+        if (end.isBefore(start)) {
+          print('⚠️ WARNING: End date is before start date!');
+          throw Exception('Invalid date range');
+        }
+      }
+
       final response = await _apiService.searchVehicles(
         city: city,
         district: district,
@@ -122,7 +149,6 @@ class _CarListScreenState extends State<CarListScreen> {
         sortBy: 'price',
       );
 
-      // Convert to Car models
       final cars = response.vehicles.map((v) => v.toCar()).toList();
 
       setState(() {
