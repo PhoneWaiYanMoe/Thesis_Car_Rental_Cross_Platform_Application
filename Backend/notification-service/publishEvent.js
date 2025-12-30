@@ -2,21 +2,21 @@ const amqp = require("amqplib");
 
 async function publishEvent() {
   try {
-    // Connect to RabbitMQ
+    // connect to RabbitMQ
     const connection = await amqp.connect("amqp://localhost:5672");
     const channel = await connection.createChannel();
 
     const exchange = "wiz.events";
     await channel.assertExchange(exchange, "topic", { durable: true });
 
-    // Event data
+    // event data
     const event = {
       eventId: "test-event-001",
       eventType: "user.registered",
       timestamp: new Date().toISOString(),
       data: {
         userId: "550e8400-e29b-41d4-a716-446655440000",
-        email: "maungmyatthiri@example.com",
+        email: "maungmyatthiri@gmail.com",
         fullName: "Nguen Van A",
         otp: "987654",
       },
@@ -26,7 +26,7 @@ async function publishEvent() {
       },
     };
 
-    // Publish to RabbitMQ
+    // publish to RabbitMQ
     channel.publish(
       exchange,
       "user.registered",
