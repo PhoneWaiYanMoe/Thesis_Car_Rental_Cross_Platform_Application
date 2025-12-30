@@ -1,11 +1,14 @@
+// lib/screens/Cars/views/car_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
+import 'package:wiz/screens/Cars/services/vehicle_api_service.dart';
 import 'package:wiz/screens/Cars/services/car_filter_service.dart';
 import 'package:wiz/screens/Cars/widgets/filter_widget.dart';
 import 'widgets/_buildCarCard.dart';
 import 'widgets/_buildTripSummary.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
+
 class CarListScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   const CarListScreen({super.key, required this.tripData});
@@ -15,7 +18,13 @@ class CarListScreen extends StatefulWidget {
 }
 
 class _CarListScreenState extends State<CarListScreen> {
-  late List<Car> _allCars;
+  final VehicleApiService _apiService = VehicleApiService();
+
+  List<Car> _allCars = [];
+  bool _isLoading = true;
+  String? _error;
+
+  // Filters
   RangeValues _priceRange = const RangeValues(500000, 2000000);
   int? _selectedSeats;
   String? _selectedFuel;
@@ -28,26 +37,127 @@ class _CarListScreenState extends State<CarListScreen> {
   @override
   void initState() {
     super.initState();
-    _allCars = Car.sampleCars;
+    _loadVehicles();
   }
 
-  List<Car> get _filteredCars => CarFilterService.filterCars(
-    cars: _allCars,
-    priceRange: _priceRange,
-    seats: _selectedSeats,
-    fuel: _selectedFuel,
-    type: _selectedType,
-    transmission: _selectedTransmission,
-    instant: _instantBooking,
-    driver: _driverSupport,
-    discount: _discount,
-  );
+  Future<void> _loadVehicles() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Extract location and dates from tripData
+      final location = widget.tripData['location'] as String?;
+      final pickup = widget.tripData['pickup'] as String?;
+      final datetime = widget.tripData['datetime'] as String?;
+
+      // Parse city/district from location
+      String? city;
+      String? district;
+
+      if (location != null && location.isNotEmpty) {
+        final parts = location.split(',');
+        if (parts.length >= 2) {
+          district = parts[0].trim();
+          city = parts[1].trim();
+        } else {
+          city = location.trim();
+        }
+      } else if (pickup != null && pickup.isNotEmpty) {
+        final parts = pickup.split(',');
+        if (parts.length >= 2) {
+          district = parts[0].trim();
+          city = parts[1].trim();
+        } else {
+          city = pickup.trim();
+        }
+      }
+
+      // Parse dates (format: "HH:MM, DD/MM - HH:MM, DD/MM")
+      String? startDate;
+      String? endDate;
+
+      if (datetime != null && datetime.contains(' - ')) {
+        final parts = datetime.split(' - ');
+        if (parts.length == 2) {
+          // Extract DD/MM from "HH:MM, DD/MM"
+          final startParts = parts[0].split(', ');
+          final endParts = parts[1].split(', ');
+
+          if (startParts.length == 2) {
+            final startDayMonth = startParts[1].split('/');
+            if (startDayMonth.length == 2) {
+              startDate = '2025-${startDayMonth[1].padLeft(2, '0')}-${startDayMonth[0].padLeft(2, '0')}';
+            }
+          }
+
+          if (endParts.length == 2) {
+            final endDayMonth = endParts[1].split('/');
+            if (endDayMonth.length == 2) {
+              endDate = '2025-${endDayMonth[1].padLeft(2, '0')}-${endDayMonth[0].padLeft(2, '0')}';
+            }
+          }
+        }
+      }
+
+      print('🔍 Searching with filters:');
+      print('   - City: $city');
+      print('   - District: $district');
+      print('   - Start Date: $startDate');
+      print('   - End Date: $endDate');
+
+      // Call API with filters
+      final response = await _apiService.searchVehicles(
+        city: city,
+        district: district,
+        startDate: startDate,
+        endDate: endDate,
+        minPrice: _priceRange.start.toInt(),
+        maxPrice: _priceRange.end.toInt(),
+        minSeats: _selectedSeats,
+        fuelType: _selectedFuel,
+        vehicleType: _selectedType,
+        transmission: _selectedTransmission,
+        sortBy: 'price',
+      );
+
+      // Convert to Car models
+      final cars = response.vehicles.map((v) => v.toCar()).toList();
+
+      setState(() {
+        _allCars = cars;
+        _isLoading = false;
+      });
+
+      print('✅ Loaded ${cars.length} vehicles');
+    } catch (e) {
+      print('❌ Error loading vehicles: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<Car> get _filteredCars {
+    return CarFilterService.filterCars(
+      cars: _allCars,
+      priceRange: _priceRange,
+      seats: _selectedSeats,
+      fuel: _selectedFuel,
+      type: _selectedType,
+      transmission: _selectedTransmission,
+      instant: _instantBooking,
+      driver: _driverSupport,
+      discount: _discount,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-   
     final displayData = Map<String, dynamic>.from(widget.tripData);
-    displayData['carIndex'] = 0; 
+    displayData['carIndex'] = 0;
     final bookingData = BookingData.fromMap(displayData);
 
     return Scaffold(
@@ -56,35 +166,39 @@ class _CarListScreenState extends State<CarListScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
         title: Text('Available Cars', style: AppStyles.h2(context)),
         centerTitle: true,
-        actions: [IconButton(icon: const Icon(Icons.tune), onPressed: _showFilterSheet)],
+        actions: [
+          IconButton(icon: const Icon(Icons.tune), onPressed: _showFilterSheet),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadVehicles),
+        ],
       ),
       body: Column(
         children: [
-          // Display trip summary
           BuildTripSummary(bookingData: bookingData),
           const SizedBox(height: 16),
 
-          // Car list or empty state
+          // Loading / Error / Content
           Expanded(
-            child: _filteredCars.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? _buildErrorState()
+                : _filteredCars.isEmpty
                 ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filteredCars.length,
-                    itemBuilder: (context, i) {
-                      // Find the index of this car in the original list
-                      final carIndex = _allCars.indexOf(_filteredCars[i]);
-
-                      return BuildCarCard(
-                        carIndex: carIndex,
-                        allCars: _allCars, // Pass original list
-                        tripData: widget.tripData,
-                      );
-                    },
-                  ),
+                : _buildCarList(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCarList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _filteredCars.length,
+      itemBuilder: (context, i) {
+        final carIndex = _allCars.indexOf(_filteredCars[i]);
+        return BuildCarCard(carIndex: carIndex, allCars: _allCars, tripData: widget.tripData);
+      },
     );
   }
 
@@ -97,6 +211,39 @@ class _CarListScreenState extends State<CarListScreen> {
           const SizedBox(height: 16),
           Text('No cars found', style: AppStyles.body(context)),
           Text('Try adjusting filters', style: AppStyles.caption(context)),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _resetFilters();
+              });
+              _loadVehicles();
+            },
+            style: AppStyles.primaryButtonStyle(context),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset Filters'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text('Failed to load vehicles', style: AppStyles.body(context)),
+          Text(_error ?? 'Unknown error', style: AppStyles.caption(context), textAlign: TextAlign.center),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _loadVehicles,
+            style: AppStyles.primaryButtonStyle(context),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
         ],
       ),
     );
@@ -157,11 +304,9 @@ class _CarListScreenState extends State<CarListScreen> {
       controller: controller,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        // Price Range Filter
         PriceRangeFilter(values: _priceRange, onChanged: (v) => _update(setSheetState, () => _priceRange = v)),
         const SizedBox(height: 24),
 
-        // Seats Filter
         ChipFilter<int>(
           title: 'Seats',
           items: [4, 5, 7, 9],
@@ -171,27 +316,24 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Fuel Type Filter
         ChipFilter<String>(
           title: 'Fuel Type',
-          items: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Other'],
+          items: ['Gasoline', 'Diesel', 'Electric', 'Hybrid'],
           selected: _selectedFuel,
           labelBuilder: (f) => f,
           onSelected: (v) => _update(setSheetState, () => _selectedFuel = v),
         ),
         const SizedBox(height: 24),
 
-        // Vehicle Type Filter
         ChipFilter<String>(
           title: 'Vehicle Type',
-          items: ['Sedan', 'SUV', 'Hatchback', 'Van', 'Other'],
+          items: ['Sedan', 'SUV', 'Hatchback', 'Van'],
           selected: _selectedType,
           labelBuilder: (t) => t,
           onSelected: (v) => _update(setSheetState, () => _selectedType = v),
         ),
         const SizedBox(height: 24),
 
-        // Transmission Filter
         ChipFilter<String>(
           title: 'Transmission',
           items: ['Automatic', 'Manual', 'Semi-auto'],
@@ -201,7 +343,6 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Instant Booking Switch
         SwitchFilter(
           title: 'Instant Booking',
           value: _instantBooking,
@@ -209,44 +350,32 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Driver Support Switch
         SwitchFilter(
           title: 'Driver Supported',
           value: _driverSupport,
           onChanged: (v) => _update(setSheetState, () => _driverSupport = v),
-        ),
-        const SizedBox(height: 24),
-
-        // Discount Switch
-        SwitchFilter(
-          title: 'Discount Available',
-          value: _discount,
-          onChanged: (v) => _update(setSheetState, () => _discount = v),
         ),
         const SizedBox(height: 80),
       ],
     );
   }
 
-  // Update both sheet state and main widget state
   void _update(StateSetter setSheetState, VoidCallback update) {
     setSheetState(update);
     setState(() {});
   }
 
-  // Reset all filters
   void _resetAndUpdate(StateSetter setSheetState) {
     setSheetState(_resetFilters);
     setState(_resetFilters);
   }
 
-  // Apply filters and close sheet
   void _applyAndClose(StateSetter setSheetState) {
     setState(() {});
     Navigator.pop(context);
+    _loadVehicles(); // Reload with new filters
   }
 
-  // Reset filter values
   void _resetFilters() {
     _priceRange = const RangeValues(500000, 2000000);
     _selectedSeats = null;

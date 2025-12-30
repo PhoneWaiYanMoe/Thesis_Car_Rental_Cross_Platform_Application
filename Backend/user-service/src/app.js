@@ -7,9 +7,10 @@ const YAML = require("yamljs");
 const path = require("path");
 const passport = require("./config/passport");
 
+// ✅ Import only routes that exist
 const authRoutes = require("./routes/auth_routes");
-const userRoutes = require("./routes/user_routes"); // ✅ NEW
 const locationRoutes = require("./routes/location_routes");
+
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
 const UserGrpcServer = require("./grpc/user_grpc_server");
@@ -42,12 +43,15 @@ try {
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
 
-// Routes
+// ✅ Routes - only mount routes that exist
 app.use("/auth", authRoutes);
-app.use("/users", userRoutes); // ✅ NEW: User profile routes
 app.use("/location", locationRoutes);
+
+// Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/", (req, res) => res.redirect("/api-docs"));
+
+// Error handler
 app.use(errorHandler);
 
 // Initialize gRPC server
