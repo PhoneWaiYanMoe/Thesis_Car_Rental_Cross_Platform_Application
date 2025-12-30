@@ -34,7 +34,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
     final history = await _locationApiService.getSearchHistory(limit: 10);
     if (mounted) {
       setState(() => _searchHistory = history);
-      print('📚 Loaded ${history.length} items from backend');
+      print('📚 [SCREEN] Loaded ${history.length} items from backend');
     }
   }
 
@@ -50,11 +50,21 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
       return;
     }
 
+    if (query.length < 2) {
+      setState(() {
+        _showHistory = false;
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
     setState(() {
       _showHistory = false;
       _isSearching = true;
     });
 
+    // Debounce: wait 500ms before searching
     Future.delayed(const Duration(milliseconds: 500), () {
       if (_searchController.text.trim() == query && mounted) {
         _performSearch(query);
@@ -64,14 +74,19 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
 
   Future<void> _performSearch(String query) async {
     try {
+      print('🔍 [SCREEN] Searching for: "$query"');
+
       final results = await _locationApiService.searchLocation(query);
+
       if (mounted) {
         setState(() {
           _searchResults = results;
           _isSearching = false;
         });
+        print('✅ [SCREEN] Received ${results.length} results');
       }
     } catch (e) {
+      print('❌ [SCREEN] Search failed: $e');
       if (mounted) {
         setState(() => _isSearching = false);
         ScaffoldMessenger.of(
@@ -110,11 +125,9 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
           type: 'current_location',
         );
 
-        // Save to backend history
-        // Ensure displayName is not empty
         final displayName = address.trim().isNotEmpty ? address : 'Current Location';
         final subtitle = address.split(',').skip(1).join(',').trim();
-        
+
         await _locationApiService.saveToHistory(
           displayName: displayName,
           shortName: 'Current Location',
@@ -139,14 +152,12 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
   }
 
   Future<void> _handleResultTap(SearchResult result) async {
-    // Save to backend history
-    // Ensure displayName is not empty - use shortName as fallback
-    final displayName = result.displayName.trim().isNotEmpty 
-        ? result.displayName 
-        : result.shortName.trim().isNotEmpty 
-            ? result.shortName 
-            : 'Unknown Location';
-    
+    final displayName = result.displayName.trim().isNotEmpty
+        ? result.displayName
+        : result.shortName.trim().isNotEmpty
+        ? result.shortName
+        : 'Unknown Location';
+
     await _locationApiService.saveToHistory(
       displayName: displayName,
       shortName: result.shortName,
@@ -161,17 +172,14 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
   }
 
   Future<void> _handleHistoryTap(HistoryItem item) async {
-    // Convert to SearchResult and return
     final result = item.toSearchResult();
 
-    // Update timestamp by saving again
-    // Ensure displayName is not empty
-    final displayName = item.displayName.trim().isNotEmpty 
-        ? item.displayName 
-        : item.shortName.trim().isNotEmpty 
-            ? item.shortName 
-            : 'Unknown Location';
-    
+    final displayName = item.displayName.trim().isNotEmpty
+        ? item.displayName
+        : item.shortName.trim().isNotEmpty
+        ? item.shortName
+        : 'Unknown Location';
+
     await _locationApiService.saveToHistory(
       displayName: displayName,
       shortName: item.shortName,

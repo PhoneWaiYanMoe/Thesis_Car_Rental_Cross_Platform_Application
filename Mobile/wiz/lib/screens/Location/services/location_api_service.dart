@@ -4,7 +4,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:wiz/services/local_storage_service.dart';
 
 class LocationApiService {
-  static const String baseUrl = 'http://10.0.2.2:3001';
+  // ✅ CHANGE THIS TO YOUR BACKEND URL
+  static const String baseUrl = 'http://10.0.2.2:3003';
   final _localStorageService = LocalStorageService();
 
   // Get auth token from local storage
@@ -18,22 +19,29 @@ class LocationApiService {
     }
   }
 
-  // Search for locations
+  // ✅ FIXED: Use backend autocomplete endpoint for real-time search
   Future<List<SearchResult>> searchLocation(String query) async {
-    if (query.isEmpty) return [];
+    if (query.isEmpty || query.length < 2) return [];
 
     try {
-      final response = await http.get(Uri.parse('$baseUrl/location/search?q=$query&limit=10'));
+      print('🔍 [FRONTEND] Calling backend autocomplete: "$query"');
+
+      final response = await http
+          .get(Uri.parse('$baseUrl/location/autocomplete?q=$query&limit=10'))
+          .timeout(const Duration(seconds: 10));
+
+      print('📡 [FRONTEND] Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        print('✅ [FRONTEND] Received ${data.length} results from backend');
         return data.map((json) => SearchResult.fromJson(json)).toList();
       } else {
-        print('Search failed with status: ${response.statusCode}');
+        print('❌ [FRONTEND] Search failed: ${response.statusCode}');
         throw Exception('Failed to search location');
       }
     } catch (e) {
-      print('Error searching location: $e');
+      print('❌ [FRONTEND] Error searching location: $e');
       return [];
     }
   }
@@ -41,16 +49,20 @@ class LocationApiService {
   // Reverse geocoding (get address from coordinates)
   Future<String?> reverseGeocode(LatLng position) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/location/reverse?lat=${position.latitude}&lon=${position.longitude}'),
-      );
+      print('📍 [FRONTEND] Reverse geocoding: (${position.latitude}, ${position.longitude})');
+
+      final response = await http
+          .get(Uri.parse('$baseUrl/location/reverse?lat=${position.latitude}&lon=${position.longitude}'))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['displayName'] ?? data['display_name'];
+        final address = data['displayName'] ?? data['display_name'];
+        print('✅ [FRONTEND] Reverse result: $address');
+        return address;
       }
     } catch (e) {
-      print('Error reverse geocoding: $e');
+      print('❌ [FRONTEND] Error reverse geocoding: $e');
     }
     return null;
   }
@@ -61,27 +73,29 @@ class LocationApiService {
       final token = await _getAuthToken();
 
       if (token == null) {
-        print('⚠️ No auth token - cannot get history');
+        print('⚠️ [FRONTEND] No auth token - cannot get history');
         return [];
       }
 
       final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      final response = await http.get(Uri.parse('$baseUrl/location/history?limit=$limit'), headers: headers);
+      final response = await http
+          .get(Uri.parse('$baseUrl/location/history?limit=$limit'), headers: headers)
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        print('✅ Loaded ${data.length} history items from backend');
+        print('✅ [FRONTEND] Loaded ${data.length} history items from backend');
         return data.map((json) => HistoryItem.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        print('⚠️ History requires authentication');
+        print('⚠️ [FRONTEND] History requires authentication');
         return [];
       } else {
-        print('⚠️ History fetch failed: ${response.statusCode}');
+        print('⚠️ [FRONTEND] History fetch failed: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Error getting search history: $e');
+      print('❌ [FRONTEND] Error getting search history: $e');
     }
     return [];
   }
@@ -98,38 +112,40 @@ class LocationApiService {
       final token = await _getAuthToken();
 
       if (token == null) {
-        print('⚠️ No auth token - cannot save history');
+        print('⚠️ [FRONTEND] No auth token - cannot save history');
         return false;
       }
 
       final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/location/history'),
-        headers: headers,
-        body: jsonEncode({
-          'displayName': displayName,
-          'shortName': shortName,
-          'subtitle': subtitle,
-          'latitude': latitude,
-          'longitude': longitude,
-        }),
-      );
+      print('💾 [FRONTEND] Saving to history: $displayName');
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/location/history'),
+            headers: headers,
+            body: jsonEncode({
+              'displayName': displayName,
+              'shortName': shortName,
+              'subtitle': subtitle,
+              'latitude': latitude,
+              'longitude': longitude,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        print('✅ Saved to backend history: $shortName');
+        print('✅ [FRONTEND] Saved to backend history: $shortName');
         return true;
       } else if (response.statusCode == 401) {
-        print('⚠️ History save requires authentication');
+        print('⚠️ [FRONTEND] History save requires authentication');
         return false;
       } else {
-        print('⚠️ History save failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        print('Request body: displayName=$displayName, shortName=$shortName, subtitle=$subtitle, lat=$latitude, lon=$longitude');
+        print('⚠️ [FRONTEND] History save failed: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('Error saving to history: $e');
+      print('❌ [FRONTEND] Error saving to history: $e');
     }
     return false;
   }
@@ -140,17 +156,19 @@ class LocationApiService {
       final token = await _getAuthToken();
 
       if (token == null) {
-        print('⚠️ No auth token - cannot delete history');
+        print('⚠️ [FRONTEND] No auth token - cannot delete history');
         return false;
       }
 
       final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      final response = await http.delete(Uri.parse('$baseUrl/location/history/$id'), headers: headers);
+      final response = await http
+          .delete(Uri.parse('$baseUrl/location/history/$id'), headers: headers)
+          .timeout(const Duration(seconds: 10));
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error deleting from history: $e');
+      print('❌ [FRONTEND] Error deleting from history: $e');
     }
     return false;
   }
@@ -161,51 +179,40 @@ class LocationApiService {
       final token = await _getAuthToken();
 
       if (token == null) {
-        print('⚠️ No auth token - cannot clear history');
+        print('⚠️ [FRONTEND] No auth token - cannot clear history');
         return false;
       }
 
       final headers = <String, String>{'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      final response = await http.delete(Uri.parse('$baseUrl/location/history'), headers: headers);
+      final response = await http
+          .delete(Uri.parse('$baseUrl/location/history'), headers: headers)
+          .timeout(const Duration(seconds: 10));
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error clearing history: $e');
+      print('❌ [FRONTEND] Error clearing history: $e');
     }
     return false;
-  }
-
-  // Get place details
-  Future<PlaceDetails?> getPlaceDetails(String placeId) async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/location/details/$placeId'));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return PlaceDetails.fromJson(data);
-      }
-    } catch (e) {
-      print('Error getting place details: $e');
-    }
-    return null;
   }
 
   // Calculate distance between two points
   Future<double?> calculateDistance(double lat1, double lon1, double lat2, double lon2) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/location/calculate-distance'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'lat1': lat1, 'lon1': lon1, 'lat2': lat2, 'lon2': lon2}),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/location/calculate-distance'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'lat1': lat1, 'lon1': lon1, 'lat2': lat2, 'lon2': lon2}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['distance'].toDouble();
       }
     } catch (e) {
-      print('Error calculating distance: $e');
+      print('❌ [FRONTEND] Error calculating distance: $e');
     }
     return null;
   }
@@ -213,18 +220,20 @@ class LocationApiService {
   // Check if location is in service area
   Future<ServiceAreaResult?> checkServiceArea(double latitude, double longitude) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/location/check-service-area'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'latitude': latitude, 'longitude': longitude}),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/location/check-service-area'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'latitude': latitude, 'longitude': longitude}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return ServiceAreaResult.fromJson(data);
       }
     } catch (e) {
-      print('Error checking service area: $e');
+      print('❌ [FRONTEND] Error checking service area: $e');
     }
     return null;
   }
@@ -322,21 +331,14 @@ class HistoryItem {
     );
   }
 
-  // Convert to SearchResult for navigation
   SearchResult toSearchResult() {
-    // Ensure displayName is not empty - use shortName as fallback
-    final displayNameValue = displayName.trim().isNotEmpty 
-        ? displayName 
-        : shortName.trim().isNotEmpty 
-            ? shortName 
-            : 'Unknown Location';
-    
-    return SearchResult(
-      placeId: id.toString(), 
-      displayName: displayNameValue, 
-      position: position, 
-      type: 'history'
-    );
+    final displayNameValue = displayName.trim().isNotEmpty
+        ? displayName
+        : shortName.trim().isNotEmpty
+        ? shortName
+        : 'Unknown Location';
+
+    return SearchResult(placeId: id.toString(), displayName: displayNameValue, position: position, type: 'history');
   }
 }
 
