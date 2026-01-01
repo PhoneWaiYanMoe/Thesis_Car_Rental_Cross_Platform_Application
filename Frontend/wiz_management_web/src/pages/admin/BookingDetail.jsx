@@ -161,7 +161,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                     }
                     className="text-[#6679C0] hover:text-[#131A34] font-semibold text-sm"
                   >
-                    View Car Details →
+                    View Car Details
                   </button>
                 </div>
               </div>

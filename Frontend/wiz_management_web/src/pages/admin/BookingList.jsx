@@ -6,8 +6,11 @@ import {
   Eye,
   ChevronDown,
   Calendar as CalendarIcon,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
+
+import Pagination from "../../components/Pagination";
+import BookingCard from "../../components/BookingCard";
 
 export default function BookingList({ bookingData, carData, userData }) {
   const navigate = useNavigate();
@@ -22,6 +25,9 @@ export default function BookingList({ bookingData, carData, userData }) {
   const [customToDate, setCustomToDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("date");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Filter bookings
   let filteredBookings = bookingData;
@@ -94,6 +100,7 @@ export default function BookingList({ bookingData, carData, userData }) {
         return 0;
     }
   });
+
   const getStatusBadge = (status) => {
     const badges = {
       completed: {
@@ -111,6 +118,7 @@ export default function BookingList({ bookingData, carData, userData }) {
     };
     return badges[status];
   };
+
   const statusCounts = {
     all: bookingData.length,
     completed: bookingData.filter((b) => b.status === "completed").length,
@@ -118,12 +126,32 @@ export default function BookingList({ bookingData, carData, userData }) {
     cancelled: bookingData.filter((b) => b.status === "cancelled").length,
     upcoming: bookingData.filter((b) => b.status === "upcoming").length,
   };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(amount);
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentBookings = filteredBookings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    filterStatus,
+    dateFilter,
+    customFromDate,
+    customToDate,
+    sortBy,
+  ]);
+
   return (
     <div>
       {/* ack button */}
@@ -280,6 +308,10 @@ export default function BookingList({ bookingData, carData, userData }) {
         <p className="text-[#717685]">
           Showing{" "}
           <span className="font-semibold text-[#131A34]">
+            {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)}
+          </span>{" "}
+          of{" "}
+          <span className="font-semibold text-[#131A34]">
             {filteredBookings.length}
           </span>{" "}
           bookings
@@ -303,7 +335,7 @@ export default function BookingList({ bookingData, carData, userData }) {
 
       {/* booking list */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {filteredBookings.length === 0 ? (
+        {currentBookings.length === 0 ? (
           <div className="p-12 text-center">
             <CalendarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
             <p className="text-[#717685] text-lg font-medium">
@@ -315,64 +347,23 @@ export default function BookingList({ bookingData, carData, userData }) {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {filteredBookings.map((booking) => {
-              const badge = getStatusBadge(booking.status);
-
-              return (
-                <div
-                  key={booking.id}
-                  onClick={() => navigate(`/admin/bookings/${booking.id}`)}
-                  className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
-                        <img
-                          src={booking.carImage}
-                          alt={booking.carName}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
-                            {booking.carName}
-                          </h4>
-                          <span
-                            className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
-                          >
-                            {badge.label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-[#717685] flex-wrap">
-                          <span className="font-medium">{booking.id}</span>
-                          <span>•</span>
-                          <span>{booking.userName}</span>
-                          <span>•</span>
-                          <span>{booking.duration} days</span>
-                          <span>•</span>
-                          <span>
-                            {new Date(booking.startDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6 text-center">
-                      <div>
-                        <p className="text-sm text-[#717685]">Total</p>
-                        <p className="font-bold text-[#6679C0]">
-                          {formatCurrency(booking.total)}
-                        </p>
-                      </div>
-                      <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {currentBookings.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                basePath="/admin/bookings"
+              />
+            ))}
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

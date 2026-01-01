@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -8,6 +8,9 @@ import {
   User as UserIcon,
 } from "lucide-react";
 
+import UserCard from "../../components/UserCard";
+import Pagination from "../../components/Pagination";
+
 export default function UserManagement({ userData }) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,6 +18,9 @@ export default function UserManagement({ userData }) {
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [showFilters, setShowFilters] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const userTypes = ["all", "renter", "owner"];
 
@@ -62,6 +68,17 @@ export default function UserManagement({ userData }) {
     stopped: userData.filter((u) => u.status === "stopped").length,
     banned: userData.filter((u) => u.status === "banned").length,
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType, sortBy]);
 
   return (
     <div>
@@ -175,6 +192,10 @@ export default function UserManagement({ userData }) {
         <p className="text-[#717685]">
           Showing{" "}
           <span className="font-semibold text-[#131A34]">
+            {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)}
+          </span>{" "}
+          of{" "}
+          <span className="font-semibold text-[#131A34]">
             {filteredUsers.length}
           </span>{" "}
           users
@@ -195,7 +216,7 @@ export default function UserManagement({ userData }) {
 
       {/* user list */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {filteredUsers.length === 0 ? (
+        {currentUsers.length === 0 ? (
           <div className="p-12 text-center">
             <UserIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
             <p className="text-[#717685] text-lg font-medium">No users found</p>
@@ -205,71 +226,19 @@ export default function UserManagement({ userData }) {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {filteredUsers.map((user) => {
-              const badge = getStatusBadge(user.status);
-              return (
-                <div
-                  key={user.id}
-                  onClick={() => navigate(`/support/users/${user.id}`)}
-                  className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 bg-[#6679C0] rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-lg">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
-                            {user.name}
-                          </h4>
-                          <span
-                            className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
-                          >
-                            {badge.label}
-                          </span>
-                          <span className="bg-[#F8F9FF] text-[#6679C0] px-2.5 py-1 rounded-lg text-xs font-semibold">
-                            {user.type === "renter" ? "Renter" : "Car Owner"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-[#717685]">
-                          <span>{user.email}</span>
-                          <span>•</span>
-                          <span>{user.id}</span>
-                          <span>•</span>
-                          <span>
-                            Joined{" "}
-                            {new Date(user.joinedDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6 text-center">
-                      <div>
-                        <p className="text-sm text-[#717685]">Bookings</p>
-                        <p className="font-bold text-[#131A34]">
-                          {user.totalBookings}
-                        </p>
-                      </div>
-                      {user.type === "owner" && (
-                        <div>
-                          <p className="text-sm text-[#717685]">Cars</p>
-                          <p className="font-bold text-[#131A34]">
-                            {user.totalCars || 0}
-                          </p>
-                        </div>
-                      )}
-                      <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {currentUsers.map((user) => (
+              <UserCard key={user.id} user={user} basePath="/support/users" />
+            ))}
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

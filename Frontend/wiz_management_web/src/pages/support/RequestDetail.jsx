@@ -220,7 +220,7 @@ export default function RequestDetail({
                   }
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
-                  View Details →
+                  View Details
                 </button>
               </div>
               <div className="bg-[#F8F9FF] rounded-xl p-4 space-y-3">
@@ -274,7 +274,7 @@ export default function RequestDetail({
                   onClick={() => navigate(`/admin/cars/${relatedVehicle.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
-                  View Details →
+                  View Details
                 </button>
               </div>
               <div className="flex items-start gap-4">
@@ -320,7 +320,7 @@ export default function RequestDetail({
                   onClick={() => navigate(`/admin/users/${relatedOwner.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
-                  View Profile →
+                  View Profile
                 </button>
               </div>
               <div className="bg-[#F8F9FF] rounded-xl p-4 space-y-2">
@@ -411,7 +411,7 @@ export default function RequestDetail({
                   onClick={() => navigate(`/admin/users/${requestCustomer.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
-                  View Profile →
+                  View Profile
                 </button>
               </div>
               <div className="space-y-4">

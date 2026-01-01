@@ -254,7 +254,7 @@ export default function UserDetail({
                   }
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
-                  See More →
+                  See More
                 </button>
               )}
             </div>

@@ -175,7 +175,6 @@ export default function AdminDashboard({
             style: "currency",
             currency: "VND",
           }).format(totalRevenue)}
-          trend={{ isPositive: true, value: "15%" }}
           bgColor="#D1FAE5"
         />
         <StatCard
@@ -185,21 +184,18 @@ export default function AdminDashboard({
             style: "currency",
             currency: "VND",
           }).format(totalProfit)}
-          trend={{ isPositive: true, value: "15%" }}
           bgColor="#DBEAFE"
         />
         <StatCard
           icon={Users}
           label="Total Users"
           value={totalUsers}
-          trend={{ isPositive: true, value: "23%" }}
           bgColor="#E0E7FF"
         />
         <StatCard
           icon={Car}
           label="Total Cars"
           value={totalCars}
-          trend={{ isPositive: true, value: "8%" }}
           bgColor="#FEF3C7"
         />
       </div>
@@ -415,7 +411,7 @@ export default function AdminDashboard({
               onClick={() => navigate("/admin/cars?sortBy=rating")}
               className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
             >
-              See More →
+              See More
             </button>
           </div>
           <div className="divide-y divide-gray-100">
@@ -467,7 +463,7 @@ export default function AdminDashboard({
               onClick={() => navigate("/admin/users?type=owner&sortBy=rentals")}
               className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
             >
-              See More →
+              See More
             </button>
           </div>
           <div className="divide-y divide-gray-100">

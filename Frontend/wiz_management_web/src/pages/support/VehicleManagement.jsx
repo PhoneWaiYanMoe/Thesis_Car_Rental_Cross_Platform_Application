@@ -1,6 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Filter, Eye, ChevronDown, Car as CarIcon, ArrowLeft } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Eye,
+  ChevronDown,
+  Car as CarIcon,
+  ArrowLeft,
+} from "lucide-react";
+
+import CarCard from "../../components/CarCard";
+import Pagination from "../../components/Pagination";
 
 export default function VehicleManagement({ carData }) {
   const navigate = useNavigate();
@@ -12,6 +22,9 @@ export default function VehicleManagement({ carData }) {
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [showFilters, setShowFilters] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const vehicleTypes = ["all", ...new Set(carData.map((c) => c.vehicleType))];
 
@@ -66,6 +79,17 @@ export default function VehicleManagement({ carData }) {
     stopped: carData.filter((c) => c.status === "stopped").length,
     banned: carData.filter((c) => c.status === "banned").length,
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType, sortBy]);
 
   return (
     <div>
@@ -194,9 +218,13 @@ export default function VehicleManagement({ carData }) {
         <p className="text-[#717685]">
           Showing{" "}
           <span className="font-semibold text-[#131A34]">
-            {filteredCars.length}
+            {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)}
           </span>{" "}
-          vehicles
+          of{" "}
+          <span className="font-semibold text-[#131A34]">
+            {filteredUsers.length}
+          </span>{" "}
+          users
         </p>
         {(searchTerm || filterStatus !== "all" || filterType !== "all") && (
           <button
@@ -214,101 +242,32 @@ export default function VehicleManagement({ carData }) {
 
       {/* car grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCars.length === 0 ? (
+        {currentCars.length === 0 ? (
           <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-gray-100">
             <CarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-            <p className="text-[#717685] text-lg font-medium">
-              No vehicles found
-            </p>
+            <p className="text-[#717685] text-lg font-medium">No cars found</p>
             <p className="text-[#B2BCE0] text-sm mt-1">
               Try adjusting your filters
             </p>
           </div>
         ) : (
-          filteredCars.map((car) => {
-            const badge = getStatusBadge(car.status);
-            return (
-              <div
-                key={car.id}
-                onClick={() => navigate(`/support/vehicles/${car.id}`)}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
-              >
-                <div className="aspect-video bg-gray-200 overflow-hidden">
-                  <img
-                    src={car.image}
-                    alt={car.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-[#131A34] group-hover:text-[#6679C0] transition-colors mb-1">
-                        {car.name}
-                      </h3>
-                      <p className="text-sm text-[#717685]">{car.ownerName}</p>
-                    </div>
-                    <span
-                      className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-                    <div>
-                      <p className="text-[#717685] text-xs">Type</p>
-                      <p className="font-semibold text-[#131A34]">
-                        {car.vehicleType}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#717685] text-xs">Seater</p>
-                      <p className="font-semibold text-[#131A34]">
-                        {car.seater}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#717685] text-xs">Fuel</p>
-                      <p className="font-semibold text-[#131A34]">
-                        {car.fuelType}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#717685] text-xs">Transmission</p>
-                      <p className="font-semibold text-[#131A34]">
-                        {car.transmission}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div>
-                      <p className="text-xs text-[#717685]">Price per day</p>
-                      <p className="font-bold text-[#6679C0]">
-                        {new Intl.NumberFormat("vi-VN").format(car.pricePerDay)}{" "}
-                        đ
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-[#717685]">Rating</p>
-                      <p className="font-bold text-[#131A34]">
-                        ★ {parseFloat(car.rating).toFixed(1)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-[#717685]">Rentals</p>
-                      <p className="font-bold text-[#131A34]">
-                        {car.totalRentals}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          currentCars.map((car) => (
+            <CarCard
+              key={car.id}
+              car={car}
+              showOwner={true}
+              onClickPath={`/support/vehicles/${car.id}`}
+            />
+          ))
         )}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

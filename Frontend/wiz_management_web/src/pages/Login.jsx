@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { predefinedUsers } from "../utils/predefinedUsers";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -14,23 +13,28 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    // find user in predefined users
+    // inline predefined users
+    const predefinedUsers = [
+      { username: "admin", password: "admin123", role: "admin" },
+      { username: "support1", password: "pass123", role: "support" },
+      { username: "support2", password: "pass123", role: "support" },
+      { username: "support3", password: "pass123", role: "support" },
+      { username: "support4", password: "pass123", role: "support" },
+    ];
+
     const user = predefinedUsers.find(
       (u) => u.username === username && u.password === password
     );
 
     if (user) {
-      // login successful
       onLogin(username, password, user.role);
 
-      // navigate based on role
       if (user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/support/dashboard");
       }
     } else {
-      // login failed
       setError("Invalid username or password");
     }
   };
