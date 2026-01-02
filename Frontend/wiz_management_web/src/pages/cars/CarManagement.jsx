@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Filter, Eye, ChevronDown, Car as CarIcon } from "lucide-react";
-
-import Pagination from "../../components/Pagination";
-import CarCard from "../../components/CarCard";
+import { Search, Filter, ChevronDown, Car as CarIcon, ArrowLeft } from "lucide-react";
+import Pagination from "../../components/common/Pagination";
+import CarCard from "../../components/common/CarCard";
 
 export default function CarManagement({ carData, onUpdateCarStatus }) {
   const navigate = useNavigate();
@@ -17,10 +16,10 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
   const [sortBy, setSortBy] = useState(sortByParam || "name");
   const [showFilters, setShowFilters] = useState(false);
 
-  const vehicleTypes = ["all", ...new Set(carData.map((c) => c.vehicleType))];
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  const vehicleTypes = ["all", ...new Set(carData.map((c) => c.vehicleType))];
 
   let filteredCars = carData;
 
@@ -48,26 +47,13 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
       case "rentals":
         return b.totalRentals - a.totalRentals;
       case "rating":
-        return b.rating - a.rating;
+        return parseFloat(b.rating) - parseFloat(a.rating);
       case "price":
-        return b.price - a.price;
+        return b.pricePerDay - a.pricePerDay;
       default:
         return 0;
     }
   });
-
-  const getStatusBadge = (status) => {
-    const badges = {
-      normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
-      stopped: {
-        bg: "bg-yellow-50",
-        text: "text-yellow-700",
-        label: "Stopped",
-      },
-      banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
-    };
-    return badges[status];
-  };
 
   const statusCounts = {
     all: carData.length,
@@ -85,18 +71,31 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterType, sortBy]);
+  }, [searchTerm, filterStatus, filterType, sortBy, ownerId]);
 
   return (
     <div>
+      {/* Back button if filtered by owner */}
+      {ownerId && (
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+        </div>
+      )}
+
       {/* header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#131A34] mb-2">
-          {ownerId ? "Owner's Cars" : "Car Management"}
+          {ownerId ? "Owner's Vehicles" : "Vehicles"}
         </h1>
         <p className="text-[#717685]">
           {ownerId
-            ? `Showing cars owned by this user`
+            ? "Showing vehicles owned by this user"
             : "Manage all vehicles on the platform"}
         </p>
       </div>
@@ -240,7 +239,7 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
               key={car.id}
               car={car}
               showOwner={true}
-              onClickPath={`/admin/cars/${car.id}`}
+              onClickPath={`/cars/${car.id}`}
             />
           ))
         )}

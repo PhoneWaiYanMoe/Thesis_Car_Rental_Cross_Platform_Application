@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
-  Clock,
   Calendar,
   User,
   Mail,
@@ -12,22 +11,23 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Car,
-  CreditCard,
   Package,
 } from "lucide-react";
-import ConfirmDialog from "../../components/ConfirmDialog";
+import { useAuth } from "../../hooks/useAuth";
+import { hasPermission } from "../../utils/permissions";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 export default function RequestDetail({
   requests,
   onApprove,
   onDeny,
-  currentUser,
   bookingData,
   carData,
   userData,
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const request = requests.find((r) => r.id === id);
 
   const [denialReason, setDenialReason] = useState("");
@@ -35,6 +35,9 @@ export default function RequestDetail({
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // Check if user can handle requests
+  const canHandleRequests = hasPermission(user.type, 'HANDLE_REQUESTS');
 
   // Get related data
   const relatedBooking = request?.bookingId
@@ -62,7 +65,7 @@ export default function RequestDetail({
             The request you're looking for doesn't exist
           </p>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/requests")}
             className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
           >
             Back to Requests
@@ -93,7 +96,7 @@ export default function RequestDetail({
       onDeny(request.id, denialReason);
     }
     setShowConfirm(false);
-    navigate(-1);
+    navigate("/requests");
   };
 
   const getStatusBadge = (status) => {
@@ -147,11 +150,11 @@ export default function RequestDetail({
       {/* header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/requests")}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back
+          Back to Requests
         </button>
         <div className="flex items-start justify-between">
           <div>
@@ -182,7 +185,7 @@ export default function RequestDetail({
           </div>
 
           {/* attached photos */}
-          {request.photos.length > 0 && (
+          {request.photos && request.photos.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
                 <ImageIcon className="w-5 h-5" />
@@ -215,9 +218,7 @@ export default function RequestDetail({
                   Related Booking
                 </h2>
                 <button
-                  onClick={() =>
-                    navigate(`/admin/bookings/${relatedBooking.id}`)
-                  }
+                  onClick={() => navigate(`/bookings/${relatedBooking.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   View Details
@@ -271,7 +272,7 @@ export default function RequestDetail({
                   Related Vehicle
                 </h2>
                 <button
-                  onClick={() => navigate(`/admin/cars/${relatedVehicle.id}`)}
+                  onClick={() => navigate(`/cars/${relatedVehicle.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   View Details
@@ -317,7 +318,7 @@ export default function RequestDetail({
                   Vehicle Owner
                 </h2>
                 <button
-                  onClick={() => navigate(`/admin/users/${relatedOwner.id}`)}
+                  onClick={() => navigate(`/users/${relatedOwner.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   View Profile
@@ -381,7 +382,7 @@ export default function RequestDetail({
           )}
 
           {/* denial input */}
-          {showDenialInput && request.status === "pending" && (
+          {showDenialInput && request.status === "pending" && canHandleRequests && (
             <div className="bg-white rounded-2xl border border-red-200 p-6">
               <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
@@ -408,7 +409,7 @@ export default function RequestDetail({
                   Customer Information
                 </h2>
                 <button
-                  onClick={() => navigate(`/admin/users/${requestCustomer.id}`)}
+                  onClick={() => navigate(`/users/${requestCustomer.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   View Profile
@@ -487,21 +488,23 @@ export default function RequestDetail({
               </div>
             </div>
           </div>
-          {/* actions */}
-          {request.status === "pending" && (
+          {/* actions - Only show for pending requests and if user has permission */}
+          {request.status === "pending" && canHandleRequests && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">Actions</h2>
               <div className="space-y-3">
                 <button
                   onClick={() => handleAction("approve")}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#9AE8AB] text-131A34 rounded-xl font-semibold hover:bg-[#7dd89a] transition-all shadow-lg hover:shadow-xl"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#9AE8AB] text-[#131A34] rounded-xl font-semibold hover:bg-[#7dd89a] transition-all shadow-lg hover:shadow-xl"
                 >
+                  <CheckCircle className="w-5 h-5" />
                   Approve Request
                 </button>
                 <button
                   onClick={() => handleAction("deny")}
                   className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#F95E5B] text-white rounded-xl font-semibold hover:bg-[#f73d39] transition-all shadow-lg hover:shadow-xl"
                 >
+                  <XCircle className="w-5 h-5" />
                   Deny Request
                 </button>
               </div>
@@ -536,20 +539,22 @@ export default function RequestDetail({
       )}
 
       {/* confirmation dialog */}
-      <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirm}
-        title={
-          confirmAction === "approve" ? "Approve Request?" : "Deny Request?"
-        }
-        message={
-          confirmAction === "approve"
-            ? "Are you sure you want to approve this request? This action cannot be undone."
-            : "Are you sure you want to deny this request? The customer will receive your explanation."
-        }
-        type={confirmAction}
-      />
+      {canHandleRequests && (
+        <ConfirmDialog
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={handleConfirm}
+          title={
+            confirmAction === "approve" ? "Approve Request?" : "Deny Request?"
+          }
+          message={
+            confirmAction === "approve"
+              ? "Are you sure you want to approve this request? This action cannot be undone."
+              : "Are you sure you want to deny this request? The customer will receive your explanation."
+          }
+          type={confirmAction}
+        />
+      )}
     </div>
   );
 }

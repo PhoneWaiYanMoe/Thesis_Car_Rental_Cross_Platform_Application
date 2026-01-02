@@ -12,8 +12,8 @@ import {
   Car,
   CreditCard,
 } from "lucide-react";
-import ConfirmDialog from "../../components/ConfirmDialog";
-import ReviewList from "../../components/ReviewList";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import ReviewList from "../../components/common/ReviewList";
 
 export default function UserDetail({
   userData,

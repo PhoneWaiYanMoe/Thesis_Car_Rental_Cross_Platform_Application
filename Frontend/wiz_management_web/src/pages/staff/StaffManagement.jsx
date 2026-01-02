@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Search, UserPlus, Eye, Settings } from "lucide-react";
-import ConfirmDialog from "../../components/ConfirmDialog";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useNavigate } from 'react-router-dom';
 
 export default function StaffManagement({

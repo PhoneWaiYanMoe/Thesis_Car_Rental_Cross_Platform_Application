@@ -1,21 +1,30 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Car,
-  User,
-  DollarSign,
-  MapPin,
-  AlertCircle,
-} from "lucide-react";
-import ReviewList from "../../components/ReviewList";
+import { ArrowLeft, User, MapPin, Settings, AlertCircle } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { hasPermission } from "../../utils/permissions";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import ReviewList from "../../components/common/ReviewList";
 
-export default function VehicleDetail({ carData, userData, reviewData }) {
+export default function CarDetail({
+  carData,
+  onUpdateCarStatus,
+  userData,
+  reviewData,
+}) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const car = carData.find((c) => c.id === id);
 
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Check if user can update car status
+  const canUpdateStatus = hasPermission(user.type, "UPDATE_CAR_STATUS");
+
   const carImages = car ? car.images || [car.image] : [];
 
   if (!car) {
@@ -30,7 +39,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             The vehicle you're looking for doesn't exist
           </p>
           <button
-            onClick={() => navigate("/support/vehicles")}
+            onClick={() => navigate("/cars")}
             className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
           >
             Back to Vehicles
@@ -39,6 +48,17 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
       </div>
     );
   }
+
+  const handleStatusChange = (status) => {
+    setNewStatus(status);
+    setShowConfirm(true);
+  };
+
+  const handleConfirm = () => {
+    onUpdateCarStatus(car.id, newStatus);
+    setShowConfirm(false);
+    setShowStatusUpdate(false);
+  };
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -62,7 +82,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
 
   return (
     <div>
-      {/* header */}
+      {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -76,16 +96,16 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             <h1 className="text-3xl font-bold text-[#131A34] mb-2">
               {car.name}
             </h1>
-            <p className="text-[#717685]">Car ID: {car.id}</p>
+            <p className="text-[#717685]">Vehicle ID: {car.id}</p>
           </div>
           {getStatusBadge(car.status)}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* main content */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* car images */}
+          {/* Car Images */}
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="aspect-video bg-gray-200 relative group">
               <img
@@ -94,7 +114,6 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
                 className="w-full h-full object-cover"
               />
 
-              {/* Navigation Arrows */}
               {carImages.length > 1 && (
                 <>
                   <button
@@ -120,7 +139,6 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
                 </>
               )}
 
-              {/* Image Indicators */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {carImages.map((_, idx) => (
                   <button
@@ -135,7 +153,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             </div>
           </div>
 
-          {/* car specifications */}
+          {/* Specifications */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Specifications
@@ -171,20 +189,10 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
                 <p className="text-sm text-[#717685] mb-1">Mileage</p>
                 <p className="font-semibold text-[#131A34]">{car.mileage} km</p>
               </div>
-              <div className="bg-[#F8F9FF] rounded-xl p-4">
-                <p className="text-sm text-[#717685] mb-1">Color</p>
-                <p className="font-semibold text-[#131A34]">{car.color}</p>
-              </div>
-              <div className="bg-[#F8F9FF] rounded-xl p-4">
-                <p className="text-sm text-[#717685] mb-1">License Plate</p>
-                <p className="font-semibold text-[#131A34]">
-                  {car.licensePlate}
-                </p>
-              </div>
             </div>
           </div>
 
-          {/* features */}
+          {/* Features */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">Features</h2>
             <div className="flex flex-wrap gap-2">
@@ -199,15 +207,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             </div>
           </div>
 
-          {/* description */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">
-              Description
-            </h2>
-            <p className="text-[#131A34] leading-relaxed">{car.description}</p>
-          </div>
-
-          {/* performance stats */}
+          {/* Performance Stats */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Performance
@@ -235,9 +235,9 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
           </div>
         </div>
 
-        {/* sidebar */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* owner info */}
+          {/* Owner Info */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Owner Information
@@ -266,7 +266,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
               <button
                 onClick={() => {
                   const owner = userData?.find((u) => u.name === car.ownerName);
-                  if (owner) navigate(`/support/users/${owner.id}`);
+                  if (owner) navigate(`/users/${owner.id}`);
                 }}
                 className="w-full mt-2 px-4 py-2 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
@@ -275,30 +275,66 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             </div>
           </div>
 
-          {/* pricing info */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">Pricing</h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[#717685]">Daily Rate</span>
-                <span className="font-bold text-[#131A34]">
-                  {new Intl.NumberFormat("vi-VN").format(car.pricePerDay)} đ
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#717685]">Insurance</span>
-                <span className="font-semibold text-[#131A34]">
-                  {car.insuranceType}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <span className="text-[#717685]">Availability</span>
-                <span className="text-sm font-semibold text-[#6679C0]">
-                  {car.availability}
-                </span>
-              </div>
+          {/* Status Update - Only show for admin */}
+          {canUpdateStatus && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Update Status
+              </h2>
+
+              {!showStatusUpdate ? (
+                <button
+                  onClick={() => setShowStatusUpdate(true)}
+                  className="w-full px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+                >
+                  Change Vehicle Status
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleStatusChange("normal")}
+                    disabled={car.status === "normal"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      car.status === "normal"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-green-50 text-green-700 hover:bg-green-100"
+                    }`}
+                  >
+                    Set as Normal
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange("stopped")}
+                    disabled={car.status === "stopped"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      car.status === "stopped"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                    }`}
+                  >
+                    Set as Stopped
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange("banned")}
+                    disabled={car.status === "banned"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      car.status === "banned"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-red-50 text-red-700 hover:bg-red-100"
+                    }`}
+                  >
+                    Ban This Vehicle
+                  </button>
+                  <button
+                    onClick={() => setShowStatusUpdate(false)}
+                    className="w-full px-6 py-3 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -307,7 +343,7 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
         <div className="mt-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
-              Đánh giá từ khách hàng (
+              Customer Reviews (
               {reviewData.filter((r) => r.carId === car.id).length})
             </h2>
             <ReviewList
@@ -316,6 +352,18 @@ export default function VehicleDetail({ carData, userData, reviewData }) {
             />
           </div>
         </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {canUpdateStatus && (
+        <ConfirmDialog
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={handleConfirm}
+          title={`Change Status to ${newStatus}?`}
+          message={`Are you sure you want to change this vehicle's status to ${newStatus}? This action will affect the vehicle's availability on the platform.`}
+          type="approve"
+        />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Car,
@@ -14,7 +14,6 @@ import {
 export default function BookingDetail({ bookingData, carData, userData }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const booking = bookingData.find((b) => b.id === id);
   const car = booking ? carData.find((c) => c.id === booking.carId) : null;
   const user = booking ? userData.find((u) => u.id === booking.userId) : null;
@@ -32,10 +31,10 @@ export default function BookingDetail({ bookingData, carData, userData }) {
             The booking you're looking for doesn't exist
           </p>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/bookings")}
             className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
           >
-            Go Back
+            Back to Bookings
           </button>
         </div>
       </div>
@@ -154,11 +153,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                     </div>
                   </div>
                   <button
-                    onClick={() =>
-                      navigate(`/admin/cars/${car.id}`, {
-                        state: { from: location.pathname },
-                      })
-                    }
+                    onClick={() => navigate(`/cars/${car.id}`)}
                     className="text-[#6679C0] hover:text-[#131A34] font-semibold text-sm"
                   >
                     View Car Details
@@ -372,7 +367,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/admin/users/${user.id}`)}
+                  onClick={() => navigate(`/users/${user.id}`)}
                   className="w-full mt-4 px-4 py-2 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
                 >
                   View User Profile
@@ -398,7 +393,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/admin/users/${owner.id}`)}
+                  onClick={() => navigate(`/users/${owner.id}`)}
                   className="w-full mt-2 px-4 py-2 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
                 >
                   View Owner Profile
@@ -414,17 +409,13 @@ export default function BookingDetail({ bookingData, carData, userData }) {
             </h2>
             <div className="space-y-3">
               <button
-                onClick={() =>
-                  navigate(`/admin/bookings?userId=${booking.userId}`)
-                }
+                onClick={() => navigate(`/bookings?userId=${booking.userId}`)}
                 className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
                 View User's Bookings
               </button>
               <button
-                onClick={() =>
-                  navigate(`/admin/bookings?ownerId=${booking.ownerId}`)
-                }
+                onClick={() => navigate(`/bookings?ownerId=${booking.ownerId}`)}
                 className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
                 View Owner's Bookings

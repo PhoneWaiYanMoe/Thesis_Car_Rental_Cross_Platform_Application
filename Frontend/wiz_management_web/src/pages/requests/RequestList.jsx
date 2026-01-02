@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Eye, Clock, CheckCircle, XCircle, ChevronDown, ImageIcon } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
-export default function RequestList({ requests, currentUser }) {
+export default function RequestList({ requests }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -29,7 +31,7 @@ export default function RequestList({ requests, currentUser }) {
     const matchesCategory = filterCategory === 'all' || req.category === filterCategory;
     const matchesStatus = filterStatus === 'all' || req.status === filterStatus;
     const matchesHandler = filterHandler === 'all' || 
-                          (filterHandler === 'me' && req.handledBy === currentUser) ||
+                          (filterHandler === 'me' && req.handledBy === user.username) ||
                           req.handledBy === filterHandler;
     return matchesSearch && matchesCategory && matchesStatus && matchesHandler;
   });
@@ -147,7 +149,6 @@ export default function RequestList({ requests, currentUser }) {
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            {/* <option value="status">Sort by Status</option> */}
           </select>
         </div>
 
@@ -224,16 +225,11 @@ export default function RequestList({ requests, currentUser }) {
               return (
                 <div
                   key={req.id}
-                  onClick={() => navigate(`/support/requests/${req.id}`)}
+                  onClick={() => navigate(`/requests/${req.id}`)}
                   className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
-                      {/* status icon */}
-                      {/* <div className="mt-1">
-                        {getStatusIcon(req.status)}
-                      </div> */}
-
                       {/* content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">

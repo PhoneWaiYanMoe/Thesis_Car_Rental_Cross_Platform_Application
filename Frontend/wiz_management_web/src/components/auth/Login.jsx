@@ -1,41 +1,39 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     if (!username || !password) {
       setError("Please enter both username and password");
       return;
     }
 
-    // inline predefined users
-    const predefinedUsers = [
-      { username: "admin", password: "admin123", role: "admin" },
-      { username: "support1", password: "pass123", role: "support" },
-      { username: "support2", password: "pass123", role: "support" },
-      { username: "support3", password: "pass123", role: "support" },
-      { username: "support4", password: "pass123", role: "support" },
-    ];
+    setLoading(true);
+    setError("");
 
-    const user = predefinedUsers.find(
-      (u) => u.username === username && u.password === password
-    );
-
-    if (user) {
-      onLogin(username, password, user.role);
-
-      if (user.role === "admin") {
-        navigate("/admin/dashboard");
+    try {
+      const result = await login({ username, password });
+      
+      if (result.success) {
+        navigate("/dashboard");
       } else {
-        navigate("/support/dashboard");
+        setError(result.error || "Invalid username or password");
       }
-    } else {
-      setError("Invalid username or password");
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,7 +52,7 @@ export default function Login({ onLogin }) {
           <p className="text-[#717685]">Sign in to Wiz Management</p>
         </div>
 
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-semibold text-[#131A34] mb-2">
               Username
@@ -64,10 +62,10 @@ export default function Login({ onLogin }) {
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
-                setError(""); // clear error when typing
+                setError("");
               }}
-              onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
+              disabled={loading}
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all disabled:bg-gray-50"
               placeholder="Enter your username"
             />
           </div>
@@ -81,15 +79,14 @@ export default function Login({ onLogin }) {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(""); // clear error when typing
+                setError("");
               }}
-              onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
+              disabled={loading}
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all disabled:bg-gray-50"
               placeholder="Enter your password"
             />
           </div>
 
-          {/* error message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
               {error}
@@ -97,26 +94,27 @@ export default function Login({ onLogin }) {
           )}
 
           <button
-            onClick={handleSubmit}
-            className="w-full bg-[#6679C0] text-white py-4 rounded-xl font-semibold hover:bg-[#131A34] hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#6679C0] text-white py-4 rounded-xl font-semibold hover:bg-[#131A34] hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            Sign In
+            {loading ? "Signing in..." : "Sign In"}
           </button>
-        </div>
+        </form>
 
         <div className="mt-8 text-center">
           <div className="inline-block bg-[#F8F9FF] rounded-xl px-6 py-4">
             <p className="text-xs text-[#717685] mb-2 font-semibold">
-              Please enter your username and password to login.
+              Demo Credentials
             </p>
-            <p className="text-xs text-[#717685] mb-2 font-semibold">
-              'Feel the magic, with Wiz'
-            </p>
-            {/* <p className="text-xs text-[#717685] mb-2 font-semibold">Demo Credentials</p>
             <div className="space-y-1 text-sm">
-              <p className="text-[#131A34]"><span className="font-semibold">Admin:</span> admin / admin123</p>
-              <p className="text-[#131A34]"><span className="font-semibold">Support:</span> support1 / pass123</p>
-            </div> */}
+              <p className="text-[#131A34]">
+                <span className="font-semibold">Admin:</span> admin / admin123
+              </p>
+              <p className="text-[#131A34]">
+                <span className="font-semibold">Support:</span> support1 / pass123
+              </p>
+            </div>
           </div>
         </div>
       </div>

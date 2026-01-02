@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -8,15 +8,19 @@ import {
   User as UserIcon,
 } from "lucide-react";
 
-import UserCard from "../../components/UserCard";
-import Pagination from "../../components/Pagination";
+import Pagination from "../../components/common/Pagination";
+import UserCard from '../../components/common/UserCard';
 
-export default function UserManagement({ userData }) {
+export default function UserManagement({ userData, onUpdateUserStatus }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const sortByParam = searchParams.get("sortBy");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState(sortByParam || "name");
   const [showFilters, setShowFilters] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,6 +48,8 @@ export default function UserManagement({ userData }) {
         return new Date(b.joinedDate) - new Date(a.joinedDate);
       case "bookings":
         return b.totalBookings - a.totalBookings;
+      case "rentals":
+        return (b.totalRentals || 0) - (a.totalRentals || 0);
       default:
         return 0;
     }
@@ -84,8 +90,10 @@ export default function UserManagement({ userData }) {
     <div>
       {/* header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#131A34] mb-2">Users</h1>
-        <p className="text-[#717685]">View all users on the platform</p>
+        <h1 className="text-3xl font-bold text-[#131A34] mb-2">
+          User Management
+        </h1>
+        <p className="text-[#717685]">Manage all users on the platform</p>
       </div>
 
       {/* status tabs */}
@@ -157,6 +165,7 @@ export default function UserManagement({ userData }) {
             <option value="name">Sort by Name</option>
             <option value="joined">Sort by Join Date</option>
             <option value="bookings">Sort by Bookings</option>
+            <option value="rentals">Sort by Rentals</option>
           </select>
         </div>
 
@@ -227,7 +236,7 @@ export default function UserManagement({ userData }) {
         ) : (
           <div className="divide-y divide-gray-100">
             {currentUsers.map((user) => (
-              <UserCard key={user.id} user={user} basePath="/support/users" />
+              <UserCard key={user.id} user={user} basePath="/admin/users" />
             ))}
           </div>
         )}

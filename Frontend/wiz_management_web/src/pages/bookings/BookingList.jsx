@@ -3,14 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   Filter,
-  Eye,
   ChevronDown,
   Calendar as CalendarIcon,
   ArrowLeft,
 } from "lucide-react";
-
-import Pagination from "../../components/Pagination";
-import BookingCard from "../../components/BookingCard";
+import Pagination from "../../components/common/Pagination";
+import BookingCard from "../../components/common/BookingCard";
 
 export default function BookingList({ bookingData, carData, userData }) {
   const navigate = useNavigate();
@@ -50,9 +48,8 @@ export default function BookingList({ bookingData, carData, userData }) {
       booking.userName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "all" || booking.status === filterStatus;
-    // REMOVE this line: const matchesUser = filterUser === 'all' || booking.userId === filterUser;
 
-    return matchesSearch && matchesStatus; // REMOVE matchesUser
+    return matchesSearch && matchesStatus;
   });
 
   // Apply date filter
@@ -101,37 +98,12 @@ export default function BookingList({ bookingData, carData, userData }) {
     }
   });
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      completed: {
-        bg: "bg-green-50",
-        text: "text-green-700",
-        label: "Completed",
-      },
-      ongoing: { bg: "bg-blue-50", text: "text-blue-700", label: "Ongoing" },
-      cancelled: { bg: "bg-red-50", text: "text-red-700", label: "Cancelled" },
-      upcoming: {
-        bg: "bg-purple-50",
-        text: "text-purple-700",
-        label: "Upcoming",
-      },
-    };
-    return badges[status];
-  };
-
   const statusCounts = {
     all: bookingData.length,
     completed: bookingData.filter((b) => b.status === "completed").length,
     ongoing: bookingData.filter((b) => b.status === "ongoing").length,
     cancelled: bookingData.filter((b) => b.status === "cancelled").length,
     upcoming: bookingData.filter((b) => b.status === "upcoming").length,
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
   };
 
   // Calculate pagination
@@ -154,7 +126,7 @@ export default function BookingList({ bookingData, carData, userData }) {
 
   return (
     <div>
-      {/* ack button */}
+      {/* Back button */}
       {(userId || ownerId) && (
         <div className="mb-6">
           <button
@@ -178,6 +150,7 @@ export default function BookingList({ bookingData, carData, userData }) {
         </h1>
         <p className="text-[#717685]">View and manage rental bookings</p>
       </div>
+
       {/* status tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
@@ -324,7 +297,6 @@ export default function BookingList({ bookingData, carData, userData }) {
               setDateFilter("all");
               setCustomFromDate("");
               setCustomToDate("");
-              // REMOVE: setFilterUser('all');
             }}
             className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
           >
@@ -351,7 +323,7 @@ export default function BookingList({ bookingData, carData, userData }) {
               <BookingCard
                 key={booking.id}
                 booking={booking}
-                basePath="/admin/bookings"
+                basePath="/bookings"
               />
             ))}
           </div>
