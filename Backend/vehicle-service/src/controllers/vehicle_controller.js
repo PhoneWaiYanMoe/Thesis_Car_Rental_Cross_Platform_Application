@@ -6,7 +6,6 @@ class VehicleController {
    * Search vehicles (public)
    * Filter by location, type, price, dates, etc.
    */
-
   async searchVehicles(req, res, next) {
     try {
       const {
@@ -25,28 +24,39 @@ class VehicleController {
         limit = 20,
       } = req.query;
 
+      console.log("🔍 Search query:", { city, district, startDate, endDate });
+
+      // ✅ Build base query - check availability ONLY if dates provided
       let query = `
-      SELECT 
-        v.*,
-        (SELECT photo_url FROM vehicle_photos 
-         WHERE vehicle_id = v.vehicle_id AND is_primary = true 
-         LIMIT 1) as primary_photo,
-        (SELECT COUNT(*) FROM vehicle_unavailability 
-         WHERE vehicle_id = v.vehicle_id 
-         AND start_date <= $1 AND end_date >= $2) as unavailable_count
-      FROM vehicles v
-      WHERE v.status = 'active'
-    `;
+        SELECT 
+          v.*,
+          (SELECT photo_url FROM vehicle_photos 
+           WHERE vehicle_id = v.vehicle_id AND is_primary = true 
+           LIMIT 1) as primary_photo
+      `;
+
+      // ✅ Only check availability if dates are provided
+      if (startDate && endDate) {
+        query += `,
+          (SELECT COUNT(*) FROM vehicle_unavailability 
+           WHERE vehicle_id = v.vehicle_id 
+           AND start_date <= $1 AND end_date >= $2) as unavailable_count
+        `;
+      } else {
+        query += `, 0 as unavailable_count`;
+      }
+
+      query += `
+        FROM vehicles v
+        WHERE v.status = 'active'
+      `;
 
       const params = [];
       let paramIndex = 1;
 
-      // Date availability check
+      // Date availability check params (if dates provided)
       if (startDate && endDate) {
         params.push(endDate, startDate);
-        paramIndex += 2;
-      } else {
-        params.push(null, null);
         paramIndex += 2;
       }
 
@@ -87,29 +97,25 @@ class VehicleController {
         paramIndex++;
       }
 
-      // ✅ IMPROVED: Use partial matching for city/district
-      if (city) {
-        // Search in both city AND address fields for flexibility
+      // ✅ Location filters with partial matching - GLOBAL SEARCH ENABLED
+      if (city && city.trim() !== "") {
         query += ` AND (
-        v.location->>'city' ILIKE $${paramIndex} OR 
-        v.location->>'address' ILIKE $${paramIndex}
-      )`;
+          v.location->>'city' ILIKE ${paramIndex} OR 
+          v.location->>'address' ILIKE ${paramIndex} OR
+          v.location->>'country' ILIKE ${paramIndex}
+        )`;
         params.push(`%${city}%`);
         paramIndex++;
       }
 
-      if (district) {
-        // Search in both district AND address fields
+      if (district && district.trim() !== "") {
         query += ` AND (
-        v.location->>'district' ILIKE $${paramIndex} OR 
-        v.location->>'address' ILIKE $${paramIndex}
-      )`;
+          v.location->>'district' ILIKE ${paramIndex} OR 
+          v.location->>'address' ILIKE ${paramIndex}
+        )`;
         params.push(`%${district}%`);
         paramIndex++;
       }
-
-      // ✅ NEW: If no location filters, or no results, include all vehicles in Ho Chi Minh City
-      const isLocationSearchEmpty = !city && !district;
 
       // Sorting
       const sortFields = {
@@ -124,36 +130,96 @@ class VehicleController {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
-      console.log("🔍 Search query:", { city, district, startDate, endDate });
       console.log("📝 SQL params:", params);
+      console.log("🔍 Full query:", query);
 
       const result = await pool.query(query, params);
 
       console.log(`✅ Found ${result.rows.length} vehicles`);
 
-      // Count total
+      // ✅ Debug: Log first vehicle if found
+      if (result.rows.length > 0) {
+        console.log("📦 Sample vehicle:", {
+          name: result.rows[0].name,
+          location: result.rows[0].location,
+          unavailable_count: result.rows[0].unavailable_count,
+        });
+      } else {
+        console.log("⚠️ No vehicles found - checking database...");
+
+        // Debug query: Check total vehicles in database
+        const debugResult = await pool.query(
+          "SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status = 'active') as active FROM vehicles"
+        );
+        console.log("📊 Database stats:", debugResult.rows[0]);
+
+        // Check if there are any unavailability records for the date range
+        if (startDate && endDate) {
+          const unavailDebug = await pool.query(
+            `SELECT COUNT(*) as count 
+             FROM vehicle_unavailability 
+             WHERE start_date <= $1 AND end_date >= $2`,
+            [endDate, startDate]
+          );
+          console.log(
+            "📅 Unavailability records in date range:",
+            unavailDebug.rows[0]
+          );
+        }
+      }
+
+      // Count total (for pagination)
       let countQuery = "SELECT COUNT(*) FROM vehicles WHERE status = 'active'";
       const countParams = [];
+      let countParamIndex = 1;
 
-      if (city || district) {
-        countQuery += " AND (";
-        const conditions = [];
+      // Add same filters to count query
+      if (vehicleType) {
+        countQuery += ` AND vehicle_type = $${countParamIndex}`;
+        countParams.push(vehicleType);
+        countParamIndex++;
+      }
 
-        if (city) {
-          conditions.push(
-            `(location->>'city' ILIKE $1 OR location->>'address' ILIKE $1)`
-          );
-          countParams.push(`%${city}%`);
-        }
-        if (district) {
-          const paramIdx = countParams.length + 1;
-          conditions.push(
-            `(location->>'district' ILIKE $${paramIdx} OR location->>'address' ILIKE $${paramIdx})`
-          );
-          countParams.push(`%${district}%`);
-        }
+      if (transmission) {
+        countQuery += ` AND transmission = $${countParamIndex}`;
+        countParams.push(transmission);
+        countParamIndex++;
+      }
 
-        countQuery += conditions.join(" AND ") + ")";
+      if (fuelType) {
+        countQuery += ` AND fuel_type = $${countParamIndex}`;
+        countParams.push(fuelType);
+        countParamIndex++;
+      }
+
+      if (minSeats) {
+        countQuery += ` AND seats >= $${countParamIndex}`;
+        countParams.push(parseInt(minSeats));
+        countParamIndex++;
+      }
+
+      if (minPrice) {
+        countQuery += ` AND price_per_day >= $${countParamIndex}`;
+        countParams.push(parseInt(minPrice));
+        countParamIndex++;
+      }
+
+      if (maxPrice) {
+        countQuery += ` AND price_per_day <= $${countParamIndex}`;
+        countParams.push(parseInt(maxPrice));
+        countParamIndex++;
+      }
+
+      if (city) {
+        countQuery += ` AND (location->>'city' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex})`;
+        countParams.push(`%${city}%`);
+        countParamIndex++;
+      }
+
+      if (district) {
+        countQuery += ` AND (location->>'district' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex})`;
+        countParams.push(`%${district}%`);
+        countParamIndex++;
       }
 
       const countResult = await pool.query(countQuery, countParams);
@@ -184,7 +250,7 @@ class VehicleController {
         },
       });
     } catch (error) {
-      console.error("Search vehicles error:", error);
+      console.error("❌ Search vehicles error:", error);
       next(error);
     }
   }

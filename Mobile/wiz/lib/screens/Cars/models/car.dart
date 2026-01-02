@@ -1,6 +1,6 @@
 class Car {
   final String image;
-  final List<String> images; 
+  final List<String> images;
   final String name;
   final double rating;
   final int reviews;

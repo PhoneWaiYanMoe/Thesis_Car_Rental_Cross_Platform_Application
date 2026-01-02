@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/location_service.dart';
 import 'package:wiz/screens/Location/services/location_api_service.dart';
+import 'package:wiz/utils/address_parser.dart';
 import 'location_search_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -145,33 +146,54 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // lib/screens/Location/views/map_screen.dart - UPDATED confirmSelection method
+
   void _confirmSelection() {
     if (_selectedPosition != null && _selectedAddress != null) {
       print('✅ Confirming location: $_selectedAddress');
 
-      // ✅ FIXED: Extract city and district from address
-      // Format: "Street, District, City, Country"
-      final parts = _selectedAddress!.split(',').map((e) => e.trim()).toList();
+      // ✅ FIXED: Better parsing of city and district from address
+      // Format can be: "Street, District, City, Country" or variations
+      final parts = _selectedAddress!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
-      String city = 'Ho Chi Minh City'; // Default
+      print('🔍 Parsing address: "$_selectedAddress"');
+      print('📝 Address parts: $parts');
+
+      String city = '';
       String district = '';
+      String country = '';
 
-      if (parts.length >= 3) {
-        district = parts[1]; // Second part is usually district
-        city = parts[2]; // Third part is usually city
-      } else if (parts.length == 2) {
+      if (parts.length >= 4) {
+        // Full address: Street, District, City, Country
+        district = parts[1];
+        city = parts[2];
+        country = parts[3];
+      } else if (parts.length == 3) {
+        // District, City, Country OR Street, City, Country
         district = parts[0];
         city = parts[1];
+        country = parts[2];
+      } else if (parts.length == 2) {
+        // City, Country
+        city = parts[0];
+        country = parts[1];
       } else if (parts.length == 1) {
+        // Just city or country
         city = parts[0];
       }
 
-      print('📍 Extracted - City: $city, District: $district');
+      // ✅ Remove any remaining commas from values
+      city = city.replaceAll(',', '').trim();
+      district = district.replaceAll(',', '').trim();
+      country = country.replaceAll(',', '').trim();
+
+      print('✅ Parsed result: {city: $city, district: $district, country: $country}');
 
       Navigator.pop(context, {
         'address': _selectedAddress,
         'city': city,
         'district': district,
+        'country': country,
         'latitude': _selectedPosition!.latitude,
         'longitude': _selectedPosition!.longitude,
       });

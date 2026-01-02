@@ -22,10 +22,7 @@ try {
   locationiqService = null;
 }
 
-// ✅ Smart service selection priority:
-// 1. Geoapify (best for Asian addresses, 3000/day free)
-// 2. LocationIQ (good alternative, paid)
-// 3. Nominatim (free fallback, rate limited)
+// ✅ Smart service selection priority
 function getGeocodingService() {
   if (geoapifyService && process.env.GEOAPIFY_API_KEY) {
     return geoapifyService;
@@ -72,7 +69,7 @@ class LocationController {
       }
 
       console.log(
-        `🔍 [SEARCH ENDPOINT] Query: "${q}" | Service: ${serviceName} | Class: ${geocodingService.constructor.name}`
+        `🔍 [SEARCH ENDPOINT] Query: "${q}" | Service: ${serviceName}`
       );
 
       const results = await geocodingService.search(q, limit);
@@ -85,7 +82,6 @@ class LocationController {
     } catch (error) {
       console.error("❌ [SEARCH] Error:", error);
 
-      // Provide user-friendly error messages
       if (error.message.includes("Rate limit")) {
         return res.status(429).json({
           error: "Too many requests. Please wait a moment and try again.",
@@ -118,7 +114,6 @@ class LocationController {
         return res.status(400).json({ error: "Invalid coordinates" });
       }
 
-      // Validate coordinate ranges
       if (
         latitude < -90 ||
         latitude > 90 ||
@@ -175,7 +170,6 @@ class LocationController {
         `🏢 [DETAILS ENDPOINT] PlaceId: ${placeId} | Service: ${serviceName}`
       );
 
-      // Try to use getDetails if available, otherwise fallback to Nominatim
       let result;
       if (geocodingService.getDetails) {
         try {
@@ -195,6 +189,56 @@ class LocationController {
       res.json(result);
     } catch (error) {
       console.error("❌ [DETAILS] Error:", error);
+      next(error);
+    }
+  }
+
+  // ✅ AUTOCOMPLETE endpoint - properly bound to class
+  async autocomplete(req, res, next) {
+    try {
+      const { q, limit = 5 } = req.query;
+
+      if (!q || q.trim().length < 2) {
+        return res.json([]);
+      }
+
+      const cacheKey = `autocomplete:${q}:${limit}`;
+      const cached = await cacheService.get(cacheKey);
+
+      if (cached) {
+        console.log(`✅ [AUTOCOMPLETE] Cache hit for: "${q}"`);
+        return res.json(JSON.parse(cached));
+      }
+
+      console.log(
+        `🔍 [AUTOCOMPLETE ENDPOINT] Query: "${q}" | Service: ${serviceName}`
+      );
+
+      // Use autocomplete if available
+      if (geocodingService.autocomplete) {
+        console.log(
+          `✅ [AUTOCOMPLETE] Using ${serviceName} native autocomplete`
+        );
+        const results = await geocodingService.autocomplete(q, limit);
+        await cacheService.set(cacheKey, JSON.stringify(results), 1800);
+        console.log(
+          `✅ [AUTOCOMPLETE] ${serviceName} returned ${results.length} results`
+        );
+        return res.json(results);
+      }
+
+      // Fallback to regular search
+      console.log(
+        `⚠️  [AUTOCOMPLETE] ${serviceName} has no autocomplete, using search`
+      );
+      const results = await geocodingService.search(q, limit);
+      await cacheService.set(cacheKey, JSON.stringify(results), 1800);
+      console.log(
+        `✅ [AUTOCOMPLETE] ${serviceName} search returned ${results.length} results`
+      );
+      res.json(results);
+    } catch (error) {
+      console.error("❌ [AUTOCOMPLETE] Error:", error);
       next(error);
     }
   }
@@ -236,7 +280,6 @@ class LocationController {
         });
       }
 
-      // Validate coordinates
       const lat = parseFloat(latitude);
       const lon = parseFloat(longitude);
 
@@ -401,7 +444,6 @@ class LocationController {
 
       console.log(`📍 [SERVICE AREA] Checking: (${lat}, ${lon})`);
 
-      // Check against defined service areas from database
       const serviceAreas = await pool.query(
         `SELECT name, center_lat, center_lon, radius_km 
          FROM service_areas 
@@ -409,9 +451,8 @@ class LocationController {
       );
 
       if (serviceAreas.rows.length === 0) {
-        // Fallback to default Ho Chi Minh City area
         const hcmCenter = { lat: 10.8231, lon: 106.6297 };
-        const maxDistance = 50; // 50km radius
+        const maxDistance = 50;
 
         const distance = geocodingService.calculateDistance(
           lat,
@@ -437,7 +478,6 @@ class LocationController {
         });
       }
 
-      // Check all active service areas
       let closestArea = null;
       let minDistance = Infinity;
 
@@ -507,56 +547,7 @@ class LocationController {
       next(error);
     }
   }
-
-  // ✅ AUTOCOMPLETE endpoint - THIS IS WHAT YOUR FRONTEND IS USING!
-  async autocomplete(req, res, next) {
-    try {
-      const { q, limit = 5 } = req.query;
-
-      if (!q || q.trim().length < 2) {
-        return res.json([]);
-      }
-
-      const cacheKey = `autocomplete:${q}:${limit}`;
-      const cached = await cacheService.get(cacheKey);
-
-      if (cached) {
-        console.log(`✅ [AUTOCOMPLETE] Cache hit for: "${q}"`);
-        return res.json(JSON.parse(cached));
-      }
-
-      console.log(
-        `🔍 [AUTOCOMPLETE ENDPOINT] Query: "${q}" | Service: ${serviceName} | Class: ${geocodingService.constructor.name}`
-      );
-
-      // Use autocomplete if available
-      if (geocodingService.autocomplete) {
-        console.log(
-          `✅ [AUTOCOMPLETE] Using ${serviceName} native autocomplete`
-        );
-        const results = await geocodingService.autocomplete(q, limit);
-        await cacheService.set(cacheKey, JSON.stringify(results), 1800);
-        console.log(
-          `✅ [AUTOCOMPLETE] ${serviceName} returned ${results.length} results`
-        );
-        return res.json(results);
-      }
-
-      // Fallback to regular search
-      console.log(
-        `⚠️  [AUTOCOMPLETE] ${serviceName} has no autocomplete, using search`
-      );
-      const results = await geocodingService.search(q, limit);
-      await cacheService.set(cacheKey, JSON.stringify(results), 1800);
-      console.log(
-        `✅ [AUTOCOMPLETE] ${serviceName} search returned ${results.length} results`
-      );
-      res.json(results);
-    } catch (error) {
-      console.error("❌ [AUTOCOMPLETE] Error:", error);
-      next(error);
-    }
-  }
 }
 
+// ✅ CRITICAL FIX: Export a new instance of the class
 module.exports = new LocationController();

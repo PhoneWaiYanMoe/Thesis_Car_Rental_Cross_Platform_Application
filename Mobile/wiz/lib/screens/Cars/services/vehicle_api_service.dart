@@ -7,6 +7,7 @@ class VehicleApiService {
   static const String baseUrl = 'http://10.0.2.2:3002'; // vehicle-service
 
   /// Search vehicles with filters
+  /// Returns VehicleSearchResponse with isLocationFiltered flag
   Future<VehicleSearchResponse> searchVehicles({
     String? vehicleType,
     String? transmission,
@@ -49,7 +50,11 @@ class VehicleApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('✅ Found ${data['vehicles'].length} vehicles');
-        return VehicleSearchResponse.fromJson(data);
+
+        // Check if location filtering was applied
+        final hasLocationFilter = city != null || district != null;
+
+        return VehicleSearchResponse.fromJson(data, hasLocationFilter: hasLocationFilter);
       } else {
         print('❌ Search failed: ${response.statusCode}');
         throw Exception('Failed to search vehicles: ${response.statusCode}');
@@ -118,15 +123,38 @@ class VehicleApiService {
 class VehicleSearchResponse {
   final List<VehicleSummary> vehicles;
   final Pagination pagination;
+  final bool hasLocationFilter; // NEW: Track if location filter was applied
+  final String? searchedCity;
+  final String? searchedDistrict;
 
-  VehicleSearchResponse({required this.vehicles, required this.pagination});
+  VehicleSearchResponse({
+    required this.vehicles,
+    required this.pagination,
+    this.hasLocationFilter = false,
+    this.searchedCity,
+    this.searchedDistrict,
+  });
 
-  factory VehicleSearchResponse.fromJson(Map<String, dynamic> json) {
+  factory VehicleSearchResponse.fromJson(
+    Map<String, dynamic> json, {
+    bool hasLocationFilter = false,
+    String? searchedCity,
+    String? searchedDistrict,
+  }) {
     return VehicleSearchResponse(
       vehicles: (json['vehicles'] as List).map((v) => VehicleSummary.fromJson(v)).toList(),
       pagination: Pagination.fromJson(json['pagination']),
+      hasLocationFilter: hasLocationFilter,
+      searchedCity: searchedCity,
+      searchedDistrict: searchedDistrict,
     );
   }
+
+  // Check if we found vehicles in the searched location
+  bool get hasVehiclesInSearchedLocation => hasLocationFilter && vehicles.isNotEmpty;
+
+  // Check if we need to show "no vehicles in area" message
+  bool get shouldShowNoVehiclesMessage => hasLocationFilter && vehicles.isEmpty;
 }
 
 class VehicleSummary {
@@ -196,7 +224,7 @@ class VehicleSummary {
       rating: rating,
       reviews: totalRentals,
       price: pricePerDay,
-      owner: 'Vehicle Owner', // Will be fetched separately if needed
+      owner: 'Vehicle Owner',
       ownerAvatar: 'assets/images/article_2.png',
       ownerJoinedDate: DateTime.now(),
       location: location['city'] ?? location['district'] ?? 'Unknown',
