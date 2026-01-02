@@ -2,16 +2,10 @@
 const axios = require("axios");
 
 /**
- * Geoapify Geocoding Service
- * 
+ * Geoapify Geocoding Service - GLOBAL SEARCH ENABLED
+ *
  * FREE TIER: 3,000 requests/day (no credit card required)
  * Get API key at: https://www.geoapify.com/
- * 
- * Advantages over LocationIQ/Nominatim:
- * - Better address formatting
- * - More accurate city/district parsing
- * - Faster response times
- * - Better handling of Asian addresses
  */
 
 class GeoapifyService {
@@ -33,7 +27,7 @@ class GeoapifyService {
   }
 
   /**
-   * Search for locations
+   * Search for locations - GLOBALLY (not restricted to Vietnam)
    */
   async search(query, limit = 10) {
     if (!query || typeof query !== "string" || query.trim() === "") {
@@ -44,7 +38,7 @@ class GeoapifyService {
       throw new Error("Geoapify API key not configured");
     }
 
-    console.log(`🔍 Geoapify search: "${query}"`);
+    console.log(`🔍 Geoapify GLOBAL search: "${query}"`);
 
     try {
       const response = await this.client.get("/geocode/search", {
@@ -52,7 +46,7 @@ class GeoapifyService {
           text: query.trim(),
           apiKey: this.apiKey,
           limit,
-          filter: "countrycode:vn", // Focus on Vietnam
+          // ✅ REMOVED: filter: "countrycode:vn" - Now searches globally
           format: "json",
           lang: "en",
         },
@@ -67,7 +61,7 @@ class GeoapifyService {
       }
 
       const results = response.data.results || [];
-      console.log(`✅ Geoapify found ${results.length} results`);
+      console.log(`✅ Geoapify found ${results.length} results globally`);
 
       return results.map((item) => this._formatSearchResult(item));
     } catch (error) {
@@ -75,7 +69,9 @@ class GeoapifyService {
 
       if (error.response) {
         if (error.response.status === 401 || error.response.status === 403) {
-          throw new Error("Invalid API key. Check your Geoapify configuration.");
+          throw new Error(
+            "Invalid API key. Check your Geoapify configuration."
+          );
         } else if (error.response.status === 429) {
           throw new Error("Rate limit exceeded. Please wait before retrying.");
         }
@@ -134,7 +130,7 @@ class GeoapifyService {
   }
 
   /**
-   * Autocomplete (faster for real-time search)
+   * Autocomplete (faster for real-time search) - GLOBAL
    */
   async autocomplete(query, limit = 5) {
     if (!query || query.length < 2) {
@@ -152,7 +148,7 @@ class GeoapifyService {
           text: query.trim(),
           apiKey: this.apiKey,
           limit,
-          filter: "countrycode:vn",
+          // ✅ REMOVED: filter: "countrycode:vn" - Now autocompletes globally
           format: "json",
           lang: "en",
         },
@@ -163,6 +159,10 @@ class GeoapifyService {
       }
 
       const results = response.data.results || [];
+      console.log(
+        `✅ Global autocomplete: ${results.length} results for "${query}"`
+      );
+
       return results.map((item) => ({
         placeId: item.place_id || item.osm_id,
         displayName: item.formatted,
@@ -178,8 +178,6 @@ class GeoapifyService {
    * Get place details (not directly supported, use reverse geocoding)
    */
   async getDetails(placeId) {
-    // Geoapify doesn't have a dedicated details endpoint
-    // Try to extract coordinates from place_id if it's an OSM ID
     console.log(`ℹ️  Using reverse geocoding for place details`);
     throw new Error("Place details not directly supported by Geoapify");
   }
@@ -210,27 +208,26 @@ class GeoapifyService {
     const props = item.properties || {};
     const address = props;
 
-    // Extract city and district properly
-    const city = 
-      address.city || 
-      address.town || 
-      address.village || 
+    // ✅ IMPROVED: Better handling of any location globally
+    const city =
+      address.city ||
+      address.town ||
+      address.village ||
       address.municipality ||
-      address.county || 
-      "Ho Chi Minh City"; // Default for Vietnam
+      address.county ||
+      address.state ||
+      "";
 
-    const district = 
-      address.district || 
-      address.suburb || 
-      address.neighbourhood || 
+    const district =
+      address.district ||
+      address.suburb ||
+      address.neighbourhood ||
       address.quarter ||
       "";
 
-    const road = 
-      address.street || 
-      address.road || 
-      address.name ||
-      "";
+    const road = address.street || address.road || address.name || "";
+
+    const country = address.country || "";
 
     // Build short name
     let shortName = "";
@@ -242,6 +239,8 @@ class GeoapifyService {
       shortName = district;
     } else if (city) {
       shortName = city;
+    } else if (country) {
+      shortName = country;
     } else {
       shortName = props.formatted || "Unknown";
     }
@@ -250,11 +249,15 @@ class GeoapifyService {
     const subtitleParts = [];
     if (district && !road) subtitleParts.push(district);
     if (city) subtitleParts.push(city);
-    if (address.country) subtitleParts.push(address.country);
+    if (country) subtitleParts.push(country);
 
     return {
       placeId: item.place_id || props.place_id || props.osm_id,
-      displayName: props.formatted || `${road}, ${district}, ${city}`,
+      displayName:
+        props.formatted ||
+        `${road}, ${district}, ${city}, ${country}`
+          .replace(/, ,/g, ",")
+          .replace(/^, |, $/g, ""),
       shortName,
       subtitle: subtitleParts.join(", "),
       latitude: parseFloat(props.lat || item.geometry?.coordinates?.[1] || 0),
@@ -264,7 +267,7 @@ class GeoapifyService {
         road,
         suburb: district,
         city,
-        country: address.country || "Vietnam",
+        country,
         postcode: address.postcode || address.postal_code,
       },
     };
@@ -277,26 +280,25 @@ class GeoapifyService {
     const props = data.properties || {};
     const address = props;
 
-    const city = 
-      address.city || 
-      address.town || 
-      address.village || 
+    const city =
+      address.city ||
+      address.town ||
+      address.village ||
       address.municipality ||
-      address.county || 
-      "Ho Chi Minh City";
+      address.county ||
+      address.state ||
+      "";
 
-    const district = 
-      address.district || 
-      address.suburb || 
-      address.neighbourhood || 
+    const district =
+      address.district ||
+      address.suburb ||
+      address.neighbourhood ||
       address.quarter ||
       "";
 
-    const road = 
-      address.street || 
-      address.road || 
-      address.name ||
-      "";
+    const road = address.street || address.road || address.name || "";
+
+    const country = address.country || "";
 
     let shortName = "";
     if (road && district) {
@@ -305,13 +307,21 @@ class GeoapifyService {
       shortName = road;
     } else if (district) {
       shortName = district;
-    } else {
+    } else if (city) {
       shortName = city;
+    } else if (country) {
+      shortName = country;
+    } else {
+      shortName = props.formatted || "Unknown";
     }
 
     return {
       placeId: data.place_id || props.place_id || props.osm_id,
-      displayName: props.formatted || `${road}, ${district}, ${city}`,
+      displayName:
+        props.formatted ||
+        `${road}, ${district}, ${city}, ${country}`
+          .replace(/, ,/g, ",")
+          .replace(/^, |, $/g, ""),
       shortName,
       latitude: parseFloat(props.lat || data.geometry?.coordinates?.[1] || 0),
       longitude: parseFloat(props.lon || data.geometry?.coordinates?.[0] || 0),
@@ -319,7 +329,7 @@ class GeoapifyService {
         road,
         suburb: district,
         city,
-        country: address.country || "Vietnam",
+        country,
         postcode: address.postcode || address.postal_code,
       },
     };

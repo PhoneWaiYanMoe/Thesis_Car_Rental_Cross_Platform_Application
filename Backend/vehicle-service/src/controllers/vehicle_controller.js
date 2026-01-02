@@ -97,12 +97,12 @@ class VehicleController {
         paramIndex++;
       }
 
-      // ✅ Location filters with partial matching - GLOBAL SEARCH ENABLED
+      // ✅ FIXED: Location filters with proper parameter indexing
       if (city && city.trim() !== "") {
         query += ` AND (
-          v.location->>'city' ILIKE ${paramIndex} OR 
-          v.location->>'address' ILIKE ${paramIndex} OR
-          v.location->>'country' ILIKE ${paramIndex}
+          v.location->>'city' ILIKE $${paramIndex} OR 
+          v.location->>'address' ILIKE $${paramIndex} OR
+          v.location->>'country' ILIKE $${paramIndex}
         )`;
         params.push(`%${city}%`);
         paramIndex++;
@@ -110,8 +110,8 @@ class VehicleController {
 
       if (district && district.trim() !== "") {
         query += ` AND (
-          v.location->>'district' ILIKE ${paramIndex} OR 
-          v.location->>'address' ILIKE ${paramIndex}
+          v.location->>'district' ILIKE $${paramIndex} OR 
+          v.location->>'address' ILIKE $${paramIndex}
         )`;
         params.push(`%${district}%`);
         paramIndex++;
@@ -131,42 +131,10 @@ class VehicleController {
       params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
       console.log("📝 SQL params:", params);
-      console.log("🔍 Full query:", query);
 
       const result = await pool.query(query, params);
 
       console.log(`✅ Found ${result.rows.length} vehicles`);
-
-      // ✅ Debug: Log first vehicle if found
-      if (result.rows.length > 0) {
-        console.log("📦 Sample vehicle:", {
-          name: result.rows[0].name,
-          location: result.rows[0].location,
-          unavailable_count: result.rows[0].unavailable_count,
-        });
-      } else {
-        console.log("⚠️ No vehicles found - checking database...");
-
-        // Debug query: Check total vehicles in database
-        const debugResult = await pool.query(
-          "SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status = 'active') as active FROM vehicles"
-        );
-        console.log("📊 Database stats:", debugResult.rows[0]);
-
-        // Check if there are any unavailability records for the date range
-        if (startDate && endDate) {
-          const unavailDebug = await pool.query(
-            `SELECT COUNT(*) as count 
-             FROM vehicle_unavailability 
-             WHERE start_date <= $1 AND end_date >= $2`,
-            [endDate, startDate]
-          );
-          console.log(
-            "📅 Unavailability records in date range:",
-            unavailDebug.rows[0]
-          );
-        }
-      }
 
       // Count total (for pagination)
       let countQuery = "SELECT COUNT(*) FROM vehicles WHERE status = 'active'";
@@ -210,13 +178,13 @@ class VehicleController {
         countParamIndex++;
       }
 
-      if (city) {
-        countQuery += ` AND (location->>'city' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex})`;
+      if (city && city.trim() !== "") {
+        countQuery += ` AND (location->>'city' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex} OR location->>'country' ILIKE $${countParamIndex})`;
         countParams.push(`%${city}%`);
         countParamIndex++;
       }
 
-      if (district) {
+      if (district && district.trim() !== "") {
         countQuery += ` AND (location->>'district' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex})`;
         countParams.push(`%${district}%`);
         countParamIndex++;
