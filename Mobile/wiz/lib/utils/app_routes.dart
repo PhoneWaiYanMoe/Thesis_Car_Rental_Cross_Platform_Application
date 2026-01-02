@@ -94,8 +94,9 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
 
       case carDetails:
+        // ✅ FIXED: Handle Car object properly
         final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null && args.containsKey('carIndex')) {
+        if (args != null && args.containsKey('car')) {
           return MaterialPageRoute(builder: (_) => CarDetailsScreen(arguments: args));
         }
         return null;

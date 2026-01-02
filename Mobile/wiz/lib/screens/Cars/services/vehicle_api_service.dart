@@ -33,8 +33,11 @@ class VehicleApiService {
       if (minSeats != null) queryParams['minSeats'] = minSeats.toString();
       if (minPrice != null) queryParams['minPrice'] = minPrice.toString();
       if (maxPrice != null) queryParams['maxPrice'] = maxPrice.toString();
-      if (city != null) queryParams['city'] = city;
-      if (district != null) queryParams['district'] = district;
+
+      // ✅ FIX: Only add city/district if they are not empty
+      if (city != null && city.trim().isNotEmpty) queryParams['city'] = city;
+      if (district != null && district.trim().isNotEmpty) queryParams['district'] = district;
+
       if (startDate != null) queryParams['startDate'] = startDate;
       if (endDate != null) queryParams['endDate'] = endDate;
       queryParams['sortBy'] = sortBy;
@@ -52,9 +55,15 @@ class VehicleApiService {
         print('✅ Found ${data['vehicles'].length} vehicles');
 
         // Check if location filtering was applied
-        final hasLocationFilter = city != null || district != null;
+        final hasLocationFilter =
+            (city != null && city.trim().isNotEmpty) || (district != null && district.trim().isNotEmpty);
 
-        return VehicleSearchResponse.fromJson(data, hasLocationFilter: hasLocationFilter);
+        return VehicleSearchResponse.fromJson(
+          data,
+          hasLocationFilter: hasLocationFilter,
+          searchedCity: city,
+          searchedDistrict: district,
+        );
       } else {
         print('❌ Search failed: ${response.statusCode}');
         throw Exception('Failed to search vehicles: ${response.statusCode}');
@@ -123,7 +132,7 @@ class VehicleApiService {
 class VehicleSearchResponse {
   final List<VehicleSummary> vehicles;
   final Pagination pagination;
-  final bool hasLocationFilter; // NEW: Track if location filter was applied
+  final bool hasLocationFilter;
   final String? searchedCity;
   final String? searchedDistrict;
 
@@ -150,10 +159,7 @@ class VehicleSearchResponse {
     );
   }
 
-  // Check if we found vehicles in the searched location
   bool get hasVehiclesInSearchedLocation => hasLocationFilter && vehicles.isNotEmpty;
-
-  // Check if we need to show "no vehicles in area" message
   bool get shouldShowNoVehiclesMessage => hasLocationFilter && vehicles.isEmpty;
 }
 
@@ -174,6 +180,9 @@ class VehicleSummary {
   final bool driverSupported;
   final bool deliveryAvailable;
   final bool isAvailable;
+  final String ownerId;
+  final String ownerName; // ✅ ADD
+  final String ownerAvatar; // ✅ ADD
 
   VehicleSummary({
     required this.id,
@@ -192,6 +201,9 @@ class VehicleSummary {
     required this.driverSupported,
     required this.deliveryAvailable,
     required this.isAvailable,
+    required this.ownerId,
+    required this.ownerName, // ✅ ADD
+    required this.ownerAvatar, // ✅ ADD
   });
 
   factory VehicleSummary.fromJson(Map<String, dynamic> json) {
@@ -212,21 +224,24 @@ class VehicleSummary {
       driverSupported: json['driverSupported'] ?? false,
       deliveryAvailable: json['deliveryAvailable'] ?? false,
       isAvailable: json['isAvailable'] ?? true,
+      ownerId: json['ownerId'] ?? '',
+      ownerName: json['ownerName'] ?? 'Vehicle Owner', // ✅ ADD
+      ownerAvatar: json['ownerAvatar'] ?? 'assets/images/article_2.png', // ✅ ADD
     );
   }
 
   // Convert to Car model for compatibility
   Car toCar() {
     return Car(
-      id: id, // ✅ ADD: Pass vehicle ID from backend
+      id: id,
       image: primaryPhoto ?? 'assets/images/Car.png',
       images: [primaryPhoto ?? 'assets/images/Car.png'],
       name: name,
       rating: rating,
       reviews: totalRentals,
       price: pricePerDay,
-      owner: 'Vehicle Owner',
-      ownerAvatar: 'assets/images/article_2.png',
+      owner: ownerName, // ✅ USE
+      ownerAvatar: ownerAvatar, // ✅ USE
       ownerJoinedDate: DateTime.now(),
       location: location['city'] ?? location['district'] ?? 'Unknown',
       seats: seats,
@@ -266,6 +281,8 @@ class VehicleDetails {
   final Map<String, dynamic> performance;
   final Map<String, dynamic> rules;
   final String createdAt;
+  final String ownerName; // ✅ ADD
+  final String ownerAvatar; // ✅ ADD
 
   VehicleDetails({
     required this.id,
@@ -281,6 +298,8 @@ class VehicleDetails {
     required this.performance,
     required this.rules,
     required this.createdAt,
+    required this.ownerName, // ✅ ADD
+    required this.ownerAvatar, // ✅ ADD
   });
 
   factory VehicleDetails.fromJson(Map<String, dynamic> json) {
@@ -298,6 +317,8 @@ class VehicleDetails {
       performance: json['performance'] ?? {},
       rules: json['rules'] ?? {},
       createdAt: json['createdAt'] ?? '',
+      ownerName: json['ownerName'] ?? 'Vehicle Owner', // ✅ ADD
+      ownerAvatar: json['ownerAvatar'] ?? 'assets/images/article_2.png', // ✅ ADD
     );
   }
 
@@ -307,15 +328,15 @@ class VehicleDetails {
     final perf = performance;
 
     return Car(
-      id: id, // ✅ ADD: Pass vehicle ID from backend
+      id: id,
       image: photos.isNotEmpty ? photos[0]['url'] ?? 'assets/images/Car.png' : 'assets/images/Car.png',
       images: photos.map((p) => p['url']?.toString() ?? 'assets/images/Car.png').toList(),
       name: name,
       rating: (perf['rating'] ?? 0.0).toDouble(),
       reviews: perf['reviewCount'] ?? 0,
       price: pricing['pricePerDay'] ?? 0,
-      owner: 'Vehicle Owner',
-      ownerAvatar: 'assets/images/article_2.png',
+      owner: ownerName, // ✅ USE
+      ownerAvatar: ownerAvatar, // ✅ USE
       ownerJoinedDate: DateTime.now(),
       location: location['city'] ?? location['district'] ?? 'Unknown',
       seats: specs['seats'] ?? 5,

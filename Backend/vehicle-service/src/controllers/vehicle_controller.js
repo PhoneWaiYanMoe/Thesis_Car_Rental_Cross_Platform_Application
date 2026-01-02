@@ -26,7 +26,7 @@ class VehicleController {
 
       console.log("🔍 Search query:", { city, district, startDate, endDate });
 
-      // ✅ Build base query - check availability ONLY if dates provided
+      // ✅ FIX: Build base query - check availability ONLY if dates provided
       let query = `
         SELECT 
           v.*,
@@ -97,7 +97,7 @@ class VehicleController {
         paramIndex++;
       }
 
-      // ✅ FIXED: Location filters with proper parameter indexing
+      // ✅ FIX: Make location filters more flexible with JSONB operators
       if (city && city.trim() !== "") {
         query += ` AND (
           v.location->>'city' ILIKE $${paramIndex} OR 
@@ -210,6 +210,10 @@ class VehicleController {
           driverSupported: vehicle.driver_supported,
           deliveryAvailable: vehicle.delivery_available,
           isAvailable: vehicle.unavailable_count === 0,
+          // ✅ ADD: Owner info (will be default until we implement gRPC call to user service)
+          ownerId: vehicle.owner_id,
+          ownerName: "Vehicle Owner", // ✅ Default name
+          ownerAvatar: "assets/images/article_2.png", // ✅ Default avatar
         })),
         pagination: {
           total: parseInt(countResult.rows[0].count),
@@ -294,6 +298,9 @@ class VehicleController {
           },
           rules: vehicle.rules || {},
           createdAt: vehicle.created_at,
+          // ✅ ADD: Owner info
+          ownerName: "Vehicle Owner",
+          ownerAvatar: "assets/images/article_2.png",
         },
       });
     } catch (error) {
