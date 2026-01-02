@@ -131,14 +131,40 @@ class BookingData {
   // Create from Map (for navigation arguments)
   factory BookingData.fromMap(Map<String, dynamic> map) {
     // ✅ CHANGED: Get car directly from map instead of using index
-    Car car;
+    Car? car;
 
     if (map.containsKey('car') && map['car'] is Car) {
       // Car object passed directly
       car = map['car'] as Car;
     } else {
-      // ❌ REMOVED: Fallback to sample cars - should never happen now
-      throw ArgumentError('Car object not found in booking data');
+      // ✅ FIXED: Create a placeholder car for trip summary display
+      car = Car(
+        id: 'placeholder',
+        image: 'assets/images/Car.png',
+        images: ['assets/images/Car.png'],
+        name: 'Select a car',
+        rating: 0.0,
+        reviews: 0,
+        price: 0,
+        owner: 'Owner',
+        ownerAvatar: 'assets/images/article_2.png',
+        ownerJoinedDate: DateTime.now(),
+        location: map['location'] as String? ?? 'Unknown',
+        seats: 5,
+        fuel: 'Gasoline',
+        type: 'Sedan',
+        transmission: 'Automatic',
+        instant: false,
+        driver: false,
+        discount: false,
+        brand: 'Brand',
+        year: 2020,
+        mileage: '0 km',
+        color: 'Unknown',
+        features: [],
+        rules: [],
+        limitsAndFees: {},
+      );
     }
 
     // Parse dates from datetime string
@@ -219,7 +245,6 @@ class BookingData {
       'endPhotosSubmitted': endPhotosSubmitted,
     };
   }
-
 
   // Copy with for updating booking options
   BookingData copyWith({
