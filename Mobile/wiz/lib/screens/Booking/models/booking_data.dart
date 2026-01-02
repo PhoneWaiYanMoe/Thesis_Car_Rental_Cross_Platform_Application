@@ -127,9 +127,19 @@ class BookingData {
   String get carImage => car.image; // Adjust to match actual Car property (e.g., imagePath)
 
   // Create from Map (for navigation arguments)
+
+  // Create from Map (for navigation arguments)
   factory BookingData.fromMap(Map<String, dynamic> map) {
-    final carIndex = map['carIndex'] as int;
-    final car = Car.sampleCars[carIndex];
+    // ✅ CHANGED: Get car directly from map instead of using index
+    Car car;
+
+    if (map.containsKey('car') && map['car'] is Car) {
+      // Car object passed directly
+      car = map['car'] as Car;
+    } else {
+      // ❌ REMOVED: Fallback to sample cars - should never happen now
+      throw ArgumentError('Car object not found in booking data');
+    }
 
     // Parse dates from datetime string
     final datetime = map['datetime'] as String;
@@ -145,8 +155,8 @@ class BookingData {
       startDate: dates['start']!,
       endDate: dates['end']!,
       days: dates['days']!,
-      car: car,
-      carIndex: carIndex,
+      car: car, // ✅ Use car from map
+      carIndex: 0, // ✅ Keep for backwards compatibility but not used
       travelScope: map['travelScope'] as TravelScope? ?? TravelScope.inner,
       insurance: map['insurance'] as InsuranceOption? ?? InsuranceOption.none,
       paymentMethod: map['paymentMethod'] as PaymentMethod? ?? PaymentMethod.none,
@@ -173,7 +183,7 @@ class BookingData {
     );
   }
 
-  // Convert to Map (for navigation)
+  // ✅ UPDATE: toMap to include car object
   Map<String, dynamic> toMap() {
     return {
       'mode': mode,
@@ -182,7 +192,8 @@ class BookingData {
       'pickup': pickup,
       'destination': destination,
       'datetime': datetime,
-      'carIndex': carIndex,
+      'car': car, // ✅ Include car object
+      'carIndex': carIndex, // Keep for compatibility
       'travelScope': travelScope,
       'insurance': insurance,
       'paymentMethod': paymentMethod,
@@ -208,6 +219,7 @@ class BookingData {
       'endPhotosSubmitted': endPhotosSubmitted,
     };
   }
+
 
   // Copy with for updating booking options
   BookingData copyWith({
@@ -379,126 +391,4 @@ class BookingData {
   }
 
   // Replace the getSampleBookings method in booking_data.dart
-
-  static List<BookingData> getSampleBookings() {
-    // Ensure we don't exceed the available cars
-    final availableCars = Car.sampleCars.length;
-
-    return [
-      BookingData(
-        id: 1,
-        mode: 'Self Drive',
-        withDriver: false,
-        location: 'Hanoi',
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[0],
-        carIndex: 0,
-        status: BookingStatus.completed,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-        rated: true,
-        renterName: 'Jaes Myott',
-        licenseNumber: '346654',
-        startTime: '8:50 A.M, 12/Oct/2025',
-        endTime: '8:50 A.M, 14/Oct/2025',
-        rentalPrice: 780000,
-        insuranceFee: 70000,
-        depositPayment: 510000,
-        remainingPayment: 1190000,
-        ownerName: 'Rumbling',
-        ownerTrips: 16,
-        ownerRating: 4.5,
-        ownerCars: 3,
-      ),
-      BookingData(
-        id: 2,
-        mode: 'Self Drive',
-        withDriver: false,
-        location: 'Hanoi',
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[1],
-        carIndex: 1,
-        status: BookingStatus.completed,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-        rated: false,
-      ),
-      BookingData(
-        id: 3,
-        mode: 'Self Drive',
-        withDriver: false,
-        location: 'Hanoi',
-        datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-        startDate: DateTime(2025, 10, 12),
-        endDate: DateTime(2025, 10, 14),
-        days: 3,
-        car: Car.sampleCars[2],
-        carIndex: 2,
-        status: BookingStatus.cancelled,
-        price: '2,000,000 VND',
-        date: 'Oct 25, 2025',
-        duration: '2 Days',
-      ),
-      // Only add more if we have more cars available
-      if (availableCars > 3)
-        BookingData(
-          id: 4,
-          mode: 'Self Drive',
-          withDriver: false,
-          location: 'Hanoi',
-          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-          startDate: DateTime(2025, 10, 12),
-          endDate: DateTime(2025, 10, 14),
-          days: 3,
-          car: Car.sampleCars[3],
-          carIndex: 3,
-          status: BookingStatus.pending,
-          price: '2,000,000 VND',
-          date: 'Oct 25, 2025',
-          duration: '2 Days',
-        ),
-      if (availableCars > 4)
-        BookingData(
-          id: 5,
-          mode: 'Self Drive',
-          withDriver: false,
-          location: 'Hanoi',
-          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-          startDate: DateTime(2025, 10, 12),
-          endDate: DateTime(2025, 10, 14),
-          days: 3,
-          car: Car.sampleCars[4],
-          carIndex: 4,
-          status: BookingStatus.confirmed,
-          price: '2,000,000 VND',
-          date: 'Oct 25, 2025',
-          duration: '2 Days',
-        ),
-      if (availableCars > 5)
-        BookingData(
-          id: 6,
-          mode: 'Self Drive',
-          withDriver: false,
-          location: 'Hanoi',
-          datetime: '8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025',
-          startDate: DateTime(2025, 10, 12),
-          endDate: DateTime(2025, 10, 14),
-          days: 3,
-          car: Car.sampleCars[5],
-          carIndex: 5,
-          status: BookingStatus.onJourney,
-          price: '2,000,000 VND',
-          date: 'Oct 25, 2025',
-          duration: '2 Days',
-        ),
-    ];
-  }
 }

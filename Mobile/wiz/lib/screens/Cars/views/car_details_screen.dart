@@ -44,6 +44,9 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     _loadVehicleDetails();
   }
 
+  // Mobile/wiz/lib/screens/Cars/views/car_details_screen.dart
+  // ✅ UPDATE: _loadVehicleDetails method
+
   Future<void> _loadVehicleDetails() async {
     setState(() {
       _isLoading = true;
@@ -51,17 +54,21 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     });
 
     try {
-      // Get vehicle ID from allCars list
-      final carIndex = widget.arguments['carIndex'] as int;
-      final allCars = (widget.arguments['allCars'] as List?)?.cast<Car>() ?? [];
+      // ✅ CHANGED: Get car directly from arguments
+      Car car;
 
-      if (carIndex < 0 || carIndex >= allCars.length) {
-        throw Exception('Invalid car index');
+      if (widget.arguments.containsKey('car') && widget.arguments['car'] is Car) {
+        // Car object passed directly from car list
+        car = widget.arguments['car'] as Car;
+        print('✅ Loaded car from arguments: ${car.name} (ID: ${car.id})');
+      } else {
+        throw Exception('Car object not found in arguments');
       }
 
-      // For now, use the car from the list
-      // In production, you'd fetch fresh details from API
-      final car = allCars[carIndex];
+      // ✅ OPTIONAL: Fetch fresh details from API using car.id
+      // Uncomment if you want to always get latest data
+      // final vehicleDetails = await _apiService.getVehicleDetails(car.id);
+      // car = vehicleDetails.toCar();
 
       // Update booking data with the car
       _bookingData = _bookingData.copyWith();
@@ -115,9 +122,19 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       }
 
       if (startDate != null && endDate != null) {
-        // In production, get actual vehicle ID
-        // For now, we'll skip the API call since we don't have real vehicle IDs yet
-        print('📅 Would check availability from $startDate to $endDate');
+        // ✅ Use actual vehicle ID from car object
+        final car = _bookingData.car;
+        print('📅 Checking availability for vehicle ${car.id} from $startDate to $endDate');
+
+        final availability = await _apiService.checkAvailability(
+          vehicleId: car.id,
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        setState(() {
+          _availability = availability;
+        });
       }
 
       setState(() {

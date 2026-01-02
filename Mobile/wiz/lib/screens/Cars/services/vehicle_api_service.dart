@@ -218,6 +218,7 @@ class VehicleSummary {
   // Convert to Car model for compatibility
   Car toCar() {
     return Car(
+      id: id, // ✅ ADD: Pass vehicle ID from backend
       image: primaryPhoto ?? 'assets/images/Car.png',
       images: [primaryPhoto ?? 'assets/images/Car.png'],
       name: name,
@@ -306,6 +307,7 @@ class VehicleDetails {
     final perf = performance;
 
     return Car(
+      id: id, // ✅ ADD: Pass vehicle ID from backend
       image: photos.isNotEmpty ? photos[0]['url'] ?? 'assets/images/Car.png' : 'assets/images/Car.png',
       images: photos.map((p) => p['url']?.toString() ?? 'assets/images/Car.png').toList(),
       name: name,
@@ -328,7 +330,7 @@ class VehicleDetails {
       mileage: '${specs['mileage'] ?? 0} km',
       color: 'Unknown',
       features: features,
-      rules: [], // Can be extracted from rules map
+      rules: [],
       limitsAndFees: {},
     );
   }

@@ -1,16 +1,18 @@
+// Mobile/wiz/lib/screens/Cars/views/widgets/_buildCarCard.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
 import 'package:wiz/utils/app_routes.dart';
 
 class BuildCarCard extends StatelessWidget {
-  final int carIndex;
-  final List<Car> allCars;
+  final Car car; // ✅ CHANGED: Accept Car object directly
   final Map<String, dynamic> tripData;
 
-  const BuildCarCard({super.key, required this.carIndex, required this.allCars, required this.tripData});
-
-  Car get car => allCars[carIndex];
+  const BuildCarCard({
+    super.key,
+    required this.car, // ✅ CHANGED: Remove carIndex and allCars
+    required this.tripData,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +22,9 @@ class BuildCarCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // Add carIndex to tripData
+          // ✅ CHANGED: Pass car object directly in arguments
           final arguments = Map<String, dynamic>.from(tripData);
-          arguments['carIndex'] = carIndex;
+          arguments['car'] = car; // ✅ Pass the entire car object
 
           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
         },
@@ -88,7 +90,7 @@ class BuildCarCard extends StatelessWidget {
                         ).copyWith(padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24))),
                         onPressed: () {
                           final arguments = Map<String, dynamic>.from(tripData);
-                          arguments['carIndex'] = carIndex;
+                          arguments['car'] = car; // ✅ Pass car object
 
                           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
                         },

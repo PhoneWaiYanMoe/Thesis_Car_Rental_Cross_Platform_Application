@@ -287,8 +287,11 @@ class _CarListScreenState extends State<CarListScreen> {
         // ✅ Show vehicles from searched area (if any)
         if (!_showNoVehiclesMessage && _filteredCars.isNotEmpty)
           ..._filteredCars.asMap().entries.map((entry) {
-            final carIndex = _allCars.indexOf(entry.value);
-            return BuildCarCard(carIndex: carIndex, allCars: _allCars, tripData: widget.tripData);
+            final car = entry.value; // ✅ Use car directly from filtered list
+            return BuildCarCard(
+              car: car, // ✅ CHANGED: Pass car object instead of index
+              tripData: widget.tripData,
+            );
           }),
 
         // ✅ Show loading for alternative vehicles
@@ -296,16 +299,27 @@ class _CarListScreenState extends State<CarListScreen> {
           const Center(
             child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
           ),
-
-        // ✅ Show alternative vehicles
         if (_showNoVehiclesMessage && !_isLoadingAlternatives)
           if (_filteredAlternativeCars.isEmpty)
             _buildEmptyState()
           else
             ..._filteredAlternativeCars.asMap().entries.map((entry) {
-              final carIndex = _alternativeCars.indexOf(entry.value);
-              return BuildCarCard(carIndex: carIndex, allCars: _alternativeCars, tripData: widget.tripData);
+              final car = entry.value; // ✅ Use car directly from alternative list
+              return BuildCarCard(
+                car: car, // ✅ CHANGED: Pass car object instead of index
+                tripData: widget.tripData,
+              );
             }),
+
+        // ✅ Show alternative vehicles
+        if (!_showNoVehiclesMessage && _filteredCars.isNotEmpty)
+          ..._filteredCars.asMap().entries.map((entry) {
+            final car = entry.value; // ✅ Use car directly from filtered list
+            return BuildCarCard(
+              car: car, // ✅ CHANGED: Pass car object instead of index
+              tripData: widget.tripData,
+            );
+          }),
 
         // ✅ Show empty state if no vehicles at all
         if (!_showNoVehiclesMessage && _filteredCars.isEmpty) _buildEmptyState(),
