@@ -1,4 +1,6 @@
 // Backend/vehicle-service/proto/user.proto
+// (Copy from user-service/proto/user.proto)
+
 syntax = "proto3";
 
 package user;
