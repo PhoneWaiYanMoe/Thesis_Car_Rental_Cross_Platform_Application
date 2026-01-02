@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
+import 'package:wiz/constants/booking_constants.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildBillingDetails.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildCarHeader.dart';
 import 'package:wiz/screens/Booking/views/widgets/_buildRenterInfo.dart';
-import 'package:wiz/screens/Auth/services/auth_api_service.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
-import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
+import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 
@@ -22,8 +22,10 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   bool _agreedToTerms = false;
+  bool _isSubmitting = false;
   final TextEditingController _messageController = TextEditingController();
   final _localStorageService = LocalStorageService();
+  final _bookingApiService = BookingApiService();
   String _userName = '';
   String _licenseNumber = '';
 
@@ -333,37 +335,137 @@ class _BookingScreenState extends State<BookingScreen> {
       width: double.infinity,
       child: ElevatedButton(
         style: AppStyles.primaryButtonStyle(context),
-        onPressed: _agreedToTerms ? () => _showBookingConfirmation() : null,
-        child: Text('Book', style: AppStyles.button),
+        onPressed: (_agreedToTerms && !_isSubmitting) ? () => _showBookingConfirmation() : null,
+        child: _isSubmitting
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Text('Book', style: AppStyles.button),
       ),
     );
   }
 
-  void _showBookingConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppStyles.surface(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Booking Confirmed!', style: AppStyles.h2(context)),
-        content: Text(
-          'Your booking has been submitted. The owner will review and respond shortly.',
-          style: AppStyles.body(context),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text('OK', style: TextStyle(color: AppStyles.primary)),
+  Future<void> _showBookingConfirmation() async {
+    if (_isSubmitting) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final car = _bookingData.car;
+      
+      // Prepare pickup and dropoff locations
+      Map<String, dynamic> pickupLocation = {};
+      Map<String, dynamic> dropoffLocation = {};
+
+      if (_bookingData.withDriver) {
+        // For with driver mode, use pickup and destination
+        pickupLocation = {
+          'address': _bookingData.pickup ?? '',
+          'type': 'pickup',
+        };
+        dropoffLocation = {
+          'address': _bookingData.destination ?? '',
+          'type': 'dropoff',
+        };
+      } else {
+        // For self-drive mode, use location
+        final locationParts = (_bookingData.location ?? '').split(', ');
+        pickupLocation = {
+          'address': _bookingData.location ?? '',
+          'city': locationParts.length > 1 ? locationParts[1] : '',
+          'district': locationParts.isNotEmpty ? locationParts[0] : '',
+          'type': 'pickup',
+        };
+        dropoffLocation = pickupLocation; // Same location for self-drive
+      }
+
+      // Map insurance option to coverage percentage
+      int insuranceCoverage = 0;
+      final insurance = _bookingData.insurance;
+      if (insurance == InsuranceOption.p30) {
+        insuranceCoverage = 30;
+      } else if (insurance == InsuranceOption.p50) {
+        insuranceCoverage = 50;
+      } else if (insurance == InsuranceOption.p70) {
+        insuranceCoverage = 70;
+      } else if (insurance == InsuranceOption.p100) {
+        insuranceCoverage = 100;
+      } else {
+        insuranceCoverage = 0;
+      }
+
+      // Create booking
+      final response = await _bookingApiService.createBooking(
+        vehicleId: car.id,
+        startDate: _bookingData.startDate,
+        endDate: _bookingData.endDate,
+        pickupLocation: pickupLocation,
+        dropoffLocation: dropoffLocation,
+        driverRequired: _bookingData.withDriver,
+        insuranceCoverage: insuranceCoverage,
+        paymentMethodId: 'default', // TODO: Get from payment method selection
+        additionalNotes: _messageController.text.isNotEmpty ? _messageController.text : null,
+      );
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppStyles.surface(context),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('Booking Confirmed!', style: AppStyles.h2(context)),
+            content: Text(
+              'Your booking has been submitted successfully. Booking ID: ${response.booking.id.substring(0, 8)}...\n\nThe owner will review and respond shortly.',
+              style: AppStyles.body(context),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: Text('OK', style: TextStyle(color: AppStyles.primary)),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppStyles.surface(context),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('Booking Failed', style: AppStyles.h2(context)),
+            content: Text(
+              'Failed to create booking: ${e.toString()}',
+              style: AppStyles.body(context),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK', style: TextStyle(color: AppStyles.primary)),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
-  String _formatPrice(int price) {
-    return price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},');
-  }
 }

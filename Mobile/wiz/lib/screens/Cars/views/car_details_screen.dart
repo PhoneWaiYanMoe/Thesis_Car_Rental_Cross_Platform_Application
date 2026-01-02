@@ -4,6 +4,7 @@ import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/constants/booking_constants.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
 import 'package:wiz/screens/Cars/services/vehicle_api_service.dart';
+import 'package:wiz/screens/Cars/services/review_api_service.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildBottomBar.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarHeader.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
@@ -30,12 +31,16 @@ class CarDetailsScreen extends StatefulWidget {
 
 class _CarDetailsScreenState extends State<CarDetailsScreen> {
   final VehicleApiService _apiService = VehicleApiService();
+  final ReviewApiService _reviewApiService = ReviewApiService();
 
   late BookingData _bookingData;
   bool _isLoading = true;
   bool _isCheckingAvailability = false;
+  bool _isLoadingReviews = false;
   String? _error;
   VehicleAvailability? _availability;
+  VehicleReviewsResponse? _reviewsResponse;
+  Car? _car;
 
   @override
   void initState() {
@@ -65,16 +70,27 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
         throw Exception('Car object not found in arguments');
       }
 
-      // ✅ OPTIONAL: Fetch fresh details from API using car.id
-      // Uncomment if you want to always get latest data
-      // final vehicleDetails = await _apiService.getVehicleDetails(car.id);
-      // car = vehicleDetails.toCar();
+      // ✅ Fetch fresh details from API using car.id to get latest data including owner info
+      try {
+        final vehicleDetails = await _apiService.getVehicleDetails(car.id);
+        car = vehicleDetails.toCar();
+        print('✅ Fetched fresh vehicle details from API');
+      } catch (e) {
+        print('⚠️ Failed to fetch fresh details, using cached car: $e');
+        // Continue with car from arguments if API fails
+      }
+
+      // Store car in state
+      _car = car;
 
       // Update booking data with the car
       _bookingData = _bookingData.copyWith();
 
-      // Check availability
-      await _checkAvailability();
+      // Check availability and load reviews in parallel
+      await Future.wait([
+        _checkAvailability(),
+        _loadReviews(car.id),
+      ]);
 
       setState(() {
         _isLoading = false;
@@ -88,6 +104,37 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
+  Future<void> _loadReviews(String vehicleId) async {
+    setState(() {
+      _isLoadingReviews = true;
+    });
+
+    try {
+      print('📝 Loading reviews for vehicle: $vehicleId');
+      final reviewsResponse = await _reviewApiService.getVehicleReviews(
+        vehicleId: vehicleId,
+        sortBy: 'newest',
+        limit: 10,
+      );
+
+      setState(() {
+        _reviewsResponse = reviewsResponse;
+        _isLoadingReviews = false;
+      });
+
+      print('✅ Loaded ${reviewsResponse.reviews.length} reviews');
+    } catch (e) {
+      print('⚠️ Failed to load reviews: $e');
+      setState(() {
+        _isLoadingReviews = false;
+      });
+      // Don't set error, just show empty reviews
+    }
+  }
+
+  // Mobile/wiz/lib/screens/Cars/views/car_details_screen.dart
+  // Replace the _checkAvailability method
+
   Future<void> _checkAvailability() async {
     setState(() {
       _isCheckingAvailability = true;
@@ -100,29 +147,64 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       String? endDate;
 
       if (datetime != null && datetime.contains(' - ')) {
+        final now = DateTime.now();
+        final currentYear = now.year;
+
         final parts = datetime.split(' - ');
         if (parts.length == 2) {
           final startParts = parts[0].split(', ');
           final endParts = parts[1].split(', ');
 
+          // ✅ FIX: Parse start date with correct year logic
           if (startParts.length == 2) {
             final startDayMonth = startParts[1].split('/');
             if (startDayMonth.length == 2) {
-              startDate = '2025-${startDayMonth[1].padLeft(2, '0')}-${startDayMonth[0].padLeft(2, '0')}';
+              final startDay = int.parse(startDayMonth[0]);
+              final startMonth = int.parse(startDayMonth[1]);
+
+              // ✅ If date is in the past (same month but earlier day, or earlier month), use next year
+              int startYear = currentYear;
+              if (startMonth < now.month || (startMonth == now.month && startDay < now.day)) {
+                startYear = currentYear + 1;
+              }
+
+              startDate = '$startYear-${startMonth.toString().padLeft(2, '0')}-${startDay.toString().padLeft(2, '0')}';
             }
           }
 
+          // ✅ FIX: Parse end date with correct year logic
           if (endParts.length == 2) {
             final endDayMonth = endParts[1].split('/');
             if (endDayMonth.length == 2) {
-              endDate = '2025-${endDayMonth[1].padLeft(2, '0')}-${endDayMonth[0].padLeft(2, '0')}';
+              final endDay = int.parse(endDayMonth[0]);
+              final endMonth = int.parse(endDayMonth[1]);
+
+              // ✅ End date year should be based on start date
+              int endYear = currentYear;
+              if (startDate != null) {
+                final parsedStartDate = DateTime.parse(startDate);
+
+                // If end month/day is before start month/day, it must be next year
+                if (endMonth < parsedStartDate.month ||
+                    (endMonth == parsedStartDate.month && endDay < parsedStartDate.day)) {
+                  endYear = parsedStartDate.year + 1;
+                } else {
+                  endYear = parsedStartDate.year;
+                }
+              } else {
+                // Fallback: use same logic as start date
+                if (endMonth < now.month || (endMonth == now.month && endDay < now.day)) {
+                  endYear = currentYear + 1;
+                }
+              }
+
+              endDate = '$endYear-${endMonth.toString().padLeft(2, '0')}-${endDay.toString().padLeft(2, '0')}';
             }
           }
         }
       }
 
       if (startDate != null && endDate != null) {
-        // ✅ Use actual vehicle ID from car object
         final car = _bookingData.car;
         print('📅 Checking availability for vehicle ${car.id} from $startDate to $endDate');
 
@@ -192,7 +274,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       );
     }
 
-    final car = _bookingData.car;
+    final car = _car ?? _bookingData.car;
 
     // Show availability warning if not available
     if (_availability != null && !_availability!.isAvailable) {
@@ -348,19 +430,41 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               onChanged: (method) => _updateBookingData(paymentMethod: method),
             ),
             const SizedBox(height: 24),
-            ReviewsSection(
-              reviews: [
-                Review(name: 'Nguyen Thi A', date: '15/May/2025', rating: 4.8),
-                Review(
-                  name: 'Tran Van B',
-                  date: '10/May/2025',
-                  rating: 5.0,
-                  comment: 'Great car! Clean and comfortable.',
+            if (_isLoadingReviews)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
                 ),
-                Review(name: 'Le Thi C', date: '08/May/2025', rating: 4.5),
-              ],
-              onSeeMorePressed: () {},
-            ),
+              )
+            else if (_reviewsResponse != null)
+              ReviewsSection(
+                reviews: _reviewsResponse!.reviews.map((r) {
+                  // Parse date from ISO string
+                  String formattedDate = r.createdAt;
+                  try {
+                    final date = DateTime.parse(r.createdAt);
+                    formattedDate = '${date.day}/${_getMonthName(date.month)}/${date.year}';
+                  } catch (e) {
+                    // Keep original format if parsing fails
+                  }
+
+                  return Review(
+                    name: r.user.name,
+                    date: formattedDate,
+                    rating: r.rating.toDouble(),
+                    comment: r.comment,
+                  );
+                }).toList(),
+                onSeeMorePressed: () {
+                  // TODO: Navigate to full reviews screen
+                },
+              )
+            else
+              ReviewsSection(
+                reviews: [],
+                onSeeMorePressed: () {},
+              ),
             const SizedBox(height: 24),
           ],
         ),
@@ -376,5 +480,23 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               },
       ),
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month - 1];
   }
 }

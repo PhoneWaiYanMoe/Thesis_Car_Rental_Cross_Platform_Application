@@ -163,6 +163,9 @@ class VehicleSearchResponse {
   bool get shouldShowNoVehiclesMessage => hasLocationFilter && vehicles.isEmpty;
 }
 
+// Mobile/wiz/lib/screens/Cars/services/vehicle_api_service.dart
+// Replace VehicleSummary.fromJson and toCar methods
+
 class VehicleSummary {
   final String id;
   final String name;
@@ -181,8 +184,8 @@ class VehicleSummary {
   final bool deliveryAvailable;
   final bool isAvailable;
   final String ownerId;
-  final String ownerName; // ✅ ADD
-  final String ownerAvatar; // ✅ ADD
+  final String ownerName;
+  final String? ownerAvatar; // ✅ Now nullable
 
   VehicleSummary({
     required this.id,
@@ -202,8 +205,8 @@ class VehicleSummary {
     required this.deliveryAvailable,
     required this.isAvailable,
     required this.ownerId,
-    required this.ownerName, // ✅ ADD
-    required this.ownerAvatar, // ✅ ADD
+    required this.ownerName,
+    this.ownerAvatar, // ✅ Nullable
   });
 
   factory VehicleSummary.fromJson(Map<String, dynamic> json) {
@@ -225,8 +228,8 @@ class VehicleSummary {
       deliveryAvailable: json['deliveryAvailable'] ?? false,
       isAvailable: json['isAvailable'] ?? true,
       ownerId: json['ownerId'] ?? '',
-      ownerName: json['ownerName'] ?? 'Vehicle Owner', // ✅ ADD
-      ownerAvatar: json['ownerAvatar'] ?? 'assets/images/article_2.png', // ✅ ADD
+      ownerName: json['ownerName'] ?? 'Vehicle Owner',
+      ownerAvatar: json['ownerAvatar'], // ✅ Can be null
     );
   }
 
@@ -240,8 +243,9 @@ class VehicleSummary {
       rating: rating,
       reviews: totalRentals,
       price: pricePerDay,
-      owner: ownerName, // ✅ USE
-      ownerAvatar: ownerAvatar, // ✅ USE
+      owner: ownerName,
+      // ✅ FIX: Use default avatar if null
+      ownerAvatar: ownerAvatar ?? 'assets/images/article_2.png',
       ownerJoinedDate: DateTime.now(),
       location: location['city'] ?? location['district'] ?? 'Unknown',
       seats: seats,
@@ -267,6 +271,8 @@ class VehicleSummary {
   }
 }
 
+// ✅ ALSO UPDATE VehicleDetails class similarly
+
 class VehicleDetails {
   final String id;
   final String ownerId;
@@ -281,8 +287,8 @@ class VehicleDetails {
   final Map<String, dynamic> performance;
   final Map<String, dynamic> rules;
   final String createdAt;
-  final String ownerName; // ✅ ADD
-  final String ownerAvatar; // ✅ ADD
+  final String ownerName;
+  final String? ownerAvatar; // ✅ Nullable
 
   VehicleDetails({
     required this.id,
@@ -298,8 +304,8 @@ class VehicleDetails {
     required this.performance,
     required this.rules,
     required this.createdAt,
-    required this.ownerName, // ✅ ADD
-    required this.ownerAvatar, // ✅ ADD
+    required this.ownerName,
+    this.ownerAvatar, // ✅ Nullable
   });
 
   factory VehicleDetails.fromJson(Map<String, dynamic> json) {
@@ -317,8 +323,8 @@ class VehicleDetails {
       performance: json['performance'] ?? {},
       rules: json['rules'] ?? {},
       createdAt: json['createdAt'] ?? '',
-      ownerName: json['ownerName'] ?? 'Vehicle Owner', // ✅ ADD
-      ownerAvatar: json['ownerAvatar'] ?? 'assets/images/article_2.png', // ✅ ADD
+      ownerName: json['ownerName'] ?? 'Vehicle Owner',
+      ownerAvatar: json['ownerAvatar'], // ✅ Can be null
     );
   }
 
@@ -335,8 +341,9 @@ class VehicleDetails {
       rating: (perf['rating'] ?? 0.0).toDouble(),
       reviews: perf['reviewCount'] ?? 0,
       price: pricing['pricePerDay'] ?? 0,
-      owner: ownerName, // ✅ USE
-      ownerAvatar: ownerAvatar, // ✅ USE
+      owner: ownerName,
+      // ✅ FIX: Use default avatar if null
+      ownerAvatar: ownerAvatar ?? 'assets/images/article_2.png',
       ownerJoinedDate: DateTime.now(),
       location: location['city'] ?? location['district'] ?? 'Unknown',
       seats: specs['seats'] ?? 5,

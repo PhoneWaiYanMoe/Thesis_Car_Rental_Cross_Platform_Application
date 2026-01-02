@@ -1,10 +1,11 @@
 // Backend/vehicle-service/src/controllers/vehicle_controller.js
+
 const pool = require("../config/database");
+const { getUserInfo, getUsersInfo } = require("../grpc/user_grpc_client");
 
 class VehicleController {
   /**
-   * Search vehicles (public)
-   * Filter by location, type, price, dates, etc.
+   * Search vehicles (public) - WITH OWNER INFO
    */
   async searchVehicles(req, res, next) {
     try {
@@ -26,7 +27,7 @@ class VehicleController {
 
       console.log("🔍 Search query:", { city, district, startDate, endDate });
 
-      // ✅ FIX: Build base query - check availability ONLY if dates provided
+      // Build main query
       let query = `
         SELECT 
           v.*,
@@ -35,7 +36,6 @@ class VehicleController {
            LIMIT 1) as primary_photo
       `;
 
-      // ✅ Only check availability if dates are provided
       if (startDate && endDate) {
         query += `,
           (SELECT COUNT(*) FROM vehicle_unavailability 
@@ -54,66 +54,60 @@ class VehicleController {
       const params = [];
       let paramIndex = 1;
 
-      // Date availability check params (if dates provided)
+      // Availability overlap check parameters
       if (startDate && endDate) {
-        params.push(endDate, startDate);
+        params.push(endDate, startDate); // $1 = endDate, $2 = startDate for overlap
         paramIndex += 2;
       }
 
-      // Filters
+      // Apply filters
       if (vehicleType) {
         query += ` AND v.vehicle_type = $${paramIndex}`;
         params.push(vehicleType);
         paramIndex++;
       }
-
       if (transmission) {
         query += ` AND v.transmission = $${paramIndex}`;
         params.push(transmission);
         paramIndex++;
       }
-
       if (fuelType) {
         query += ` AND v.fuel_type = $${paramIndex}`;
         params.push(fuelType);
         paramIndex++;
       }
-
       if (minSeats) {
         query += ` AND v.seats >= $${paramIndex}`;
         params.push(parseInt(minSeats));
         paramIndex++;
       }
-
       if (minPrice) {
         query += ` AND v.price_per_day >= $${paramIndex}`;
         params.push(parseInt(minPrice));
         paramIndex++;
       }
-
       if (maxPrice) {
         query += ` AND v.price_per_day <= $${paramIndex}`;
         params.push(parseInt(maxPrice));
         paramIndex++;
       }
 
-      // ✅ FIX: Make location filters more flexible with JSONB operators
-      if (city && city.trim() !== "") {
+      // Location search (partial match on city, district, address)
+      if (city && city.trim()) {
         query += ` AND (
           v.location->>'city' ILIKE $${paramIndex} OR 
           v.location->>'address' ILIKE $${paramIndex} OR
           v.location->>'country' ILIKE $${paramIndex}
         )`;
-        params.push(`%${city}%`);
+        params.push(`%${city.trim()}%`);
         paramIndex++;
       }
-
-      if (district && district.trim() !== "") {
+      if (district && district.trim()) {
         query += ` AND (
           v.location->>'district' ILIKE $${paramIndex} OR 
           v.location->>'address' ILIKE $${paramIndex}
         )`;
-        params.push(`%${district}%`);
+        params.push(`%${district.trim()}%`);
         paramIndex++;
       }
 
@@ -121,104 +115,130 @@ class VehicleController {
       const sortFields = {
         price: "v.price_per_day ASC",
         "price-desc": "v.price_per_day DESC",
-        rating: "v.average_rating DESC",
+        rating: "v.average_rating DESC NULLS LAST",
         rentals: "v.total_rentals DESC",
         newest: "v.created_at DESC",
       };
-
       query += ` ORDER BY ${sortFields[sortBy] || sortFields.price}`;
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
-      console.log("📝 SQL params:", params);
-
       const result = await pool.query(query, params);
-
       console.log(`✅ Found ${result.rows.length} vehicles`);
 
-      // Count total (for pagination)
+      // === BATCH FETCH OWNER INFO ===
+      const ownerIds = [...new Set(result.rows.map((v) => v.owner_id))];
+      const ownersMap = new Map();
+
+      if (ownerIds.length > 0) {
+        try {
+          console.log(
+            `📞 Fetching info for ${ownerIds.length} owners via gRPC...`
+          );
+          const users = await getUsersInfo(ownerIds);
+
+          users.forEach((user) => {
+            ownersMap.set(user.userId, {
+              name: user.fullName || "Vehicle Owner",
+              avatar: user.avatarUrl || null,
+            });
+          });
+
+          console.log(
+            `✅ Successfully loaded ${ownersMap.size} owner profiles`
+          );
+        } catch (error) {
+          console.warn(
+            "⚠️ gRPC batch fetch failed – using default owner info:",
+            error.message
+          );
+          // Fallback: default for all
+          ownerIds.forEach((id) => {
+            ownersMap.set(id, { name: "Vehicle Owner", avatar: null });
+          });
+        }
+      }
+
+      // === COUNT QUERY FOR PAGINATION ===
       let countQuery = "SELECT COUNT(*) FROM vehicles WHERE status = 'active'";
       const countParams = [];
-      let countParamIndex = 1;
+      let cIdx = 1;
 
-      // Add same filters to count query
+      // Reapply same filters to count query
       if (vehicleType) {
-        countQuery += ` AND vehicle_type = $${countParamIndex}`;
+        countQuery += ` AND vehicle_type = $${cIdx++}`;
         countParams.push(vehicleType);
-        countParamIndex++;
       }
-
       if (transmission) {
-        countQuery += ` AND transmission = $${countParamIndex}`;
+        countQuery += ` AND transmission = $${cIdx++}`;
         countParams.push(transmission);
-        countParamIndex++;
       }
-
       if (fuelType) {
-        countQuery += ` AND fuel_type = $${countParamIndex}`;
+        countQuery += ` AND fuel_type = $${cIdx++}`;
         countParams.push(fuelType);
-        countParamIndex++;
       }
-
       if (minSeats) {
-        countQuery += ` AND seats >= $${countParamIndex}`;
+        countQuery += ` AND seats >= $${cIdx++}`;
         countParams.push(parseInt(minSeats));
-        countParamIndex++;
       }
-
       if (minPrice) {
-        countQuery += ` AND price_per_day >= $${countParamIndex}`;
+        countQuery += ` AND price_per_day >= $${cIdx++}`;
         countParams.push(parseInt(minPrice));
-        countParamIndex++;
       }
-
       if (maxPrice) {
-        countQuery += ` AND price_per_day <= $${countParamIndex}`;
+        countQuery += ` AND price_per_day <= $${cIdx++}`;
         countParams.push(parseInt(maxPrice));
-        countParamIndex++;
       }
-
-      if (city && city.trim() !== "") {
-        countQuery += ` AND (location->>'city' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex} OR location->>'country' ILIKE $${countParamIndex})`;
-        countParams.push(`%${city}%`);
-        countParamIndex++;
+      if (city && city.trim()) {
+        countQuery += ` AND (location->>'city' ILIKE $${cIdx} OR location->>'address' ILIKE $${cIdx} OR location->>'country' ILIKE $${cIdx})`;
+        countParams.push(`%${city.trim()}%`);
+        cIdx++;
       }
-
-      if (district && district.trim() !== "") {
-        countQuery += ` AND (location->>'district' ILIKE $${countParamIndex} OR location->>'address' ILIKE $${countParamIndex})`;
-        countParams.push(`%${district}%`);
-        countParamIndex++;
+      if (district && district.trim()) {
+        countQuery += ` AND (location->>'district' ILIKE $${cIdx} OR location->>'address' ILIKE $${cIdx})`;
+        countParams.push(`%${district.trim()}%`);
+        cIdx++;
       }
 
       const countResult = await pool.query(countQuery, countParams);
 
+      // === BUILD RESPONSE ===
       res.json({
-        vehicles: result.rows.map((vehicle) => ({
-          id: vehicle.vehicle_id,
-          name: vehicle.name,
-          vehicleType: vehicle.vehicle_type,
-          transmission: vehicle.transmission,
-          fuelType: vehicle.fuel_type,
-          seats: vehicle.seats,
-          year: vehicle.year,
-          pricePerDay: vehicle.price_per_day,
-          rating: parseFloat(vehicle.average_rating),
-          totalRentals: vehicle.total_rentals,
-          primaryPhoto: vehicle.primary_photo,
-          location: vehicle.location,
-          instantBooking: vehicle.instant_booking,
-          driverSupported: vehicle.driver_supported,
-          deliveryAvailable: vehicle.delivery_available,
-          isAvailable: vehicle.unavailable_count === 0,
-          // ✅ ADD: Owner info (will be default until we implement gRPC call to user service)
-          ownerId: vehicle.owner_id,
-          ownerName: "Vehicle Owner", // ✅ Default name
-          ownerAvatar: "assets/images/article_2.png", // ✅ Default avatar
-        })),
+        vehicles: result.rows.map((vehicle) => {
+          const ownerInfo = ownersMap.get(vehicle.owner_id) || {
+            name: "Vehicle Owner",
+            avatar: null,
+          };
+
+          return {
+            id: vehicle.vehicle_id,
+            name: vehicle.name,
+            vehicleType: vehicle.vehicle_type,
+            transmission: vehicle.transmission,
+            fuelType: vehicle.fuel_type,
+            seats: vehicle.seats,
+            year: vehicle.year,
+            pricePerDay: vehicle.price_per_day,
+            rating: parseFloat(vehicle.average_rating || 0),
+            totalRentals: vehicle.total_rentals || 0,
+            primaryPhoto: vehicle.primary_photo,
+            location: vehicle.location,
+            instantBooking: vehicle.instant_booking,
+            driverSupported: vehicle.driver_supported,
+            deliveryAvailable: vehicle.delivery_available,
+            isAvailable: vehicle.unavailable_count === 0,
+            ownerId: vehicle.owner_id,
+            ownerName: ownerInfo.name,
+            ownerAvatar: ownerInfo.avatar,
+          };
+        }),
         pagination: {
           total: parseInt(countResult.rows[0].count),
           page: parseInt(page),
           limit: parseInt(limit),
+          pages: Math.ceil(
+            parseInt(countResult.rows[0].count) / parseInt(limit)
+          ),
         },
       });
     } catch (error) {
@@ -228,14 +248,15 @@ class VehicleController {
   }
 
   /**
-   * Get vehicle details by ID (public)
+   * Get vehicle details by ID (public) - WITH OWNER INFO
    */
   async getVehicleById(req, res, next) {
     try {
       const { id } = req.params;
 
       const result = await pool.query(
-        `SELECT v.*,
+        `SELECT 
+          v.*,
           (SELECT json_agg(json_build_object(
             'url', photo_url,
             'isPrimary', is_primary,
@@ -257,17 +278,36 @@ class VehicleController {
       );
 
       if (result.rows.length === 0) {
-        return res.status(404).json({
-          error: "Vehicle not found or not available",
-        });
+        return res
+          .status(404)
+          .json({ error: "Vehicle not found or not available" });
       }
 
       const vehicle = result.rows[0];
+
+      // === FETCH SINGLE OWNER INFO WITH FALLBACK ===
+      let ownerName = "Vehicle Owner";
+      let ownerAvatar = null;
+
+      try {
+        console.log(`📞 Fetching owner info for user ${vehicle.owner_id}...`);
+        const user = await getUserInfo(vehicle.owner_id);
+        ownerName = user.fullName || ownerName;
+        ownerAvatar = user.avatarUrl || ownerAvatar;
+        console.log(`✅ Owner loaded: ${ownerName}`);
+      } catch (error) {
+        console.warn(
+          "⚠️ Failed to fetch owner info via gRPC – using defaults:",
+          error.message
+        );
+      }
 
       res.json({
         vehicle: {
           id: vehicle.vehicle_id,
           ownerId: vehicle.owner_id,
+          ownerName,
+          ownerAvatar,
           name: vehicle.name,
           description: vehicle.description,
           specifications: {
@@ -286,31 +326,28 @@ class VehicleController {
           },
           location: vehicle.location,
           availability: {
-            driverSupported: vehicle.driver_supported,
             instantBooking: vehicle.instant_booking,
+            driverSupported: vehicle.driver_supported,
             deliveryAvailable: vehicle.delivery_available,
             unavailablePeriods: vehicle.unavailable_periods || [],
           },
           performance: {
-            totalRentals: vehicle.total_rentals,
-            rating: parseFloat(vehicle.average_rating),
-            reviewCount: vehicle.review_count,
+            totalRentals: vehicle.total_rentals || 0,
+            rating: parseFloat(vehicle.average_rating || 0),
+            reviewCount: vehicle.review_count || 0,
           },
           rules: vehicle.rules || {},
           createdAt: vehicle.created_at,
-          // ✅ ADD: Owner info
-          ownerName: "Vehicle Owner",
-          ownerAvatar: "assets/images/article_2.png",
         },
       });
     } catch (error) {
-      console.error("Get vehicle error:", error);
+      console.error("❌ Get vehicle by ID error:", error);
       next(error);
     }
   }
 
   /**
-   * Check vehicle availability for dates
+   * Check vehicle availability for specific dates
    */
   async checkAvailability(req, res, next) {
     try {
@@ -323,21 +360,20 @@ class VehicleController {
         });
       }
 
-      // Check if vehicle exists and is active
       const vehicleResult = await pool.query(
         "SELECT vehicle_id, name, price_per_day FROM vehicles WHERE vehicle_id = $1 AND status = 'active'",
         [id]
       );
 
       if (vehicleResult.rows.length === 0) {
-        return res.status(404).json({
-          error: "Vehicle not found or not available",
-        });
+        return res
+          .status(404)
+          .json({ error: "Vehicle not found or not available" });
       }
 
-      // Check unavailability periods
       const unavailableResult = await pool.query(
-        `SELECT * FROM vehicle_unavailability 
+        `SELECT start_date, end_date, reason 
+         FROM vehicle_unavailability 
          WHERE vehicle_id = $1 
          AND (
            (start_date <= $2 AND end_date >= $2) OR
@@ -353,16 +389,12 @@ class VehicleController {
         vehicleId: id,
         isAvailable,
         message: isAvailable
-          ? "Vehicle is available for selected dates"
-          : "Vehicle is not available for selected dates",
-        unavailablePeriods: unavailableResult.rows.map((period) => ({
-          startDate: period.start_date,
-          endDate: period.end_date,
-          reason: period.reason,
-        })),
+          ? "Vehicle is available for the selected dates"
+          : "Vehicle is not available for the selected dates",
+        unavailablePeriods: unavailableResult.rows,
       });
     } catch (error) {
-      console.error("Check availability error:", error);
+      console.error("❌ Check availability error:", error);
       next(error);
     }
   }

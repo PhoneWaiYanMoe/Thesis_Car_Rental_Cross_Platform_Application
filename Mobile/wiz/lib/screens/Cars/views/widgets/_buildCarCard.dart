@@ -5,14 +5,10 @@ import 'package:wiz/screens/Cars/models/car.dart';
 import 'package:wiz/utils/app_routes.dart';
 
 class BuildCarCard extends StatelessWidget {
-  final Car car; // ✅ CHANGED: Accept Car object directly
+  final Car car;
   final Map<String, dynamic> tripData;
 
-  const BuildCarCard({
-    super.key,
-    required this.car, // ✅ CHANGED: Remove carIndex and allCars
-    required this.tripData,
-  });
+  const BuildCarCard({super.key, required this.car, required this.tripData});
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +18,8 @@ class BuildCarCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // ✅ CHANGED: Pass car object directly in arguments
           final arguments = Map<String, dynamic>.from(tripData);
-          arguments['car'] = car; // ✅ Pass the entire car object
-
+          arguments['car'] = car;
           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
         },
         child: Column(
@@ -54,10 +48,18 @@ class BuildCarCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(radius: 16, backgroundImage: AssetImage(car.ownerAvatar)),
+                      // ✅ FIX: Handle owner avatar properly with fallback
+                      _buildOwnerAvatar(car.ownerAvatar),
                       const SizedBox(width: 8),
-                      Text(car.owner, style: AppStyles.caption(context)),
-                      const Spacer(),
+                      Expanded(
+                        child: Text(
+                          car.owner,
+                          style: AppStyles.caption(context),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Row(
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 16),
@@ -73,7 +75,14 @@ class BuildCarCard extends StatelessWidget {
                     children: [
                       Icon(Icons.location_on, size: 16, color: AppStyles.textSecondary(context)),
                       const SizedBox(width: 4),
-                      Text(car.location, style: AppStyles.caption(context)),
+                      Expanded(
+                        child: Text(
+                          car.location,
+                          style: AppStyles.caption(context),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -90,8 +99,7 @@ class BuildCarCard extends StatelessWidget {
                         ).copyWith(padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24))),
                         onPressed: () {
                           final arguments = Map<String, dynamic>.from(tripData);
-                          arguments['car'] = car; // ✅ Pass car object
-
+                          arguments['car'] = car;
                           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
                         },
                         child: Text('See details', style: AppStyles.button),
@@ -105,6 +113,62 @@ class BuildCarCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // ✅ NEW: Helper to build owner avatar with proper fallback
+  Widget _buildOwnerAvatar(String avatarPath) {
+    // Check if it's a network URL or asset path
+    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey[300],
+        child: ClipOval(
+          child: Image.network(
+            avatarPath,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback to default icon if network image fails
+              return Icon(Icons.person, size: 20, color: Colors.grey[600]);
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      // Asset image with fallback to default icon
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey[300],
+        child: ClipOval(
+          child: Image.asset(
+            avatarPath,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback to default icon if asset fails
+              return Icon(Icons.person, size: 20, color: Colors.grey[600]);
+            },
+          ),
+        ),
+      );
+    }
   }
 
   String _formatPrice(int price) {
