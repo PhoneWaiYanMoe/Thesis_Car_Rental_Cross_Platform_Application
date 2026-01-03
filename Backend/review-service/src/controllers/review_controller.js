@@ -1,4 +1,6 @@
 // Backend/review-service/src/controllers/review_controller.js
+// ✅ UPDATED: Better error messages for review eligibility
+
 const { VehicleReview, OwnerReview } = require("../models/Review");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
 const userGrpcClient = require("../grpc/user_grpc_client");
@@ -20,7 +22,7 @@ class ReviewController {
         });
       }
 
-      // ✅ FIX BUG 1: STRICT VERIFICATION - NO TRY-CATCH BYPASS
+      // ✅ STRICT VERIFICATION
       let bookingVerification;
       try {
         bookingVerification = await bookingGrpcClient.verifyBooking(
@@ -36,12 +38,24 @@ class ReviewController {
       }
 
       if (!bookingVerification.valid) {
+        // ✅ UPDATED: More detailed error message
+        let reason = "Invalid booking for review";
+
+        if (!bookingVerification.is_completed) {
+          reason =
+            "Booking must be completed or return submitted before you can review";
+        } else if (!bookingVerification.is_customer) {
+          reason =
+            "Only the customer who booked this vehicle can submit a review";
+        }
+
         return res.status(400).json({
-          error: bookingVerification.message || "Invalid booking for review",
+          error: bookingVerification.message || reason,
           canReview: false,
-          reason: !bookingVerification.is_completed
-            ? "Booking not completed"
-            : "Not the customer",
+          details: {
+            isCompleted: bookingVerification.is_completed,
+            isCustomer: bookingVerification.is_customer,
+          },
         });
       }
 
@@ -83,12 +97,10 @@ class ReviewController {
         await bookingGrpcClient.markBookingReviewed(bookingId, "vehicle");
       } catch (error) {
         console.warn("⚠️  Could not mark booking as reviewed:", error.message);
-        // Continue - review is saved, marking is optional
       }
 
-      // ✅ FIX BUG 2: UPDATE VEHICLE RATING VIA GRPC
+      // Update vehicle rating via gRPC
       try {
-        // Get all reviews for this vehicle to calculate new average
         const allReviews = await VehicleReview.find({
           vehicleId,
           isVisible: true,
@@ -98,7 +110,6 @@ class ReviewController {
         const newAvgRating = totalRating / allReviews.length;
         const newReviewCount = allReviews.length;
 
-        // Update vehicle-service via gRPC
         await vehicleGrpcClient.updateVehicleRating(
           vehicleId,
           newAvgRating,
@@ -110,7 +121,6 @@ class ReviewController {
         );
       } catch (error) {
         console.error("⚠️  Could not update vehicle rating:", error.message);
-        // Don't fail the review submission if rating update fails
       }
 
       console.log(`✅ Vehicle review submitted: ${review._id}`);
@@ -145,7 +155,7 @@ class ReviewController {
         });
       }
 
-      // ✅ FIX BUG 1: STRICT VERIFICATION - NO TRY-CATCH BYPASS
+      // ✅ STRICT VERIFICATION
       let bookingVerification;
       try {
         bookingVerification = await bookingGrpcClient.verifyBooking(
@@ -161,12 +171,23 @@ class ReviewController {
       }
 
       if (!bookingVerification.valid) {
+        // ✅ UPDATED: More detailed error message
+        let reason = "Invalid booking for review";
+
+        if (!bookingVerification.is_completed) {
+          reason =
+            "Booking must be completed or return submitted before you can review";
+        } else if (!bookingVerification.is_customer) {
+          reason = "Only the customer who booked can submit a review";
+        }
+
         return res.status(400).json({
-          error: bookingVerification.message || "Invalid booking for review",
+          error: bookingVerification.message || reason,
           canReview: false,
-          reason: !bookingVerification.is_completed
-            ? "Booking not completed"
-            : "Not the customer",
+          details: {
+            isCompleted: bookingVerification.is_completed,
+            isCustomer: bookingVerification.is_customer,
+          },
         });
       }
 
@@ -208,19 +229,18 @@ class ReviewController {
   }
 
   // ==================== GET REVIEWS ====================
+  // (Keep all other methods the same - getVehicleReviews, getOwnerReviews, etc.)
 
   async getVehicleReviews(req, res, next) {
     try {
       const { vehicleId } = req.params;
       const { sortBy = "newest", minRating, page = 1, limit = 10 } = req.query;
 
-      // Build query
       const query = { vehicleId, isVisible: true };
       if (minRating) {
         query.rating = { $gte: parseFloat(minRating) };
       }
 
-      // Build sort
       let sort = {};
       if (sortBy === "highest") {
         sort = { rating: -1, createdAt: -1 };
@@ -230,7 +250,6 @@ class ReviewController {
         sort = { createdAt: -1 };
       }
 
-      // Pagination
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
       const [reviews, total, allReviews] = await Promise.all([
@@ -243,7 +262,6 @@ class ReviewController {
         VehicleReview.find({ vehicleId, isVisible: true }).lean(),
       ]);
 
-      // Get user profiles for all reviews
       const userIds = [...new Set(reviews.map((r) => r.customerId))];
       let userProfiles = {};
 
@@ -256,7 +274,6 @@ class ReviewController {
         console.warn("⚠️  Could not fetch user profiles");
       }
 
-      // Calculate summary
       const avgRating =
         allReviews.length > 0
           ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
@@ -270,7 +287,6 @@ class ReviewController {
         1: allReviews.filter((r) => r.rating === 1).length,
       };
 
-      // Format reviews
       const formattedReviews = reviews.map((review) => {
         const userProfile = userProfiles[review.customerId] || {};
         return {
@@ -313,10 +329,8 @@ class ReviewController {
       const { ownerId } = req.params;
       const { sortBy = "newest", page = 1, limit = 10 } = req.query;
 
-      // Build query
       const query = { ownerId, isVisible: true };
 
-      // Build sort
       let sort = {};
       if (sortBy === "highest") {
         sort = { rating: -1, createdAt: -1 };
@@ -326,7 +340,6 @@ class ReviewController {
         sort = { createdAt: -1 };
       }
 
-      // Pagination
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
       const [reviews, total, allReviews] = await Promise.all([
@@ -339,7 +352,6 @@ class ReviewController {
         OwnerReview.find({ ownerId, isVisible: true }).lean(),
       ]);
 
-      // Get user profiles
       const userIds = [...new Set(reviews.map((r) => r.customerId))];
       let userProfiles = {};
 
@@ -352,13 +364,11 @@ class ReviewController {
         console.warn("⚠️  Could not fetch user profiles");
       }
 
-      // Calculate summary
       const avgRating =
         allReviews.length > 0
           ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
           : 0;
 
-      // Format reviews
       const formattedReviews = reviews.map((review) => {
         const userProfile = userProfiles[review.customerId] || {};
         return {
@@ -401,7 +411,6 @@ class ReviewController {
       const { id } = req.params;
       const { response } = req.body;
 
-      // Find review and verify owner
       const review = await VehicleReview.findById(id);
 
       if (!review) {
@@ -438,7 +447,6 @@ class ReviewController {
       const { id } = req.params;
       const { reason, details } = req.body;
 
-      // Try both review types
       let review = await VehicleReview.findById(id);
       if (!review) {
         review = await OwnerReview.findById(id);
@@ -474,7 +482,6 @@ class ReviewController {
       const userId = req.user.userId;
       const { id } = req.params;
 
-      // Try both review types
       let review = await VehicleReview.findById(id);
       let reviewType = "vehicle";
 
@@ -487,7 +494,6 @@ class ReviewController {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      // Check if already marked helpful
       if (review.helpfulBy.includes(userId)) {
         return res.status(400).json({
           error: "You have already marked this review as helpful",

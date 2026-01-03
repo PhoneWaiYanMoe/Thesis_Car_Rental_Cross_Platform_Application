@@ -42,17 +42,36 @@ class BookingGrpcServer {
       }
 
       const booking = result.rows[0];
-      const isCompleted = booking.status === "completed";
+
+      // ✅ UPDATED: Allow reviews for both 'completed' and 'return_submitted'
+      const isEligibleForReview =
+        booking.status === "completed" || booking.status === "return_submitted";
+
       const isCustomer = booking.customer_id === user_id;
 
+      if (!isEligibleForReview) {
+        return callback(null, {
+          valid: false,
+          message: `Cannot review booking with status: ${booking.status}. Must be 'completed' or 'return_submitted'.`,
+          is_completed: false,
+          is_customer: isCustomer,
+        });
+      }
+
+      if (!isCustomer) {
+        return callback(null, {
+          valid: false,
+          message: "Only the customer can review this booking",
+          is_completed: isEligibleForReview,
+          is_customer: false,
+        });
+      }
+
       callback(null, {
-        valid: isCompleted && isCustomer,
-        message:
-          isCompleted && isCustomer
-            ? "Valid"
-            : "Booking not completed or user not customer",
-        is_completed: isCompleted,
-        is_customer: isCustomer,
+        valid: true,
+        message: "Valid for review",
+        is_completed: isEligibleForReview,
+        is_customer: true,
       });
     } catch (error) {
       console.error("❌ gRPC verifyBookingForReview error:", error);
@@ -129,6 +148,10 @@ class BookingGrpcServer {
       await pool.query(
         `UPDATE bookings SET ${field} = true WHERE booking_id = $1`,
         [booking_id]
+      );
+
+      console.log(
+        `✅ Marked booking ${booking_id} as reviewed (${review_type})`
       );
 
       callback(null, {

@@ -25,12 +25,12 @@ class RateReviewScreen extends StatefulWidget {
 
 class _RateReviewScreenState extends State<RateReviewScreen> {
   final ReviewApiService _reviewApi = ReviewApiService();
-  
+
   // Vehicle review
   int _vehicleRating = 0;
   final TextEditingController _vehicleReviewController = TextEditingController();
   bool _vehicleReviewSubmitted = false;
-  
+
   // Owner review
   int _ownerRating = 0;
   final TextEditingController _ownerReviewController = TextEditingController();
@@ -52,10 +52,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
   Future<void> _submitVehicleReview() async {
     if (_vehicleRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a rating for the vehicle'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please select a rating for the vehicle'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -76,12 +73,9 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vehicle review submitted!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Vehicle review submitted!'), backgroundColor: Colors.green));
 
         // ✅ If owner review not needed, go back
         if (widget.ownerId == null || widget.ownerId!.isEmpty) {
@@ -93,14 +87,11 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
       }
     } catch (e) {
       setState(() => _isSubmitting = false);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit review: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to submit review: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -108,10 +99,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
   Future<void> _submitOwnerReview() async {
     if (_ownerRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a rating for the owner'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please select a rating for the owner'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -135,12 +123,9 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Owner review submitted!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Owner review submitted!'), backgroundColor: Colors.green));
 
         // Go back to booking details
         await Future.delayed(const Duration(seconds: 1));
@@ -150,14 +135,11 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
       }
     } catch (e) {
       setState(() => _isSubmitting = false);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit review: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to submit review: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -167,10 +149,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
         title: Text('Rate & Review', style: AppStyles.h2(context)),
         centerTitle: true,
         backgroundColor: AppStyles.background(context),
@@ -182,10 +161,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
           if (widget.ownerId != null && widget.ownerId!.isNotEmpty)
             Container(
               margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppStyles.surface(context),
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
               child: Row(
                 children: [
                   Expanded(
@@ -194,9 +170,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: _currentTab == 0 
-                              ? AppStyles.primary 
-                              : Colors.transparent,
+                          color: _currentTab == 0 ? AppStyles.primary : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -204,29 +178,21 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                           children: [
                             Icon(
                               Icons.directions_car,
-                              color: _currentTab == 0 
-                                  ? Colors.white 
-                                  : AppStyles.textSecondary(context),
+                              color: _currentTab == 0 ? Colors.white : AppStyles.textSecondary(context),
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Vehicle',
                               style: TextStyle(
-                                color: _currentTab == 0 
-                                    ? Colors.white 
-                                    : AppStyles.textSecondary(context),
+                                color: _currentTab == 0 ? Colors.white : AppStyles.textSecondary(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             if (_vehicleReviewSubmitted)
                               const Padding(
                                 padding: EdgeInsets.only(left: 4),
-                                child: Icon(
-                                  Icons.check_circle,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                child: Icon(Icons.check_circle, color: Colors.white, size: 16),
                               ),
                           ],
                         ),
@@ -239,9 +205,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: _currentTab == 1 
-                              ? AppStyles.primary 
-                              : Colors.transparent,
+                          color: _currentTab == 1 ? AppStyles.primary : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -249,29 +213,21 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                           children: [
                             Icon(
                               Icons.person,
-                              color: _currentTab == 1 
-                                  ? Colors.white 
-                                  : AppStyles.textSecondary(context),
+                              color: _currentTab == 1 ? Colors.white : AppStyles.textSecondary(context),
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Owner',
                               style: TextStyle(
-                                color: _currentTab == 1 
-                                    ? Colors.white 
-                                    : AppStyles.textSecondary(context),
+                                color: _currentTab == 1 ? Colors.white : AppStyles.textSecondary(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             if (_ownerReviewSubmitted)
                               const Padding(
                                 padding: EdgeInsets.only(left: 4),
-                                child: Icon(
-                                  Icons.check_circle,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                child: Icon(Icons.check_circle, color: Colors.white, size: 16),
                               ),
                           ],
                         ),
@@ -282,11 +238,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
               ),
             ),
 
-          Expanded(
-            child: _currentTab == 0
-                ? _buildVehicleReviewTab()
-                : _buildOwnerReviewTab(),
-          ),
+          Expanded(child: _currentTab == 0 ? _buildVehicleReviewTab() : _buildOwnerReviewTab()),
         ],
       ),
     );
@@ -307,15 +259,13 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Star rating
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
                     return GestureDetector(
-                      onTap: _vehicleReviewSubmitted 
-                          ? null 
-                          : () => setState(() => _vehicleRating = index + 1),
+                      onTap: _vehicleReviewSubmitted ? null : () => setState(() => _vehicleRating = index + 1),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Icon(
@@ -327,9 +277,9 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     );
                   }),
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // Comment
                 Text('Your Review (Optional)', style: AppStyles.h3(context)),
                 const SizedBox(height: 12),
@@ -342,10 +292,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     hintText: 'Share your experience with this vehicle...',
                     filled: true,
                     fillColor: AppStyles.surface(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                   style: AppStyles.body(context),
                 ),
@@ -365,10 +312,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                         const SizedBox(width: 12),
                         Text(
                           'Vehicle review submitted!',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -390,10 +334,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text('Submit Vehicle Review', style: AppStyles.button),
               ),
@@ -405,12 +346,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
 
   Widget _buildOwnerReviewTab() {
     if (widget.ownerId == null || widget.ownerId!.isEmpty) {
-      return Center(
-        child: Text(
-          'No owner information available',
-          style: AppStyles.caption(context),
-        ),
-      );
+      return Center(child: Text('No owner information available', style: AppStyles.caption(context)));
     }
 
     return Column(
@@ -427,15 +363,13 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Overall star rating
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
                     return GestureDetector(
-                      onTap: _ownerReviewSubmitted 
-                          ? null 
-                          : () => setState(() => _ownerRating = index + 1),
+                      onTap: _ownerReviewSubmitted ? null : () => setState(() => _ownerRating = index + 1),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Icon(
@@ -447,35 +381,35 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     );
                   }),
                 ),
-                
+
                 const SizedBox(height: 48),
 
                 // Aspect ratings (optional)
                 Text('Detailed Ratings (Optional)', style: AppStyles.h3(context)),
                 const SizedBox(height: 16),
-                
+
                 _buildAspectRating(
                   'Communication',
                   _communicationRating,
                   (rating) => setState(() => _communicationRating = rating),
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildAspectRating(
                   'Reliability',
                   _reliabilityRating,
                   (rating) => setState(() => _reliabilityRating = rating),
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildAspectRating(
                   'Car Condition',
                   _carConditionRating,
                   (rating) => setState(() => _carConditionRating = rating),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Comment
                 Text('Your Review (Optional)', style: AppStyles.h3(context)),
                 const SizedBox(height: 12),
@@ -488,10 +422,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     hintText: 'Share your experience with the owner...',
                     filled: true,
                     fillColor: AppStyles.surface(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                   style: AppStyles.body(context),
                 ),
@@ -511,10 +442,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                         const SizedBox(width: 12),
                         Text(
                           'Owner review submitted!',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -536,10 +464,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text('Submit Owner Review', style: AppStyles.button),
               ),
@@ -552,10 +477,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
   Widget _buildAspectRating(String label, int rating, Function(int) onRatingChanged) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppStyles.surface(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -563,16 +485,10 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
           Row(
             children: List.generate(5, (index) {
               return GestureDetector(
-                onTap: _ownerReviewSubmitted 
-                    ? null 
-                    : () => onRatingChanged(index + 1),
+                onTap: _ownerReviewSubmitted ? null : () => onRatingChanged(index + 1),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    index < rating ? Icons.star : Icons.star_border,
-                    size: 24,
-                    color: Colors.amber,
-                  ),
+                  child: Icon(index < rating ? Icons.star : Icons.star_border, size: 24, color: Colors.amber),
                 ),
               );
             }),

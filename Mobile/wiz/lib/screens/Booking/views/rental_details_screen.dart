@@ -1,5 +1,5 @@
 // Mobile/wiz/lib/screens/Booking/views/rental_details_screen.dart
-// UPDATED: Better button logic based on backend actions
+// ✅ FIXED: Timeline map access errors
 
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
@@ -52,12 +52,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     }
   }
 
-  // ✅ UPDATED: Get button action based on backend actions
   Map<String, dynamic> _getButtonAction() {
     if (_booking == null) return {'show': false};
 
     final actions = _booking!.actions;
-    final status = _booking!.status;
 
     // Priority order for actions
     if (actions.canSignContract) {
@@ -80,7 +78,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       return {'show': true, 'text': 'Cancel Booking', 'action': 'cancel', 'color': Colors.red};
     }
 
-    // No actions available
     return {'show': false};
   }
 
@@ -147,11 +144,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status Badge
                   _buildStatusBadge(_booking!.status),
                   const SizedBox(height: 8),
 
-                  // ✅ NEW: Show testing mode indicator
+                  // ✅ Show testing mode indicator
                   if (_booking!.timeline['isTestingMode'] == true)
                     Container(
                       margin: const EdgeInsets.only(top: 8),
@@ -176,43 +172,34 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Vehicle Info
                   Text(_booking!.vehicle.name, style: AppStyles.h1(context)),
                   const SizedBox(height: 4),
                   Text('Booking ID: ${_booking!.id.substring(0, 8)}...', style: AppStyles.caption(context)),
                   const SizedBox(height: 24),
 
-                  // Timeline Details
                   _buildTimelineCard(),
                   const SizedBox(height: 16),
 
-                  // Location Details
                   _buildLocationCard(),
                   const SizedBox(height: 16),
 
-                  // Billing Details
                   _buildBillingCard(),
                   const SizedBox(height: 16),
 
-                  // Insurance
                   if (_booking!.insurance.coverage > 0) ...[_buildInsuranceCard(), const SizedBox(height: 16)],
 
-                  // Contract Status
                   if (_booking!.contract != null) ...[_buildContractCard(), const SizedBox(height: 16)],
 
-                  // Pickup Photos
                   if (_booking!.pickupPhotos != null && _booking!.pickupPhotos!.isNotEmpty) ...[
                     _buildPhotosSection('Pickup Photos', _booking!.pickupPhotos!),
                     const SizedBox(height: 16),
                   ],
 
-                  // Return Photos
                   if (_booking!.returnPhotos != null && _booking!.returnPhotos!.isNotEmpty) ...[
                     _buildPhotosSection('Return Photos', _booking!.returnPhotos!),
                     const SizedBox(height: 16),
                   ],
 
-                  // Additional Notes
                   if (_booking!.additionalNotes != null && _booking!.additionalNotes!.isNotEmpty) ...[
                     Card(
                       color: AppStyles.surface(context),
@@ -235,7 +222,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ),
           ),
 
-          // ✅ UPDATED: Show button based on backend actions
           if (showButton)
             Container(
               padding: const EdgeInsets.all(16),
@@ -316,9 +302,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ... (rest of the widget methods stay the same) ...
-
-  // ✅ UPDATED: Handle button press based on action type
   void _handleButtonPress(String action) async {
     switch (action) {
       case 'sign_contract':
@@ -363,7 +346,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSubmitPickupPhotos() async {
-    // ✅ MOCK: Generate 3 mock photo paths
     final mockPhotos = List.generate(3, (i) => 'mock_pickup_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
 
     try {
@@ -390,7 +372,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSubmitReturnPhotos() async {
-    // ✅ MOCK: Generate 3 mock photo paths
     final mockPhotos = List.generate(3, (i) => 'mock_return_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
 
     try {
@@ -411,7 +392,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         );
         _loadBookingDetails();
 
-        // ✅ Auto-navigate to review after brief delay
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
           _handleRateReview();
@@ -427,7 +407,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   void _handleRateReview() {
-    // Navigate to rate & review screen
     Navigator.pushNamed(
       context,
       AppRoutes.rateReview,
@@ -496,9 +475,13 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ... (rest of the build methods stay the same) ...
-
+  // ✅ FIXED: Access timeline map properties correctly
   Widget _buildTimelineCard() {
+    // Parse DateTime from timeline map
+    final startDate = DateTime.parse(_booking!.timeline['startDate'] as String);
+    final endDate = DateTime.parse(_booking!.timeline['endDate'] as String);
+    final duration = _booking!.timeline['duration'] as String;
+
     return Card(
       color: AppStyles.surface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -509,11 +492,11 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Text('Timeline', style: AppStyles.h3(context)),
             const SizedBox(height: 12),
-            _buildRow('Start Date', _formatDateTime(_booking!.timeline.startDate)),
+            _buildRow('Start Date', _formatDateTime(startDate)),
             const SizedBox(height: 8),
-            _buildRow('End Date', _formatDateTime(_booking!.timeline.endDate)),
+            _buildRow('End Date', _formatDateTime(endDate)),
             const SizedBox(height: 8),
-            _buildRow('Duration', _booking!.timeline.duration),
+            _buildRow('Duration', duration),
           ],
         ),
       ),

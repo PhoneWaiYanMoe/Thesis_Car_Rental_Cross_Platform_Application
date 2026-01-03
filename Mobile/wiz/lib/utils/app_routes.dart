@@ -1,4 +1,6 @@
 // lib/utils/app_routes.dart
+// ✅ FIXED: Updated rateReview route to use new parameters
+
 import 'package:flutter/material.dart';
 import 'package:wiz/screens/Auth/views/forgot_password_screen.dart';
 import 'package:wiz/screens/Auth/views/login_screen.dart';
@@ -134,7 +136,6 @@ class AppRoutes {
         }
         return null;
 
-      // ✅ FIXED: Accept bookingId instead of booking object
       case rentalDetails:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('bookingId')) {
@@ -143,18 +144,21 @@ class AppRoutes {
         }
         return null;
 
+      // ✅ FIXED: Updated to use new parameters
       case rateReview:
         final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null) {
-          BookingData booking;
-          if (args['booking'] is BookingData) {
-            booking = args['booking'] as BookingData;
-          } else if (args['booking'] is Map<String, dynamic>) {
-            booking = BookingData.fromMap(args['booking'] as Map<String, dynamic>);
-          } else {
-            booking = BookingData.fromMap(args);
-          }
-          return MaterialPageRoute(builder: (_) => RateReviewScreen(booking: booking));
+        if (args != null &&
+            args.containsKey('bookingId') &&
+            args.containsKey('vehicleId') &&
+            args.containsKey('vehicleName')) {
+          return MaterialPageRoute(
+            builder: (_) => RateReviewScreen(
+              bookingId: args['bookingId'] as String,
+              vehicleId: args['vehicleId'] as String,
+              vehicleName: args['vehicleName'] as String,
+              ownerId: args['ownerId'] as String?,
+            ),
+          );
         }
         return null;
 
@@ -209,7 +213,6 @@ class AppRoutes {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
   }
 
-  // ✅ UPDATED: Helper methods for booking-related navigation
   static Future<dynamic> navigateToRentalDetails(BuildContext context, String bookingId) {
     return Navigator.pushNamed(context, rentalDetails, arguments: {'bookingId': bookingId});
   }
@@ -226,8 +229,19 @@ class AppRoutes {
     );
   }
 
-  static Future<BookingData?> navigateToRateReview(BuildContext context, BookingData booking) {
-    return Navigator.pushNamed<BookingData>(context, rateReview, arguments: {'booking': booking});
+  // ✅ UPDATED: New helper method with new parameters
+  static Future<dynamic> navigateToRateReview(
+    BuildContext context, {
+    required String bookingId,
+    required String vehicleId,
+    required String vehicleName,
+    String? ownerId,
+  }) {
+    return Navigator.pushNamed(
+      context,
+      rateReview,
+      arguments: {'bookingId': bookingId, 'vehicleId': vehicleId, 'vehicleName': vehicleName, 'ownerId': ownerId},
+    );
   }
 
   static Future<dynamic> navigateToChatDetail(BuildContext context, ChatData chat) {

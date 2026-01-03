@@ -728,11 +728,11 @@ class BookingActions {
 
   factory BookingActions.fromJson(Map<String, dynamic> json) {
     return BookingActions(
-      canSignContract: json['canSignContract'] ?? false,
-      canSubmitPickupPhotos: json['canSubmitPickupPhotos'] ?? false,
-      canSubmitReturnPhotos: json['canSubmitReturnPhotos'] ?? false,
-      canReview: json['canReview'] ?? false,
-      canCancel: json['canCancel'] ?? false,
+      canSignContract: json['canSignContract'] == true,
+      canSubmitPickupPhotos: json['canSubmitPickupPhotos'] == true,
+      canSubmitReturnPhotos: json['canSubmitReturnPhotos'] == true,
+      canReview: json['canReview'] == true,
+      canCancel: json['canCancel'] == true,
     );
   }
 
@@ -747,6 +747,15 @@ class BookingActions {
   }
 }
 
+// ✅ Helper function to safely parse integers
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 // ✅ UPDATED: BookingDetailsResponse with actions
 class BookingDetailsResponse {
   final String id;
@@ -757,13 +766,12 @@ class BookingDetailsResponse {
   final Map<String, dynamic> pickup;
   final Map<String, dynamic> dropoff;
   final BillingInfo billing;
-  final TimelineInfo timelineInfo;
   final InsuranceInfo insurance;
   final List<String>? pickupPhotos;
   final List<String>? returnPhotos;
   final String? additionalNotes;
   final ContractInfo? contract;
-  final BookingActions actions; // ✅ Added actions
+  final BookingActions actions;
 
   BookingDetailsResponse({
     required this.id,
@@ -775,7 +783,6 @@ class BookingDetailsResponse {
     required this.dropoff,
     required this.billing,
     required this.insurance,
-    required this.timelineInfo,
     this.pickupPhotos,
     this.returnPhotos,
     this.additionalNotes,
@@ -784,23 +791,58 @@ class BookingDetailsResponse {
   });
 
   factory BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
-    return BookingDetailsResponse(
-      id: json['id'] ?? '',
-      status: json['status'] ?? 'pending',
-      vehicle: VehicleInfo.fromJson(json['vehicle'] ?? {}),
-      customerId: json['customerId'] ?? '',
-      timeline: Map<String, dynamic>.from(json['timeline'] ?? {}),
-      pickup: Map<String, dynamic>.from(json['pickup'] ?? {}),
-      dropoff: Map<String, dynamic>.from(json['dropoff'] ?? {}),
-      billing: BillingInfo.fromJson(json['billing'] ?? {}),
-      insurance: InsuranceInfo.fromJson(json['insurance'] ?? {}),
-      timelineInfo: TimelineInfo.fromJson(json['timelineInfo'] ?? {}),
-      pickupPhotos: json['pickupPhotos'] != null ? List<String>.from(json['pickupPhotos']) : null,
-      returnPhotos: json['returnPhotos'] != null ? List<String>.from(json['returnPhotos']) : null,
-      additionalNotes: json['additionalNotes'],
-      contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
-      actions: BookingActions.fromJson(json['actions'] ?? {}),
-    );
+    print('📦 Parsing booking details JSON: ${json.keys}');
+
+    try {
+      // Parse timeline with null safety
+      final timelineData = json['timeline'];
+      Map<String, dynamic> timeline;
+
+      if (timelineData is Map<String, dynamic>) {
+        timeline = {
+          'startDate': timelineData['startDate'] ?? DateTime.now().toIso8601String(),
+          'endDate': timelineData['endDate'] ?? DateTime.now().add(Duration(days: 1)).toIso8601String(),
+          'duration': timelineData['duration'] ?? '1 days',
+          'isBookingDay': timelineData['isBookingDay'] ?? false,
+          'isAfterBookingDay': timelineData['isAfterBookingDay'] ?? false,
+          'isReturnDay': timelineData['isReturnDay'] ?? false,
+          'isAfterReturnDay': timelineData['isAfterReturnDay'] ?? false,
+          'isTestingMode': timelineData['isTestingMode'] ?? false,
+        };
+      } else {
+        timeline = {
+          'startDate': DateTime.now().toIso8601String(),
+          'endDate': DateTime.now().add(Duration(days: 1)).toIso8601String(),
+          'duration': '1 days',
+          'isBookingDay': false,
+          'isAfterBookingDay': false,
+          'isReturnDay': false,
+          'isAfterReturnDay': false,
+          'isTestingMode': false,
+        };
+      }
+
+      return BookingDetailsResponse(
+        id: json['id']?.toString() ?? '',
+        status: json['status']?.toString() ?? 'pending',
+        vehicle: VehicleInfo.fromJson(json['vehicle'] ?? {}),
+        customerId: json['customerId']?.toString() ?? '',
+        timeline: timeline,
+        pickup: Map<String, dynamic>.from(json['pickup'] ?? {}),
+        dropoff: Map<String, dynamic>.from(json['dropoff'] ?? {}),
+        billing: BillingInfo.fromJson(json['billing'] ?? {}),
+        insurance: InsuranceInfo.fromJson(json['insurance'] ?? {}),
+        pickupPhotos: json['pickupPhotos'] != null ? List<String>.from(json['pickupPhotos']) : null,
+        returnPhotos: json['returnPhotos'] != null ? List<String>.from(json['returnPhotos']) : null,
+        additionalNotes: json['additionalNotes']?.toString(),
+        contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
+        actions: BookingActions.fromJson(json['actions'] ?? {}),
+      );
+    } catch (e) {
+      print('❌ Error parsing BookingDetailsResponse: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
   }
 }
 
@@ -812,7 +854,11 @@ class VehicleInfo {
   VehicleInfo({required this.id, required this.name, this.ownerId});
 
   factory VehicleInfo.fromJson(Map<String, dynamic> json) {
-    return VehicleInfo(id: json['id'] ?? '', name: json['name'] ?? 'Unknown Vehicle', ownerId: json['ownerId']);
+    return VehicleInfo(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown Vehicle',
+      ownerId: json['ownerId']?.toString(),
+    );
   }
 }
 
@@ -841,15 +887,15 @@ class BillingInfo {
 
   factory BillingInfo.fromJson(Map<String, dynamic> json) {
     return BillingInfo(
-      rentalPrice: json['rentalPrice'] ?? 0,
-      insuranceFee: json['insuranceFee'] ?? 0,
-      dailyRate: json['dailyRate'] ?? 0,
-      numberOfDays: json['numberOfDays'] ?? 0,
-      total: json['total'] ?? 0,
-      deposit: json['deposit'] ?? 0,
-      depositPaid: json['depositPaid'] ?? false,
-      remainingPayment: json['remainingPayment'] ?? 0,
-      finalPaymentPaid: json['finalPaymentPaid'] ?? false,
+      rentalPrice: _parseInt(json['rentalPrice']) ?? 0,
+      insuranceFee: _parseInt(json['insuranceFee']) ?? 0,
+      dailyRate: _parseInt(json['dailyRate']) ?? 0,
+      numberOfDays: _parseInt(json['numberOfDays']) ?? 1,
+      total: _parseInt(json['total']) ?? 0,
+      deposit: _parseInt(json['deposit']) ?? 0,
+      depositPaid: json['depositPaid'] == true,
+      remainingPayment: _parseInt(json['remainingPayment']) ?? 0,
+      finalPaymentPaid: json['finalPaymentPaid'] == true,
     );
   }
 }
@@ -860,7 +906,7 @@ class InsuranceInfo {
   InsuranceInfo({required this.coverage});
 
   factory InsuranceInfo.fromJson(Map<String, dynamic> json) {
-    return InsuranceInfo(coverage: json['coverage'] ?? 0);
+    return InsuranceInfo(coverage: _parseInt(json['coverage']) ?? 0);
   }
 }
 
@@ -871,7 +917,15 @@ class ContractInfo {
   ContractInfo({required this.signedAt, required this.url});
 
   factory ContractInfo.fromJson(Map<String, dynamic> json) {
-    return ContractInfo(signedAt: DateTime.parse(json['signedAt']), url: json['url'] ?? '');
+    try {
+      return ContractInfo(
+        signedAt: DateTime.parse(json['signedAt']?.toString() ?? DateTime.now().toIso8601String()),
+        url: json['url']?.toString() ?? '',
+      );
+    } catch (e) {
+      print('⚠️ Error parsing ContractInfo: $e');
+      return ContractInfo(signedAt: DateTime.now(), url: '');
+    }
   }
 }
 
