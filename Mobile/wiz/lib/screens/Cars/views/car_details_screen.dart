@@ -411,7 +411,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => OwnerCarsScreen(
-                      ownerId: ownerId, // This should be the actual owner_id from backend
+                      ownerId: car.ownerId,
                       ownerName: car.owner,
                       ownerAvatar: car.ownerAvatar,
                       joinedDate: car.ownerJoinedDate,
