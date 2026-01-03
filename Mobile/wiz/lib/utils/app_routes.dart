@@ -96,7 +96,6 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
 
       case carDetails:
-        // ✅ FIXED: Handle Car object properly
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('car')) {
           return MaterialPageRoute(builder: (_) => CarDetailsScreen(arguments: args));
@@ -134,20 +133,16 @@ class AppRoutes {
           );
         }
         return null;
+
+      // ✅ FIXED: Accept bookingId instead of booking object
       case rentalDetails:
         final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null) {
-          BookingData booking;
-          if (args['booking'] is BookingData) {
-            booking = args['booking'] as BookingData;
-          } else if (args['booking'] is Map<String, dynamic>) {
-            booking = BookingData.fromMap(args['booking'] as Map<String, dynamic>);
-          } else {
-            booking = BookingData.fromMap(args);
-          }
-          return MaterialPageRoute(builder: (_) => RentalDetailsScreen(booking: booking));
+        if (args != null && args.containsKey('bookingId')) {
+          final bookingId = args['bookingId'] as String;
+          return MaterialPageRoute(builder: (_) => RentalDetailsScreen(bookingId: bookingId));
         }
         return null;
+
       case rateReview:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null) {
@@ -214,9 +209,9 @@ class AppRoutes {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
   }
 
-  // Helper methods for booking-related navigation
-  static Future<BookingData?> navigateToRentalDetails(BuildContext context, BookingData booking) {
-    return Navigator.pushNamed<BookingData>(context, rentalDetails, arguments: {'booking': booking});
+  // ✅ UPDATED: Helper methods for booking-related navigation
+  static Future<dynamic> navigateToRentalDetails(BuildContext context, String bookingId) {
+    return Navigator.pushNamed(context, rentalDetails, arguments: {'bookingId': bookingId});
   }
 
   static Future<BookingData?> navigateToPhotoSubmission(
