@@ -1,0 +1,34 @@
+// Backend/user-service/proto/user.proto
+
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  // Get single user profile
+  rpc GetUserProfile(GetUserProfileRequest) returns (UserProfile);
+  
+  // Get multiple user profiles
+  rpc GetUserProfiles(GetUserProfilesRequest) returns (GetUserProfilesResponse);
+}
+
+message GetUserProfileRequest {
+  string user_id = 1;
+}
+
+message UserProfile {
+  string user_id = 1;
+  string email = 2;
+  string full_name = 3;
+  string avatar_url = 4;
+  string role = 5;
+}
+
+message GetUserProfilesRequest {
+  repeated string user_ids = 1;
+}
+
+message GetUserProfilesResponse {
+  repeated UserProfile users = 1;
+}
+

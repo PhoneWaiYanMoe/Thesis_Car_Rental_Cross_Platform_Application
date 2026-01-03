@@ -1,3 +1,4 @@
+# Backend/docker-compose.yml - FIXED VERSION
 version: "3.9"
 
 services:
@@ -106,8 +107,16 @@ services:
         condition: service_healthy
     volumes:
       - ./user-service/src:/app/src
+      - ./user-service/proto:/app/proto
     networks:
       - wiz-network
+    # ✅ ADD: Health check for user-service gRPC
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ==================== LOCATION SERVICE ====================
   location-service:
@@ -157,10 +166,14 @@ services:
       - NODE_ENV=development
       - BASE_URL=http://localhost:3002
       - JWT_SECRET=${JWT_SECRET}
-      - USER_SERVICE_GRPC_URL=user-service:50053
-      - REVIEW_SERVICE_GRPC_URL=review-service:50054
+      # ✅ FIX: Use container name, not service name with port
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
     depends_on:
       postgres:
+        condition: service_healthy
+      # ✅ ADD: Wait for user-service to be healthy
+      user-service:
         condition: service_healthy
     volumes:
       - ./vehicle-service/src:/app/src
@@ -186,11 +199,11 @@ services:
       - NODE_ENV=development
       - BASE_URL=http://localhost:3004
       - JWT_SECRET=${JWT_SECRET}
-      # ✅ FIX: Use service names for gRPC URLs
-      - LOCATION_SERVICE_GRPC_URL=location-service:50051
-      - USER_SERVICE_GRPC_URL=user-service:50053
-      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
-      - REVIEW_SERVICE_GRPC_URL=review-service:50054
+      # ✅ FIX: Use container names consistently
+      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
     depends_on:
       postgres:
         condition: service_healthy
@@ -198,6 +211,8 @@ services:
         condition: service_started
       vehicle-service:
         condition: service_started
+      user-service:
+        condition: service_healthy
     volumes:
       - ./booking-service/src:/app/src
     networks:
@@ -220,10 +235,10 @@ services:
       - NODE_ENV=development
       - BASE_URL=http://localhost:3005
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
-      # ✅ FIX: Use service names for gRPC URLs
-      - BOOKING_SERVICE_GRPC_URL=booking-service:50052
-      - USER_SERVICE_GRPC_URL=user-service:50053
-      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
+      # ✅ FIX: Use container names consistently
+      - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
     depends_on:
       mongodb:
         condition: service_healthy
@@ -231,6 +246,8 @@ services:
         condition: service_started
       vehicle-service:
         condition: service_started
+      user-service:
+        condition: service_healthy
     volumes:
       - ./review-service/src:/app/src
     networks:
