@@ -139,6 +139,7 @@ class BookingData {
     } else {
       // ✅ FIXED: Create a placeholder car for trip summary display
       car = Car(
+        ownerId: 'owner_placeholder',
         id: 'placeholder',
         image: 'assets/images/Car.png',
         images: ['assets/images/Car.png'],

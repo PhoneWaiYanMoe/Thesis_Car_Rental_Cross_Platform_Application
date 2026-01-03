@@ -1,5 +1,6 @@
 class Car {
   final String id;
+  final String ownerId;
   final String image;
   final List<String> images;
   final String name;
@@ -28,6 +29,7 @@ class Car {
 
   Car({
     required this.id,
+    required this.ownerId,
     required this.image,
     required this.images,
     required this.name,

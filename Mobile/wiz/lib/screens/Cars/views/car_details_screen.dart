@@ -5,6 +5,7 @@ import 'package:wiz/constants/booking_constants.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
 import 'package:wiz/screens/Cars/services/vehicle_api_service.dart';
 import 'package:wiz/screens/Cars/services/review_api_service.dart';
+import 'package:wiz/screens/Cars/views/owner_cars_screen.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildBottomBar.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarHeader.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
@@ -87,10 +88,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       _bookingData = _bookingData.copyWith();
 
       // Check availability and load reviews in parallel
-      await Future.wait([
-        _checkAvailability(),
-        _loadReviews(car.id),
-      ]);
+      await Future.wait([_checkAvailability(), _loadReviews(car.id)]);
 
       setState(() {
         _isLoading = false;
@@ -405,7 +403,22 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               ownerName: car.owner,
               ownerAvatarAsset: car.ownerAvatar,
               joinedDate: car.ownerJoinedDate,
-              onViewCarsPressed: () {},
+              onViewCarsPressed: () {
+                // Get owner ID from vehicle details loaded from API
+                final ownerId = _car?.id ?? car.id; // Use vehicle's owner_id if available
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OwnerCarsScreen(
+                      ownerId: ownerId, // This should be the actual owner_id from backend
+                      ownerName: car.owner,
+                      ownerAvatar: car.ownerAvatar,
+                      joinedDate: car.ownerJoinedDate,
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             if (car.rules.isNotEmpty) ...[RulesByOwner(rules: car.rules), const SizedBox(height: 24)],
@@ -432,10 +445,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             const SizedBox(height: 24),
             if (_isLoadingReviews)
               const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ),
+                child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()),
               )
             else if (_reviewsResponse != null)
               ReviewsSection(
@@ -461,10 +471,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                 },
               )
             else
-              ReviewsSection(
-                reviews: [],
-                onSeeMorePressed: () {},
-              ),
+              ReviewsSection(reviews: [], onSeeMorePressed: () {}),
             const SizedBox(height: 24),
           ],
         ),
@@ -483,20 +490,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   }
 
   String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[month - 1];
   }
 }

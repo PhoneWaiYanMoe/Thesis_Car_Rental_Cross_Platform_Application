@@ -236,6 +236,7 @@ class VehicleSummary {
   // Convert to Car model for compatibility
   Car toCar() {
     return Car(
+      ownerId: ownerId,
       id: id,
       image: primaryPhoto ?? 'assets/images/Car.png',
       images: [primaryPhoto ?? 'assets/images/Car.png'],
@@ -335,6 +336,7 @@ class VehicleDetails {
 
     return Car(
       id: id,
+      ownerId: ownerId,
       image: photos.isNotEmpty ? photos[0]['url'] ?? 'assets/images/Car.png' : 'assets/images/Car.png',
       images: photos.map((p) => p['url']?.toString() ?? 'assets/images/Car.png').toList(),
       name: name,
