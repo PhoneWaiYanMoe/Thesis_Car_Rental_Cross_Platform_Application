@@ -278,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: 'Booking Requests',
                       subtitle: 'View and manage booking requests',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                        AppRoutes.navigateTo(context, AppRoutes.ownerBookings);
                       },
                     ),
 

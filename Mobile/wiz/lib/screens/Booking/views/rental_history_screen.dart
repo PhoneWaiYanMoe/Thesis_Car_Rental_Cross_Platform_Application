@@ -1,8 +1,7 @@
 // Mobile/wiz/lib/screens/Booking/views/rental_history_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/screens/Booking/models/booking_data.dart';
-import 'package:wiz/screens/Booking/views/rental_details_screen.dart';
+import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 
 class RentalHistoryScreen extends StatefulWidget {
@@ -14,11 +13,12 @@ class RentalHistoryScreen extends StatefulWidget {
 
 class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final BookingApiService _bookingApi = BookingApiService();
 
-  // ✅ CHANGED: Start with empty list
-  List<BookingData> bookings = [];
+  List<CustomerBooking> _bookings = [];
   bool _isLoading = true;
   String? _error;
+  String _selectedStatus = 'all';
 
   @override
   void initState() {
@@ -26,7 +26,6 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
     _loadBookings();
   }
 
-  // ✅ NEW: Load bookings from backend
   Future<void> _loadBookings() async {
     setState(() {
       _isLoading = true;
@@ -34,17 +33,14 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
     });
 
     try {
-      // TODO: Implement API call to get user's bookings
-      // final bookingService = BookingApiService();
-      // final fetchedBookings = await bookingService.getMyBookings();
+      final response = await _bookingApi.getMyBookings(status: _selectedStatus == 'all' ? null : _selectedStatus);
 
-      // For now, show empty state
       setState(() {
-        bookings = [];
+        _bookings = response.bookings;
         _isLoading = false;
       });
 
-      print('📋 Loaded ${bookings.length} bookings from backend');
+      print('📋 Loaded ${_bookings.length} customer bookings from backend');
     } catch (e) {
       print('❌ Error loading bookings: $e');
       setState(() {
@@ -52,6 +48,42 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Filter by Status', style: AppStyles.h2(context)),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8,
+              children: ['all', 'pending', 'booking', 'picked_up', 'return_submitted', 'completed', 'cancelled'].map((
+                status,
+              ) {
+                final isSelected = _selectedStatus == status;
+                return FilterChip(
+                  label: Text(status.toUpperCase().replaceAll('_', ' ')),
+                  selected: isSelected,
+                  selectedColor: AppStyles.primary,
+                  checkmarkColor: Colors.white,
+                  onSelected: (_) {
+                    setState(() => _selectedStatus = status);
+                    Navigator.pop(context);
+                    _loadBookings();
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -63,6 +95,7 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
         centerTitle: true,
         backgroundColor: AppStyles.background(context),
         elevation: 0,
+        actions: [IconButton(icon: const Icon(Icons.tune), onPressed: _showFilterSheet)],
       ),
       body: Column(
         children: [
@@ -70,26 +103,27 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
-              decoration: AppStyles.inputDecoration(hint: 'Search', icon: Icons.search, context: context),
+              decoration: AppStyles.inputDecoration(hint: 'Search bookings', icon: Icons.search, context: context),
+              onChanged: (value) {
+                // TODO: Implement search filter
+              },
             ),
           ),
 
-          // ✅ NEW: Handle loading, error, and empty states
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                 ? _buildErrorState()
-                : bookings.isEmpty
+                : _bookings.isEmpty
                 ? _buildEmptyState()
-                : _buildBookingsList(),
+                : RefreshIndicator(onRefresh: _loadBookings, child: _buildBookingsList()),
           ),
         ],
       ),
     );
   }
 
-  // ✅ NEW: Empty state
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -113,7 +147,6 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
     );
   }
 
-  // ✅ NEW: Error state
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -134,16 +167,24 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
     );
   }
 
-  // ✅ Existing bookings list
   Widget _buildBookingsList() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: bookings.length,
+      itemCount: _bookings.length,
       itemBuilder: (context, index) {
-        final booking = bookings[index];
+        final booking = _bookings[index];
         return GestureDetector(
-          onTap: () {
-            AppRoutes.navigateToRentalDetails(context, booking);
+          onTap: () async {
+            // Navigate to details and refresh on return
+            final result = await Navigator.pushNamed(
+              context,
+              AppRoutes.rentalDetails,
+              arguments: {'bookingId': booking.id},
+            );
+
+            if (result == true) {
+              _loadBookings();
+            }
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -152,52 +193,47 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: (booking.status ?? BookingStatus.pending).color.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    (booking.status ?? BookingStatus.pending).displayName,
-                    style: TextStyle(
-                      color: (booking.status ?? BookingStatus.pending).color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                // Status badge
                 Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(booking.carImage, width: 80, height: 80, fit: BoxFit.cover),
+                    _buildStatusBadge(booking.status),
+                    const Spacer(),
+                    if (booking.canCancel)
+                      const Icon(Icons.cancel_outlined, size: 16, color: Colors.orange)
+                    else if (booking.canReview)
+                      const Icon(Icons.star_border, size: 16, color: Colors.amber),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Vehicle info
+                Text(booking.vehicle['name'] ?? 'Unknown Vehicle', style: AppStyles.h3(context)),
+                const SizedBox(height: 4),
+                Text('Booking ID: ${booking.id.substring(0, 8)}...', style: AppStyles.caption(context)),
+                const SizedBox(height: 8),
+
+                // Dates
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_formatDate(booking.startDate)} - ${_formatDate(booking.endDate)}',
+                      style: AppStyles.caption(context),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(booking.carName, style: AppStyles.h3(context)),
-                          const SizedBox(height: 4),
-                          Text(booking.date ?? 'No date', style: AppStyles.caption(context)),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                booking.price ?? 'N/A',
-                                style: AppStyles.body(
-                                  context,
-                                ).copyWith(color: AppStyles.primary, fontWeight: FontWeight.bold),
-                              ),
-                              Text(booking.duration ?? 'N/A', style: AppStyles.caption(context)),
-                            ],
-                          ),
-                        ],
-                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Price and duration
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_formatPrice(booking.pricing['total'] ?? 0)} ₫',
+                      style: AppStyles.body(context).copyWith(color: AppStyles.primary, fontWeight: FontWeight.bold),
                     ),
+                    Text(booking.duration, style: AppStyles.caption(context)),
                   ],
                 ),
               ],
@@ -206,6 +242,62 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
         );
       },
     );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    String label;
+
+    switch (status) {
+      case 'pending':
+        color = Colors.orange;
+        label = 'PENDING';
+        break;
+      case 'booking':
+        color = Colors.blue;
+        label = 'CONFIRMED';
+        break;
+      case 'picked_up':
+        color = Colors.purple;
+        label = 'ON JOURNEY';
+        break;
+      case 'return_submitted':
+        color = Colors.indigo;
+        label = 'RETURN SUBMITTED';
+        break;
+      case 'completed':
+        color = Colors.green;
+        label = 'COMPLETED';
+        break;
+      case 'cancelled':
+        color = Colors.red;
+        label = 'CANCELLED';
+        break;
+      default:
+        color = Colors.grey;
+        label = status.toUpperCase();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatPrice(int price) {
+    return price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
   }
 
   @override

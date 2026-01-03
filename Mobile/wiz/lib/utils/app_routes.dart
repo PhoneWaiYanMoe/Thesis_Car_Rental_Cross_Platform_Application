@@ -22,6 +22,7 @@ import 'package:wiz/screens/Home/views/dateTime_screen.dart';
 import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Location/views/location_search_screen.dart';
 import 'package:wiz/screens/Location/views/map_screen.dart';
+import 'package:wiz/screens/Owner/views/owner_booking_screen.dart';
 import 'package:wiz/screens/Profile/profile_screen.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Owner/views/owner_vehicles_screen.dart';
@@ -58,6 +59,7 @@ class AppRoutes {
   static const String ownerVehicleCreate = '/owner/vehicles/create';
   static const String ownerVehicleDetails = '/owner/vehicles/details';
   static const String ownerVehicleEdit = '/owner/vehicles/edit';
+  static const String ownerBookings = '/owner/bookings';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -192,6 +194,8 @@ class AppRoutes {
           return MaterialPageRoute(builder: (_) => EditVehicleScreen(vehicleId: vehicleId));
         }
         return null;
+      case ownerBookings:
+        return MaterialPageRoute(builder: (_) => OwnerBookingsScreen());
 
       default:
         return null;
