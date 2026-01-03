@@ -711,23 +711,59 @@ class Pagination {
 }
 
 // ==================== DETAILED BOOKING RESPONSE ====================
+class BookingActions {
+  final bool canSignContract;
+  final bool canSubmitPickupPhotos;
+  final bool canSubmitReturnPhotos;
+  final bool canReview;
+  final bool canCancel;
 
+  BookingActions({
+    required this.canSignContract,
+    required this.canSubmitPickupPhotos,
+    required this.canSubmitReturnPhotos,
+    required this.canReview,
+    required this.canCancel,
+  });
+
+  factory BookingActions.fromJson(Map<String, dynamic> json) {
+    return BookingActions(
+      canSignContract: json['canSignContract'] ?? false,
+      canSubmitPickupPhotos: json['canSubmitPickupPhotos'] ?? false,
+      canSubmitReturnPhotos: json['canSubmitReturnPhotos'] ?? false,
+      canReview: json['canReview'] ?? false,
+      canCancel: json['canCancel'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'canSignContract': canSignContract,
+      'canSubmitPickupPhotos': canSubmitPickupPhotos,
+      'canSubmitReturnPhotos': canSubmitReturnPhotos,
+      'canReview': canReview,
+      'canCancel': canCancel,
+    };
+  }
+}
+
+// ✅ UPDATED: BookingDetailsResponse with actions
 class BookingDetailsResponse {
   final String id;
   final String status;
   final VehicleInfo vehicle;
   final String customerId;
-  final TimelineInfo timeline;
+  final Map<String, dynamic> timeline;
   final Map<String, dynamic> pickup;
   final Map<String, dynamic> dropoff;
   final BillingInfo billing;
+  final TimelineInfo timelineInfo;
   final InsuranceInfo insurance;
   final List<String>? pickupPhotos;
   final List<String>? returnPhotos;
   final String? additionalNotes;
   final ContractInfo? contract;
-  final bool canCancel;
-  final bool canReview;
+  final BookingActions actions; // ✅ Added actions
 
   BookingDetailsResponse({
     required this.id,
@@ -739,12 +775,12 @@ class BookingDetailsResponse {
     required this.dropoff,
     required this.billing,
     required this.insurance,
+    required this.timelineInfo,
     this.pickupPhotos,
     this.returnPhotos,
     this.additionalNotes,
     this.contract,
-    required this.canCancel,
-    required this.canReview,
+    required this.actions,
   });
 
   factory BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
@@ -753,17 +789,17 @@ class BookingDetailsResponse {
       status: json['status'] ?? 'pending',
       vehicle: VehicleInfo.fromJson(json['vehicle'] ?? {}),
       customerId: json['customerId'] ?? '',
-      timeline: TimelineInfo.fromJson(json['timeline'] ?? {}),
+      timeline: Map<String, dynamic>.from(json['timeline'] ?? {}),
       pickup: Map<String, dynamic>.from(json['pickup'] ?? {}),
       dropoff: Map<String, dynamic>.from(json['dropoff'] ?? {}),
       billing: BillingInfo.fromJson(json['billing'] ?? {}),
       insurance: InsuranceInfo.fromJson(json['insurance'] ?? {}),
+      timelineInfo: TimelineInfo.fromJson(json['timelineInfo'] ?? {}),
       pickupPhotos: json['pickupPhotos'] != null ? List<String>.from(json['pickupPhotos']) : null,
       returnPhotos: json['returnPhotos'] != null ? List<String>.from(json['returnPhotos']) : null,
       additionalNotes: json['additionalNotes'],
       contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
-      canCancel: json['canCancel'] ?? false,
-      canReview: json['canReview'] ?? false,
+      actions: BookingActions.fromJson(json['actions'] ?? {}),
     );
   }
 }
@@ -777,24 +813,6 @@ class VehicleInfo {
 
   factory VehicleInfo.fromJson(Map<String, dynamic> json) {
     return VehicleInfo(id: json['id'] ?? '', name: json['name'] ?? 'Unknown Vehicle', ownerId: json['ownerId']);
-  }
-}
-
-class TimelineInfo {
-  final DateTime startDate;
-  final DateTime endDate;
-  final String duration;
-  final bool isBookingDay;
-
-  TimelineInfo({required this.startDate, required this.endDate, required this.duration, required this.isBookingDay});
-
-  factory TimelineInfo.fromJson(Map<String, dynamic> json) {
-    return TimelineInfo(
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      duration: json['duration'] ?? '',
-      isBookingDay: json['isBookingDay'] ?? false,
-    );
   }
 }
 
@@ -855,4 +873,24 @@ class ContractInfo {
   factory ContractInfo.fromJson(Map<String, dynamic> json) {
     return ContractInfo(signedAt: DateTime.parse(json['signedAt']), url: json['url'] ?? '');
   }
+}
+
+class TimelineInfo {
+  final DateTime startDate;
+  final DateTime endDate;
+  final String duration;
+  final bool isBookingDay;
+
+  TimelineInfo({required this.startDate, required this.endDate, required this.duration, required this.isBookingDay});
+
+  factory TimelineInfo.fromJson(Map<String, dynamic> json) {
+    return TimelineInfo(
+      startDate: DateTime.parse(json['startDate']),
+      endDate: DateTime.parse(json['endDate']),
+      duration: json['duration'] ?? '',
+      isBookingDay: json['isBookingDay'] ?? false,
+    );
+  }
+
+  void operator [](String other) {}
 }

@@ -1,4 +1,6 @@
 // Mobile/wiz/lib/screens/Booking/views/rental_details_screen.dart
+// UPDATED: Better button logic based on backend actions
+
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
@@ -50,86 +52,36 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     }
   }
 
-  bool _isBookingDay() {
-    if (_booking == null) return false;
-    final now = DateTime.now();
-    final startDate = _booking!.timeline.startDate;
-    return now.year == startDate.year && now.month == startDate.month && now.day == startDate.day;
-  }
+  // ✅ UPDATED: Get button action based on backend actions
+  Map<String, dynamic> _getButtonAction() {
+    if (_booking == null) return {'show': false};
 
-  bool _isFinalDay() {
-    if (_booking == null) return false;
-    final now = DateTime.now();
-    final endDate = _booking!.timeline.endDate;
-    return now.year == endDate.year && now.month == endDate.month && now.day == endDate.day;
-  }
-
-  bool _isAfterBookingDay() {
-    if (_booking == null) return false;
-    final now = DateTime.now();
-    final startDate = DateTime(
-      _booking!.timeline.startDate.year,
-      _booking!.timeline.startDate.month,
-      _booking!.timeline.startDate.day,
-    );
-    final today = DateTime(now.year, now.month, now.day);
-    return today.isAfter(startDate);
-  }
-
-  bool _isAfterFinalDay() {
-    if (_booking == null) return false;
-    final now = DateTime.now();
-    final endDate = DateTime(
-      _booking!.timeline.endDate.year,
-      _booking!.timeline.endDate.month,
-      _booking!.timeline.endDate.day,
-    );
-    final today = DateTime(now.year, now.month, now.day);
-    return today.isAfter(endDate);
-  }
-
-  String _getButtonText() {
-    if (_booking == null) return '';
-
+    final actions = _booking!.actions;
     final status = _booking!.status;
 
-    // If cancelled or completed, no button
-    if (status == 'cancelled' || status == 'completed') {
-      return '';
+    // Priority order for actions
+    if (actions.canSignContract) {
+      return {'show': true, 'text': 'Sign Contract', 'action': 'sign_contract', 'color': AppStyles.primary};
     }
 
-    // If on journey (picked_up)
-    if (status == 'picked_up') {
-      if (_isFinalDay() || _isAfterFinalDay()) {
-        return 'Submit Return Photos';
-      }
-      return '';
+    if (actions.canSubmitPickupPhotos) {
+      return {'show': true, 'text': 'Submit Pickup Photos', 'action': 'submit_pickup', 'color': AppStyles.primary};
     }
 
-    // If pending or confirmed (booking)
-    if (status == 'pending' || status == 'booking') {
-      if (_isBookingDay() || _isAfterBookingDay()) {
-        // Can sign contract and submit pickup photos
-        if (_booking!.contract == null) {
-          return 'Sign Contract';
-        } else if (_booking!.pickupPhotos == null || _booking!.pickupPhotos!.isEmpty) {
-          return 'Submit Pickup Photos';
-        }
-        return '';
-      } else {
-        // Before booking day, can cancel
-        return 'Cancel Booking';
-      }
+    if (actions.canSubmitReturnPhotos) {
+      return {'show': true, 'text': 'Submit Return Photos', 'action': 'submit_return', 'color': AppStyles.primary};
     }
 
-    return '';
-  }
-
-  Color _getButtonColor(String buttonText) {
-    if (buttonText == 'Cancel Booking') {
-      return Colors.red;
+    if (actions.canReview) {
+      return {'show': true, 'text': 'Rate & Review', 'action': 'rate_review', 'color': Colors.amber};
     }
-    return AppStyles.primary;
+
+    if (actions.canCancel) {
+      return {'show': true, 'text': 'Cancel Booking', 'action': 'cancel', 'color': Colors.red};
+    }
+
+    // No actions available
+    return {'show': false};
   }
 
   @override
@@ -175,8 +127,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       );
     }
 
-    final buttonText = _getButtonText();
-    final showButton = buttonText.isNotEmpty;
+    final buttonAction = _getButtonAction();
+    final showButton = buttonAction['show'] as bool;
 
     return Scaffold(
       backgroundColor: AppStyles.background(context),
@@ -197,6 +149,31 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 children: [
                   // Status Badge
                   _buildStatusBadge(_booking!.status),
+                  const SizedBox(height: 8),
+
+                  // ✅ NEW: Show testing mode indicator
+                  if (_booking!.timeline['isTestingMode'] == true)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.science, size: 16, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Text(
+                            'TESTING MODE: Date checks bypassed',
+                            style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 16),
 
                   // Vehicle Info
@@ -258,6 +235,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ),
           ),
 
+          // ✅ UPDATED: Show button based on backend actions
           if (showButton)
             Container(
               padding: const EdgeInsets.all(16),
@@ -269,12 +247,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _getButtonColor(buttonText),
+                    backgroundColor: buttonAction['color'] as Color,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () => _handleButtonPress(buttonText),
-                  child: Text(buttonText, style: AppStyles.button),
+                  onPressed: () => _handleButtonPress(buttonAction['action'] as String),
+                  child: Text(buttonAction['text'] as String, style: AppStyles.button),
                 ),
               ),
             ),
@@ -337,6 +315,188 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       ),
     );
   }
+
+  // ... (rest of the widget methods stay the same) ...
+
+  // ✅ UPDATED: Handle button press based on action type
+  void _handleButtonPress(String action) async {
+    switch (action) {
+      case 'sign_contract':
+        await _handleSignContract();
+        break;
+      case 'submit_pickup':
+        await _handleSubmitPickupPhotos();
+        break;
+      case 'submit_return':
+        await _handleSubmitReturnPhotos();
+        break;
+      case 'rate_review':
+        _handleRateReview();
+        break;
+      case 'cancel':
+        _showCancelDialog();
+        break;
+    }
+  }
+
+  Future<void> _handleSignContract() async {
+    try {
+      await _bookingApi.signContract(
+        bookingId: widget.bookingId,
+        signature: 'data:image/png;base64,mock_signature_${DateTime.now().millisecondsSinceEpoch}',
+        agreedToTerms: true,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Contract signed successfully!'), backgroundColor: Colors.green));
+        _loadBookingDetails();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to sign contract: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _handleSubmitPickupPhotos() async {
+    // ✅ MOCK: Generate 3 mock photo paths
+    final mockPhotos = List.generate(3, (i) => 'mock_pickup_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+
+    try {
+      await _bookingApi.confirmPickup(
+        bookingId: widget.bookingId,
+        pickupPhotos: mockPhotos,
+        odometerReading: 10000 + (widget.bookingId.hashCode % 50000),
+        notes: 'Car in good condition',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pickup confirmed! Have a safe journey!'), backgroundColor: Colors.green),
+        );
+        _loadBookingDetails();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to confirm pickup: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _handleSubmitReturnPhotos() async {
+    // ✅ MOCK: Generate 3 mock photo paths
+    final mockPhotos = List.generate(3, (i) => 'mock_return_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+
+    try {
+      await _bookingApi.confirmReturn(
+        bookingId: widget.bookingId,
+        returnPhotos: mockPhotos,
+        odometerReading: 10500 + (widget.bookingId.hashCode % 50000),
+        notes: 'Returned in good condition',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Return submitted! You can now rate your experience.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        _loadBookingDetails();
+
+        // ✅ Auto-navigate to review after brief delay
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          _handleRateReview();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to submit return: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  void _handleRateReview() {
+    // Navigate to rate & review screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.rateReview,
+      arguments: {
+        'bookingId': widget.bookingId,
+        'vehicleId': _booking!.vehicle.id,
+        'vehicleName': _booking!.vehicle.name,
+        'ownerId': _booking!.vehicle.ownerId,
+      },
+    );
+  }
+
+  void _showCancelDialog() {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppStyles.surface(context),
+        title: Text('Cancel Booking', style: AppStyles.h2(context)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to cancel this booking?', style: AppStyles.body(context)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                hintText: 'Reason for cancellation (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                await _bookingApi.cancelBooking(
+                  bookingId: widget.bookingId,
+                  reason: reasonController.text.isEmpty ? 'Customer cancelled' : reasonController.text,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Booking cancelled'), backgroundColor: Colors.orange));
+                  Navigator.pop(context, true);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ... (rest of the build methods stay the same) ...
 
   Widget _buildTimelineCard() {
     return Card(
@@ -560,138 +720,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               : AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
         ),
       ],
-    );
-  }
-
-  void _handleButtonPress(String buttonText) async {
-    if (buttonText == 'Cancel Booking') {
-      _showCancelDialog();
-    } else if (buttonText == 'Sign Contract') {
-      _handleSignContract();
-    } else if (buttonText == 'Submit Pickup Photos') {
-      _handleSubmitPickupPhotos();
-    } else if (buttonText == 'Submit Return Photos') {
-      _handleSubmitReturnPhotos();
-    }
-  }
-
-  Future<void> _handleSignContract() async {
-    // Mock signature for now
-    try {
-      await _bookingApi.signContract(
-        bookingId: widget.bookingId,
-        signature: 'data:image/png;base64,mock_signature',
-        agreedToTerms: true,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contract signed successfully!'), backgroundColor: Colors.green));
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to sign contract: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handleSubmitPickupPhotos() async {
-    // Mock photos for now
-    try {
-      await _bookingApi.confirmPickup(
-        bookingId: widget.bookingId,
-        pickupPhotos: ['photo1.jpg', 'photo2.jpg', 'photo3.jpg'],
-        odometerReading: 10000,
-        notes: 'Car in good condition',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Pickup confirmed successfully!'), backgroundColor: Colors.green));
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to confirm pickup: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handleSubmitReturnPhotos() async {
-    // Mock photos for now
-    try {
-      await _bookingApi.confirmReturn(
-        bookingId: widget.bookingId,
-        returnPhotos: ['photo1.jpg', 'photo2.jpg', 'photo3.jpg'],
-        odometerReading: 10500,
-        notes: 'Returned in good condition',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Return submitted successfully!'), backgroundColor: Colors.green));
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit return: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  void _showCancelDialog() {
-    final reasonController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppStyles.surface(context),
-        title: Text('Cancel Booking', style: AppStyles.h2(context)),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(hintText: 'Reason for cancellation'),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              try {
-                await _bookingApi.cancelBooking(
-                  bookingId: widget.bookingId,
-                  reason: reasonController.text.isEmpty ? 'Customer cancelled' : reasonController.text,
-                );
-
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Booking cancelled'), backgroundColor: Colors.orange));
-                  Navigator.pop(context, true);
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: Colors.red));
-                }
-              }
-            },
-            child: const Text('Yes', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 
