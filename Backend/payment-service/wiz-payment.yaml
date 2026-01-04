@@ -1,0 +1,889 @@
+openapi: 3.0.3
+info:
+  title: Wiz Payment Service API
+  description: |
+    **Secure Payment Processing Service for Wiz Car Rental**
+    
+    ## Payment Flow Overview
+    
+    **Booking Payment (2-Phase):**
+    1. **Deposit Payment (30%)** - Required to confirm booking
+       - Customer pays deposit when creating booking
+       - Status: pending → booking (after owner approval)
+    
+    2. **Final Payment (70%)** - Before pickup
+       - Customer pays remaining amount before contract signing
+       - Status: booking → ready for pickup
+    
+    **Refund Flow:**
+    - Cancellation > 24hrs before start: Full deposit refund
+    - Cancellation 12-24hrs before: 50% deposit refund
+    - Cancellation < 12hrs: No refund
+    - Owner rejection: Full refund
+    - Dispute resolution: Variable refund (CS decision)
+    
+    ## Supported Payment Methods
+    
+    ### International
+    - **Stripe**: Credit/Debit cards (Visa, Mastercard, Amex)
+    - **PayPal**: PayPal balance, linked cards
+    
+    ### Vietnam Local
+    - **VNPay**: Vietnamese bank cards, e-wallets
+      - ATM cards
+      - QR Code payment
+      - Mobile banking
+    
+    ## Security Features
+    - **PCI-DSS Level 1 Compliant**
+    - **End-to-end encryption (E2EE)**
+    - **TLS 1.3 for all connections**
+    - **Tokenized card storage** (no raw card data stored)
+    - **3D Secure (3DS) authentication**
+    - **Fraud detection & prevention**
+    - **Webhook signature verification**
+    - **Idempotency keys** for duplicate prevention
+    
+    ## Architecture
+    ```
+    Client (Mobile/Web)
+         ↓ HTTPS/TLS 1.3
+    Payment Service (Gateway)
+         ↓ E2EE
+    ┌────────┬─────────┬────────┐
+    │ Stripe │ PayPal  │ VNPay  │
+    └────────┴─────────┴────────┘
+    ```
+    
+    **Note:** All sensitive data (card numbers, CVV) goes directly from client to payment provider.
+    Our service only handles:
+    - Payment intents/orders
+    - Transaction status
+    - Tokenized payment methods
+    - Refund processing
+  
+  version: 1.0.0
+  contact:
+    name: Wiz Payment Support
+    email: payment@wiz.com
+
+servers:
+  - url: https://api.wiz.com/v1
+    description: Production (HTTPS only)
+  - url: https://sandbox.wiz.com/v1
+    description: Sandbox/Testing
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Payment Methods
+    description: Manage saved payment methods
+  - name: Deposits
+    description: Process booking deposits (30%)
+  - name: Final Payments
+    description: Process remaining payments (70%)
+  - name: Refunds
+    description: Process refunds and cancellations
+  - name: Transactions
+    description: Transaction history and status
+  - name: Webhooks
+    description: Payment provider webhooks
+
+paths:
+  # ==================== PAYMENT METHODS ====================
+  /payment/methods:
+    get:
+      summary: Get saved payment methods
+      tags: [Payment Methods]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of saved payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentMethod'
+                  default:
+                    type: string
+                    description: Default payment method ID
+                    example: "pm_1234567890"
+    
+    post:
+      summary: Add payment method
+      description: |
+        Securely add a new payment method.
+        
+        **Security Flow:**
+        1. Client creates tokenized payment method with provider SDK
+        2. Send token to our API (never send raw card data)
+        3. We save the tokenized reference
+      tags: [Payment Methods]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - token
+              properties:
+                provider:
+                  type: string
+                  enum: [stripe, paypal, vnpay]
+                  example: "stripe"
+                token:
+                  type: string
+                  description: Payment method token from provider SDK
+                  example: "pm_1234567890abcdef"
+                setAsDefault:
+                  type: boolean
+                  default: false
+                billingDetails:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "Nguyen Van A"
+                    email:
+                      type: string
+                      example: "user@example.com"
+                    phone:
+                      type: string
+                      example: "+84900000000"
+      responses:
+        '201':
+          description: Payment method added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment method added successfully"
+                  method:
+                    $ref: '#/components/schemas/PaymentMethod'
+  
+  /payment/methods/{id}:
+    delete:
+      summary: Remove payment method
+      tags: [Payment Methods]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment method removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment method removed"
+  
+  /payment/methods/{id}/default:
+    post:
+      summary: Set default payment method
+      tags: [Payment Methods]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Default payment method updated
+
+  # ==================== DEPOSIT PAYMENTS ====================
+  /payment/deposit/intent:
+    post:
+      summary: Create deposit payment intent
+      description: |
+        Create payment intent for booking deposit (30% of total).
+        
+        **Flow:**
+        1. Create intent → Get client_secret
+        2. Use client_secret in provider SDK to collect payment
+        3. Webhook confirms payment → Booking status updates
+      tags: [Deposits]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - provider
+              properties:
+                bookingId:
+                  type: string
+                  format: uuid
+                  example: "550e8400-e29b-41d4-a716-446655440001"
+                provider:
+                  type: string
+                  enum: [stripe, paypal, vnpay]
+                  example: "stripe"
+                paymentMethodId:
+                  type: string
+                  description: Optional - use saved payment method
+                  example: "pm_1234567890"
+                returnUrl:
+                  type: string
+                  description: URL to redirect after 3DS authentication
+                  example: "wiz://payment/success"
+      responses:
+        '201':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intentId:
+                    type: string
+                    example: "pi_1234567890"
+                  clientSecret:
+                    type: string
+                    description: Secret for client SDK
+                    example: "pi_1234567890_secret_abcdef"
+                  amount:
+                    type: integer
+                    description: Amount in smallest currency unit (VND)
+                    example: 255000
+                  currency:
+                    type: string
+                    example: "VND"
+                  status:
+                    type: string
+                    example: "requires_payment_method"
+                  provider:
+                    type: string
+                    example: "stripe"
+                  
+        '400':
+          description: Invalid booking or already paid
+  
+  /payment/deposit/{intentId}/confirm:
+    post:
+      summary: Confirm deposit payment
+      description: |
+        Manually confirm payment intent (usually handled by webhook).
+        Use this if webhook fails or for manual verification.
+      tags: [Deposits]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: intentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ==================== FINAL PAYMENTS ====================
+  /payment/final/intent:
+    post:
+      summary: Create final payment intent
+      description: |
+        Create payment intent for remaining payment (70% of total).
+        Required before customer can sign contract and pick up vehicle.
+      tags: [Final Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - provider
+              properties:
+                bookingId:
+                  type: string
+                  format: uuid
+                provider:
+                  type: string
+                  enum: [stripe, paypal, vnpay]
+                paymentMethodId:
+                  type: string
+                  description: Optional - use saved payment method
+                returnUrl:
+                  type: string
+      responses:
+        '201':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intentId:
+                    type: string
+                  clientSecret:
+                    type: string
+                  amount:
+                    type: integer
+                    example: 595000
+                  currency:
+                    type: string
+                    example: "VND"
+                  status:
+                    type: string
+                  provider:
+                    type: string
+        '400':
+          description: Deposit not paid or booking not confirmed
+
+  /payment/final/{intentId}/confirm:
+    post:
+      summary: Confirm final payment
+      tags: [Final Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: intentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Final payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ==================== REFUNDS ====================
+  /payment/refund:
+    post:
+      summary: Process refund
+      description: |
+        Process refund for cancelled booking or dispute resolution.
+        
+        **Refund Rules:**
+        - Cancellation > 24hrs: Full deposit refund
+        - Cancellation 12-24hrs: 50% deposit refund
+        - Cancellation < 12hrs: No refund
+        - Owner rejection: Full refund
+        - Dispute: CS-determined amount
+        
+        **Processing Time:**
+        - Stripe: 5-10 business days
+        - PayPal: Instant to 24 hours
+        - VNPay: 3-7 business days
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - amount
+                - reason
+              properties:
+                bookingId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: integer
+                  description: Refund amount in VND
+                  example: 255000
+                reason:
+                  type: string
+                  enum: [
+                    customer_cancellation,
+                    owner_rejection,
+                    dispute_resolution,
+                    system_error
+                  ]
+                  example: "customer_cancellation"
+                notes:
+                  type: string
+                  example: "Cancelled 48 hours before booking"
+      responses:
+        '201':
+          description: Refund initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refundId:
+                    type: string
+                    example: "re_1234567890"
+                  amount:
+                    type: integer
+                    example: 255000
+                  status:
+                    type: string
+                    enum: [pending, processing, succeeded, failed]
+                    example: "processing"
+                  estimatedArrival:
+                    type: string
+                    format: date
+                    example: "2026-01-10"
+                  message:
+                    type: string
+                    example: "Refund initiated. Funds will arrive in 5-10 business days."
+        '400':
+          description: Invalid refund request
+        '403':
+          description: Not authorized to process refund
+  
+  /payment/refund/{refundId}:
+    get:
+      summary: Get refund status
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refundId:
+                    type: string
+                  bookingId:
+                    type: string
+                  amount:
+                    type: integer
+                  status:
+                    type: string
+                  reason:
+                    type: string
+                  initiatedAt:
+                    type: string
+                    format: date-time
+                  completedAt:
+                    type: string
+                    format: date-time
+                  failureReason:
+                    type: string
+
+  # ==================== TRANSACTIONS ====================
+  /payment/transactions:
+    get:
+      summary: Get transaction history
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, deposit, final, refund]
+            default: all
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, succeeded, failed, refunded]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+  
+  /payment/transactions/{id}:
+    get:
+      summary: Get transaction details
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetails'
+
+  /payment/booking/{bookingId}/transactions:
+    get:
+      summary: Get all transactions for a booking
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking transaction history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookingId:
+                    type: string
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  summary:
+                    type: object
+                    properties:
+                      totalPaid:
+                        type: integer
+                      totalRefunded:
+                        type: integer
+                      depositStatus:
+                        type: string
+                      finalPaymentStatus:
+                        type: string
+
+  # ==================== WEBHOOKS ====================
+  /payment/webhook/stripe:
+    post:
+      summary: Stripe webhook endpoint
+      description: |
+        Webhook endpoint for Stripe payment events.
+        
+        **Security:**
+        - Signature verification required
+        - IP whitelist: Stripe webhook IPs only
+        
+        **Events Handled:**
+        - payment_intent.succeeded
+        - payment_intent.payment_failed
+        - charge.refunded
+        - charge.dispute.created
+      tags: [Webhooks]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe webhook event payload
+      responses:
+        '200':
+          description: Webhook received
+        '400':
+          description: Invalid signature
+
+  /payment/webhook/paypal:
+    post:
+      summary: PayPal webhook endpoint
+      tags: [Webhooks]
+      security: []
+      responses:
+        '200':
+          description: Webhook received
+
+  /payment/webhook/vnpay:
+    post:
+      summary: VNPay webhook endpoint
+      tags: [Webhooks]
+      security: []
+      responses:
+        '200':
+          description: Webhook received
+
+  # ==================== ADMIN ROUTES ====================
+  /payment/admin/transactions:
+    get:
+      summary: Get all transactions (Admin)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: bookingId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: All transactions
+  
+  /payment/admin/refund:
+    post:
+      summary: Manual refund (Admin)
+      description: Manually process refund (bypass automatic rules)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transactionId
+                - amount
+                - reason
+              properties:
+                transactionId:
+                  type: string
+                amount:
+                  type: integer
+                reason:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Manual refund initiated
+
+  /payment/admin/disputes:
+    get:
+      summary: Get payment disputes (Admin)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of disputes
+
+# ==================== COMPONENTS ====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pm_1234567890"
+        provider:
+          type: string
+          enum: [stripe, paypal, vnpay]
+          example: "stripe"
+        type:
+          type: string
+          enum: [card, paypal, bank_account]
+          example: "card"
+        details:
+          type: object
+          description: Tokenized payment method details
+          properties:
+            brand:
+              type: string
+              example: "visa"
+            last4:
+              type: string
+              example: "4242"
+            expiryMonth:
+              type: integer
+              example: 12
+            expiryYear:
+              type: integer
+              example: 2026
+        isDefault:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [deposit, final_payment, refund]
+        amount:
+          type: integer
+        currency:
+          type: string
+          example: "VND"
+        status:
+          type: string
+          enum: [pending, processing, succeeded, failed, refunded]
+        provider:
+          type: string
+          enum: [stripe, paypal, vnpay]
+        paymentMethodId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TransactionDetails:
+      allOf:
+        - $ref: '#/components/schemas/Transaction'
+        - type: object
+          properties:
+            customer:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+            booking:
+              type: object
+              properties:
+                id:
+                  type: string
+                vehicleId:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+            paymentMethod:
+              $ref: '#/components/schemas/PaymentMethod'
+            timeline:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+            receiptUrl:
+              type: string
+              example: "https://pay.stripe.com/receipts/..."
+
+    TransactionResponse:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        status:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        provider:
+          type: string
+        receiptUrl:
+          type: string
+        message:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer

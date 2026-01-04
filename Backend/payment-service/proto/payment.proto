@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package payment;
+
+service PaymentService {
+  // Verify payment status for booking
+  rpc VerifyPaymentStatus(VerifyPaymentRequest) returns (VerifyPaymentResponse);
+  
+  // Get transaction details
+  rpc GetTransactionDetails(GetTransactionRequest) returns (TransactionDetails);
+  
+  // Process automatic refund
+  rpc ProcessRefund(RefundRequest) returns (RefundResponse);
+}
+
+message VerifyPaymentRequest {
+  string booking_id = 1;
+}
+
+message VerifyPaymentResponse {
+  bool deposit_paid = 1;
+  bool final_payment_paid = 2;
+  int32 deposit_amount = 3;
+  int32 final_payment_amount = 4;
+  string status = 5;
+}
+
+message GetTransactionRequest {
+  string transaction_id = 1;
+}
+
+message TransactionDetails {
+  string transaction_id = 1;
+  string booking_id = 2;
+  string user_id = 3;
+  string type = 4;
+  int32 amount = 5;
+  string status = 6;
+  string provider = 7;
+}
+
+message RefundRequest {
+  string booking_id = 1;
+  string user_id = 2;
+  int32 amount = 3;
+  string reason = 4;
+  string notes = 5;
+}
+
+message RefundResponse {
+  bool success = 1;
+  string refund_id = 2;
+  int32 amount = 3;
+  string status = 4;
+  string message = 5;
+}

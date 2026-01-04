@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package booking;
+
+service BookingService {
+  rpc GetBookingDetails(GetBookingDetailsRequest) returns (GetBookingDetailsResponse);
+  rpc UpdateBookingPaymentStatus(UpdatePaymentStatusRequest) returns (UpdatePaymentStatusResponse);
+}
+
+message GetBookingDetailsRequest {
+  string booking_id = 1;
+}
+
+message GetBookingDetailsResponse {
+  string booking_id = 1;
+  string customer_id = 2;
+  string vehicle_id = 3;
+  string status = 4;
+  int32 total_amount = 5;
+  int32 deposit_amount = 6;
+  int32 remaining_payment = 7;
+}
+
+message UpdatePaymentStatusRequest {
+  string booking_id = 1;
+  string payment_type = 2;
+  bool paid = 3;
+  string transaction_id = 4;
+}
+
+message UpdatePaymentStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
