@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -11,6 +11,7 @@ import {
   DollarSign,
   Eye,
   ChevronRight,
+  Calendar,
 } from "lucide-react";
 import {
   BarChart,
@@ -26,43 +27,123 @@ import {
 } from "recharts";
 import StatCard from "../components/common/StatCard";
 
-export default function Dashboard({ carData = [], userData = [], bookingData = [], requests = [] }) {
+export default function Dashboard({
+  carData = [],
+  userData = [],
+  bookingData = [],
+  requests = [],
+}) {
   const navigate = useNavigate();
   const { user, isAdmin, isSupport } = useAuth();
+
+  // Time filter state
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+
+  // Filter data based on time range
+  const getFilteredDataByTime = (data, dateField = "createdAt") => {
+    const now = new Date();
+
+    return data.filter((item) => {
+      const itemDate = new Date(item[dateField]);
+
+      switch (timeFilter) {
+        case "today":
+          return itemDate.toDateString() === now.toDateString();
+
+        case "week":
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= weekAgo;
+
+        case "month":
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return itemDate >= monthAgo;
+
+        case "year":
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          return itemDate >= yearAgo;
+
+        case "custom":
+          if (customStartDate && customEndDate) {
+            const start = new Date(customStartDate);
+            const end = new Date(customEndDate);
+            end.setHours(23, 59, 59, 999);
+            return itemDate >= start && itemDate <= end;
+          }
+          return true;
+
+        default: // "all"
+          return true;
+      }
+    });
+  };
 
   // Support Staff Dashboard
   if (isSupport) {
     const myRequests = requests.filter((r) => r.handledBy === user.username);
-    const pendingRequests = requests.filter((r) => r.status === "pending");
-    const myApproved = myRequests.filter((r) => r.status === "approved").length;
-    const myDenied = myRequests.filter((r) => r.status === "denied").length;
+    const filteredRequests = getFilteredDataByTime(requests, "createdAt");
+    const pendingRequests = filteredRequests.filter(
+      (r) => r.status === "pending"
+    );
+
+    const filteredMyRequests = getFilteredDataByTime(myRequests, "handledAt");
+    const myApproved = filteredMyRequests.filter(
+      (r) => r.status === "approved"
+    ).length;
+    const myDenied = filteredMyRequests.filter(
+      (r) => r.status === "denied"
+    ).length;
     const totalHandled = myApproved + myDenied;
 
-    // Daily activity data
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      return date.toISOString().split("T")[0];
-    });
+    // Daily activity data based on time filter
+    const getDailyData = () => {
+      let days = 7;
+      if (timeFilter === "month") days = 30;
+      if (timeFilter === "year") days = 365;
+      if (timeFilter === "custom" && customStartDate && customEndDate) {
+        const start = new Date(customStartDate);
+        const end = new Date(customEndDate);
+        days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      }
 
-    const dailyData = last7Days.map((date) => {
-      const dayRequests = myRequests.filter(
-        (r) => r.handledAt && r.handledAt.startsWith(date)
-      );
-      return {
-        date: new Date(date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        }),
-        approved: dayRequests.filter((r) => r.status === "approved").length,
-        denied: dayRequests.filter((r) => r.status === "denied").length,
-      };
-    });
+      const daysToShow = Math.min(days, 30); // Show max 30 days on chart
+      const dataPoints = Array.from({ length: daysToShow }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (daysToShow - 1 - i));
+        return date.toISOString().split("T")[0];
+      });
+
+      return dataPoints.map((date) => {
+        const dayRequests = filteredMyRequests.filter(
+          (r) => r.handledAt && r.handledAt.startsWith(date)
+        );
+        return {
+          date: new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          approved: dayRequests.filter((r) => r.status === "approved").length,
+          denied: dayRequests.filter((r) => r.status === "denied").length,
+        };
+      });
+    };
+
+    const dailyData = getDailyData();
 
     const getStatusBadge = (status) => {
       const badges = {
-        pending: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Pending" },
-        approved: { bg: "bg-green-50", text: "text-green-700", label: "Approved" },
+        pending: {
+          bg: "bg-yellow-50",
+          text: "text-yellow-700",
+          label: "Pending",
+        },
+        approved: {
+          bg: "bg-green-50",
+          text: "text-green-700",
+          label: "Approved",
+        },
         denied: { bg: "bg-red-50", text: "text-red-700", label: "Denied" },
       };
       return badges[status];
@@ -72,7 +153,74 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
       <div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#131A34] mb-2">Dashboard</h1>
-          <p className="text-[#717685]">Welcome back, {user.name || user.username}!</p>
+          <p className="text-[#717685]">
+            Welcome back, {user.name || user.username}!
+          </p>
+        </div>
+
+        {/* Time Filter */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-5 h-5 text-[#6679C0]" />
+            <h3 className="font-semibold text-[#131A34]">Time Period</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "All Time" },
+              { id: "today", label: "Today" },
+              { id: "week", label: "This Week" },
+              { id: "month", label: "This Month" },
+              { id: "year", label: "This Year" },
+              { id: "custom", label: "Custom Range" },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => {
+                  setTimeFilter(filter.id);
+                  if (filter.id === "custom") {
+                    setShowCustomDatePicker(true);
+                  } else {
+                    setShowCustomDatePicker(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  timeFilter === filter.id
+                    ? "bg-[#6679C0] text-white"
+                    : "bg-gray-100 text-[#717685] hover:bg-gray-200"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Picker */}
+          {showCustomDatePicker && timeFilter === "custom" && (
+            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#131A34] mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#131A34] mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Grid */}
@@ -107,7 +255,9 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
         <div className="grid grid-cols-1 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 border border-gray-100">
             <h3 className="text-lg font-bold text-[#131A34] mb-6">
-              My Activity (Last 7 Days)
+              My Activity{" "}
+              {timeFilter !== "all" &&
+                `(${timeFilter === "custom" ? "Custom Range" : timeFilter})`}
             </h3>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={dailyData}>
@@ -131,8 +281,18 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
                     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                   }}
                 />
-                <Bar dataKey="approved" fill="#9AE8AB" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="denied" fill="#F95E5B" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="approved"
+                  fill="#9AE8AB"
+                  radius={[8, 8, 0, 0]}
+                  name="Approved"
+                />
+                <Bar
+                  dataKey="denied"
+                  fill="#F95E5B"
+                  radius={[8, 8, 0, 0]}
+                  name="Denied"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -184,7 +344,9 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
                         <span>•</span>
                         <span>{req.category}</span>
                         <span>•</span>
-                        <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(req.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                     <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
@@ -196,7 +358,9 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
             {pendingRequests.length === 0 && (
               <div className="p-12 text-center">
                 <Clock className="w-12 h-12 text-[#B2BCE0] mx-auto mb-3" />
-                <p className="text-[#717685]">No pending requests at the moment</p>
+                <p className="text-[#717685]">
+                  No pending requests at the moment
+                </p>
               </div>
             )}
           </div>
@@ -207,10 +371,99 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
 
   // Admin Dashboard
   if (isAdmin) {
-    const totalRevenue = bookingData.reduce((sum, b) => sum + (b.total || 0), 0);
+    const filteredBookings = getFilteredDataByTime(bookingData, "createdDate");
+    const filteredUsers = getFilteredDataByTime(userData, "joinedDate");
+
+    const totalRevenue = filteredBookings.reduce(
+      (sum, b) => sum + (b.total || 0),
+      0
+    );
     const totalProfit = totalRevenue * 0.08;
-    const totalUsers = userData.length;
+    const totalUsers = userData.length; // Show all users count
+    const newUsers = filteredUsers.length; // New users in selected period
     const totalCars = carData.length;
+
+    // Generate monthly/daily revenue data based on filter
+    const getRevenueData = () => {
+      if (timeFilter === "all" || timeFilter === "year") {
+        // Show monthly data
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const currentMonth = new Date().getMonth();
+        const last6Months = [];
+
+        for (let i = 5; i >= 0; i--) {
+          const monthIndex = (currentMonth - i + 12) % 12;
+          last6Months.push(months[monthIndex]);
+        }
+
+        return last6Months.map((month) => {
+          const monthBookings = filteredBookings.filter((b) => {
+            const bookingMonth = new Date(b.createdDate).toLocaleString(
+              "en-US",
+              { month: "short" }
+            );
+            return bookingMonth === month;
+          });
+          const revenue = monthBookings.reduce(
+            (sum, b) => sum + (b.total || 0),
+            0
+          );
+          return {
+            month,
+            revenue,
+            profit: revenue * 0.08,
+          };
+        });
+      } else {
+        // Show daily data for shorter periods
+        let days = 7;
+        if (timeFilter === "month") days = 30;
+        if (timeFilter === "custom" && customStartDate && customEndDate) {
+          const start = new Date(customStartDate);
+          const end = new Date(customEndDate);
+          days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        const daysToShow = Math.min(days, 30);
+        return Array.from({ length: daysToShow }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (daysToShow - 1 - i));
+          const dateStr = date.toISOString().split("T")[0];
+
+          const dayBookings = filteredBookings.filter(
+            (b) => b.createdDate.split("T")[0] === dateStr
+          );
+          const revenue = dayBookings.reduce(
+            (sum, b) => sum + (b.total || 0),
+            0
+          );
+
+          return {
+            month: date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            revenue,
+            profit: revenue * 0.08,
+          };
+        });
+      }
+    };
+
+    const revenueData = getRevenueData();
 
     // Car type data
     const carTypeData = carData.reduce((acc, car) => {
@@ -219,20 +472,12 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
       return acc;
     }, {});
 
-    const carTypeChartData = Object.entries(carTypeData).map(([name, value]) => ({
-      name,
-      value,
-    }));
-
-    // Monthly revenue mock data
-    const monthlyRevenue = [
-      { month: "Jan", revenue: 125000000, profit: 10000000 },
-      { month: "Feb", revenue: 145000000, profit: 11600000 },
-      { month: "Mar", revenue: 165000000, profit: 13200000 },
-      { month: "Apr", revenue: 155000000, profit: 12400000 },
-      { month: "May", revenue: 185000000, profit: 14800000 },
-      { month: "Jun", revenue: 195000000, profit: 15600000 },
-    ];
+    const carTypeChartData = Object.entries(carTypeData).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
 
     // Top rated cars
     const topRatedCars = [...carData]
@@ -250,11 +495,76 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
           </p>
         </div>
 
+        {/* Time Filter */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-5 h-5 text-[#6679C0]" />
+            <h3 className="font-semibold text-[#131A34]">Time Period</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "All Time" },
+              { id: "today", label: "Today" },
+              { id: "week", label: "This Week" },
+              { id: "month", label: "This Month" },
+              { id: "year", label: "This Year" },
+              { id: "custom", label: "Custom Range" },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => {
+                  setTimeFilter(filter.id);
+                  if (filter.id === "custom") {
+                    setShowCustomDatePicker(true);
+                  } else {
+                    setShowCustomDatePicker(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  timeFilter === filter.id
+                    ? "bg-[#6679C0] text-white"
+                    : "bg-gray-100 text-[#717685] hover:bg-gray-200"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Picker */}
+          {showCustomDatePicker && timeFilter === "custom" && (
+            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#131A34] mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#131A34] mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Main Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             icon={DollarSign}
-            label="Total Revenue"
+            label={`Revenue ${timeFilter !== "all" ? `(${timeFilter})` : ""}`}
             value={new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
@@ -263,7 +573,9 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
           />
           <StatCard
             icon={TrendingUp}
-            label="Total Profit (8%)"
+            label={`Profit (8%) ${
+              timeFilter !== "all" ? `(${timeFilter})` : ""
+            }`}
             value={new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
@@ -272,8 +584,10 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
           />
           <StatCard
             icon={Users}
-            label="Total Users"
-            value={totalUsers}
+            label={
+              timeFilter !== "all" ? `New Users (${timeFilter})` : "Total Users"
+            }
+            value={timeFilter !== "all" ? newUsers : totalUsers}
             bgColor="#E0E7FF"
           />
           <StatCard
@@ -289,10 +603,12 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
           {/* Revenue Chart */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100">
             <h3 className="text-lg font-bold text-[#131A34] mb-6">
-              Revenue & Profit Trend
+              Revenue & Profit Trend{" "}
+              {timeFilter !== "all" &&
+                `(${timeFilter === "custom" ? "Custom Range" : timeFilter})`}
             </h3>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyRevenue}>
+              <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis
                   dataKey="month"
@@ -311,7 +627,9 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
                     border: "1px solid #E5E7EB",
                     borderRadius: "12px",
                   }}
-                  formatter={(value) => new Intl.NumberFormat("vi-VN").format(value) + " đ"}
+                  formatter={(value) =>
+                    new Intl.NumberFormat("vi-VN").format(value) + " đ"
+                  }
                 />
                 <Legend />
                 <Line
@@ -396,8 +714,12 @@ export default function Dashboard({ carData = [], userData = [], bookingData = [
                         {idx + 1}
                       </span>
                       <div>
-                        <p className="font-semibold text-[#131A34]">{car.name}</p>
-                        <p className="text-sm text-[#717685]">{car.ownerName}</p>
+                        <p className="font-semibold text-[#131A34]">
+                          {car.name}
+                        </p>
+                        <p className="text-sm text-[#717685]">
+                          {car.ownerName}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
