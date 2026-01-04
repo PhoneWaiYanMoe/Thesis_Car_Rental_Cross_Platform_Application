@@ -1,34 +1,82 @@
+// Backend/booking-service/proto/booking.proto
+// ✅ COPY THIS FILE TO: Backend/payment-service/proto/booking.proto
+
 syntax = "proto3";
 
 package booking;
 
 service BookingService {
+  // Verify booking for review eligibility
+  rpc VerifyBookingForReview(VerifyBookingRequest) returns (VerifyBookingResponse);
+  
+  // Get booking details (with ALL payment fields)
   rpc GetBookingDetails(GetBookingDetailsRequest) returns (GetBookingDetailsResponse);
+  
+  // Update booking payment status (called by payment service)
   rpc UpdateBookingPaymentStatus(UpdatePaymentStatusRequest) returns (UpdatePaymentStatusResponse);
+  
+  // Mark booking as reviewed
+  rpc MarkAsReviewed(MarkAsReviewedRequest) returns (MarkAsReviewedResponse);
+}
+
+message VerifyBookingRequest {
+  string booking_id = 1;
+  string user_id = 2;
+}
+
+message VerifyBookingResponse {
+  bool valid = 1;
+  string message = 2;
+  bool is_completed = 3;
+  bool is_customer = 4;
 }
 
 message GetBookingDetailsRequest {
   string booking_id = 1;
 }
 
+// ✅ UPDATED: Now includes ALL payment-related fields
 message GetBookingDetailsResponse {
   string booking_id = 1;
   string customer_id = 2;
-  string vehicle_id = 3;
-  string status = 4;
-  int32 total_amount = 5;
-  int32 deposit_amount = 6;
-  int32 remaining_payment = 7;
+  string owner_id = 3;
+  string vehicle_id = 4;
+  string status = 5;
+  
+  // ✅ Payment fields
+  int32 rental_price = 6;
+  int32 insurance_fee = 7;
+  int32 total_amount = 8;
+  int32 deposit_amount = 9;
+  int32 remaining_payment = 10;
+  bool deposit_paid = 11;
+  bool final_payment_paid = 12;
+  
+  // ✅ Booking timeline
+  string start_date = 13;
+  string end_date = 14;
+  int32 duration_days = 15;
 }
 
+// ✅ NEW: For payment service to update booking
 message UpdatePaymentStatusRequest {
   string booking_id = 1;
-  string payment_type = 2;
+  string payment_type = 2; // "deposit" or "final_payment"
   bool paid = 3;
   string transaction_id = 4;
 }
 
 message UpdatePaymentStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message MarkAsReviewedRequest {
+  string booking_id = 1;
+  string review_type = 2; // "vehicle" or "owner"
+}
+
+message MarkAsReviewedResponse {
   bool success = 1;
   string message = 2;
 }

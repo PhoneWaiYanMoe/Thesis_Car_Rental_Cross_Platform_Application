@@ -82,13 +82,30 @@ class BookingGrpcServer {
     }
   }
 
+  // ✅ UPDATED: Now returns ALL payment-related fields
   async getBookingDetails(call, callback) {
     try {
       const { booking_id } = call.request;
 
-      // Get booking from bookings table
+      // Get booking with ALL payment fields
       const result = await pool.query(
-        `SELECT booking_id, customer_id, vehicle_id, status 
+        `SELECT 
+          booking_id, 
+          customer_id, 
+          vehicle_id, 
+          status,
+          rental_price,
+          insurance_fee,
+          total_amount,
+          deposit_amount,
+          remaining_payment,
+          deposit_paid,
+          deposit_transaction_id,
+          final_payment_paid,
+          final_payment_transaction_id,
+          start_date,
+          end_date,
+          duration_days
          FROM bookings 
          WHERE booking_id = $1`,
         [booking_id]
@@ -122,15 +139,69 @@ class BookingGrpcServer {
         `✅ gRPC: Retrieved booking details for ${booking_id}, owner: ${ownerId}`
       );
 
+      // Return ALL fields needed by payment service
       callback(null, {
         booking_id: booking.booking_id,
         customer_id: booking.customer_id,
         owner_id: ownerId,
         vehicle_id: booking.vehicle_id,
         status: booking.status,
+        rental_price: booking.rental_price,
+        insurance_fee: booking.insurance_fee,
+        total_amount: booking.total_amount,
+        deposit_amount: booking.deposit_amount,
+        remaining_payment: booking.remaining_payment,
+        deposit_paid: booking.deposit_paid,
+        final_payment_paid: booking.final_payment_paid,
+        start_date: booking.start_date.toISOString(),
+        end_date: booking.end_date.toISOString(),
+        duration_days: booking.duration_days,
       });
     } catch (error) {
       console.error("❌ gRPC getBookingDetails error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
+  // ✅ NEW: Update booking payment status (called by payment service)
+  async updateBookingPaymentStatus(call, callback) {
+    try {
+      const { booking_id, payment_type, paid, transaction_id } = call.request;
+
+      if (!["deposit", "final_payment"].includes(payment_type)) {
+        return callback({
+          code: grpc.status.INVALID_ARGUMENT,
+          message: "payment_type must be 'deposit' or 'final_payment'",
+        });
+      }
+
+      const field =
+        payment_type === "deposit" ? "deposit_paid" : "final_payment_paid";
+      const txField =
+        payment_type === "deposit"
+          ? "deposit_transaction_id"
+          : "final_payment_transaction_id";
+
+      await pool.query(
+        `UPDATE bookings 
+         SET ${field} = $1, ${txField} = $2, updated_at = NOW()
+         WHERE booking_id = $3`,
+        [paid, transaction_id, booking_id]
+      );
+
+      console.log(
+        `✅ Updated booking ${booking_id} payment status: ${payment_type} = ${paid}`
+      );
+
+      callback(null, {
+        success: true,
+        message: `Payment status updated: ${payment_type}`,
+      });
+    } catch (error) {
+      console.error("❌ gRPC updateBookingPaymentStatus error:", error);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -171,6 +242,7 @@ class BookingGrpcServer {
     this.server.addService(bookingProto.BookingService.service, {
       VerifyBookingForReview: this.verifyBookingForReview.bind(this),
       GetBookingDetails: this.getBookingDetails.bind(this),
+      UpdateBookingPaymentStatus: this.updateBookingPaymentStatus.bind(this),
       MarkAsReviewed: this.markAsReviewed.bind(this),
     });
 
