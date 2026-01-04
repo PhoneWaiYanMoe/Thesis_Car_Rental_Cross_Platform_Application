@@ -282,7 +282,8 @@ services:
       - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
       - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
       - VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNPAY_RETURN_URL=http://localhost:3006/payment/webhook/vnpay
+      - VNPAY_RETURN_URL=https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay
+      - FRONTEND_URL=https://master-albacore-urgently.ngrok-free.app
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - ENCRYPTION_IV=${ENCRYPTION_IV}
     depends_on:
