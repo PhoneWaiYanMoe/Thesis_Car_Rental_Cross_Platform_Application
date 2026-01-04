@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  Search,
-  Eye,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ImageIcon,
-} from "lucide-react";
+import { ArrowLeft, Search, Eye, ImageIcon } from "lucide-react";
 
 export default function StaffRequests({ requests, staffData }) {
   const { staffId } = useParams();
@@ -33,7 +25,7 @@ export default function StaffRequests({ requests, staffData }) {
             Staff member not found
           </p>
           <button
-            onClick={() => navigate("/admin/staff")}
+            onClick={() => navigate("/staff")}
             className="mt-4 px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
           >
             Back to Staff Management
@@ -43,22 +35,12 @@ export default function StaffRequests({ requests, staffData }) {
     );
   }
 
-  // const staff = staffData.find(s => s.id === staffId);
-
-  console.log("Staff ID from URL:", staffId);
-  console.log("Staff found:", staff);
-  console.log("All requests:", requests.length);
-  console.log(
-    "Staff requests:",
-    requests.filter((r) => r.handledBy === staff?.username)
-  );
-
-  // Filter by staff member first
+  // Filter requests by staff member
   let filteredRequests = requests.filter(
     (req) => req.handledBy === staff.username
   );
 
-  // Then apply search and status filters
+  // Apply search and status filters
   filteredRequests = filteredRequests.filter((req) => {
     const matchesSearch =
       req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,7 +50,7 @@ export default function StaffRequests({ requests, staffData }) {
     return matchesSearch && matchesStatus;
   });
 
-  // Sort by handled date
+  // Sort by handled date (most recent first)
   filteredRequests = [...filteredRequests].sort((a, b) => {
     return new Date(b.handledAt) - new Date(a.handledAt);
   });
@@ -100,10 +82,10 @@ export default function StaffRequests({ requests, staffData }) {
 
   return (
     <div>
-      {/* header */}
+      {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate("/admin/staff")}
+          onClick={() => navigate("/staff")}
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -117,7 +99,7 @@ export default function StaffRequests({ requests, staffData }) {
         </p>
       </div>
 
-      {/* status tabs */}
+      {/* Status Tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: "all", label: "All Requests" },
@@ -147,7 +129,7 @@ export default function StaffRequests({ requests, staffData }) {
         ))}
       </div>
 
-      {/* search */}
+      {/* Search */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
@@ -161,7 +143,7 @@ export default function StaffRequests({ requests, staffData }) {
         </div>
       </div>
 
-      {/* results count */}
+      {/* Results Count */}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[#717685]">
           Showing{" "}
@@ -183,7 +165,7 @@ export default function StaffRequests({ requests, staffData }) {
         )}
       </div>
 
-      {/* request list */}
+      {/* Request List */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {filteredRequests.length === 0 ? (
           <div className="p-12 text-center">
@@ -204,7 +186,7 @@ export default function StaffRequests({ requests, staffData }) {
               return (
                 <div
                   key={req.id}
-                  onClick={() => navigate(`/support/requests/${req.id}`)}
+                  onClick={() => navigate(`/requests/${req.id}`)}
                   className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -248,7 +230,7 @@ export default function StaffRequests({ requests, staffData }) {
                       </div>
                     </div>
 
-                    {/* view button */}
+                    {/* View Button */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-[#717685]">
                         {new Date(req.createdAt).toLocaleDateString()}

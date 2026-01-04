@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Search, UserPlus, Eye, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, UserPlus, Settings } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { useNavigate } from 'react-router-dom';
 
 export default function StaffManagement({
   staffData,
@@ -82,7 +82,7 @@ export default function StaffManagement({
 
   return (
     <div>
-      {/* header */}
+      {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#131A34] mb-2">
@@ -101,7 +101,7 @@ export default function StaffManagement({
         </button>
       </div>
 
-      {/* status tabs */}
+      {/* Status Tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: "all", label: "All Staff" },
@@ -132,7 +132,7 @@ export default function StaffManagement({
         ))}
       </div>
 
-      {/* search */}
+      {/* Search */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
@@ -146,7 +146,7 @@ export default function StaffManagement({
         </div>
       </div>
 
-      {/* staff grid */}
+      {/* Staff Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStaff.map((staff) => {
           const badge = getStatusBadge(staff.status);
@@ -191,28 +191,12 @@ export default function StaffManagement({
                 </div>
               </div>
 
-              {/* <div className="grid grid-cols-3 gap-3 mb-4 pt-4 border-t border-gray-100">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-[#6679C0]">{staff.totalHandled || 0}</p>
-                  <p className="text-xs text-[#717685]">Handled</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-[#9AE8AB]">{staff.totalApproved || 0}</p>
-                  <p className="text-xs text-[#717685]">Approved</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-[#F95E5B]">{staff.totalDenied || 0}</p>
-                  <p className="text-xs text-[#717685]">Denied</p>
-                </div>
-              </div> */}
-
               <div className="grid grid-cols-3 gap-3 mb-4 pt-4 border-t border-gray-100">
                 <div
                   className="text-center cursor-pointer hover:bg-[#F8F9FF] rounded-lg p-2 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/admin/staff-requests/${staff.id}?status=all`);
-                  }}
+                  onClick={() =>
+                    navigate(`/staff/${staff.id}/requests?status=all`)
+                  }
                 >
                   <p className="text-lg font-bold text-[#6679C0]">
                     {staff.totalHandled || 0}
@@ -221,12 +205,9 @@ export default function StaffManagement({
                 </div>
                 <div
                   className="text-center cursor-pointer hover:bg-[#F8F9FF] rounded-lg p-2 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(
-                      `/admin/staff-requests/${staff.id}?status=approved`
-                    );
-                  }}
+                  onClick={() =>
+                    navigate(`/staff/${staff.id}/requests?status=approved`)
+                  }
                 >
                   <p className="text-lg font-bold text-[#9AE8AB]">
                     {staff.totalApproved || 0}
@@ -235,10 +216,9 @@ export default function StaffManagement({
                 </div>
                 <div
                   className="text-center cursor-pointer hover:bg-[#F8F9FF] rounded-lg p-2 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/admin/staff-requests/${staff.id}?status=denied`);
-                  }}
+                  onClick={() =>
+                    navigate(`/staff/${staff.id}/requests?status=denied`)
+                  }
                 >
                   <p className="text-lg font-bold text-[#F95E5B]">
                     {staff.totalDenied || 0}
@@ -274,7 +254,7 @@ export default function StaffManagement({
         </div>
       )}
 
-      {/* create staff modal */}
+      {/* Create Staff Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
@@ -353,7 +333,7 @@ export default function StaffManagement({
         </div>
       )}
 
-      {/* status update modal */}
+      {/* Status Update Modal */}
       {showStatusUpdate && selectedStaff && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
@@ -411,7 +391,7 @@ export default function StaffManagement({
         </div>
       )}
 
-      {/* confirmation dialog */}
+      {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}

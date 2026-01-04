@@ -9,9 +9,9 @@ import {
   Calendar,
   Settings,
   AlertCircle,
-  Car,
-  CreditCard,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { hasPermission } from "../../utils/permissions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReviewList from "../../components/common/ReviewList";
 
@@ -24,15 +24,39 @@ export default function UserDetail({
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const user = userData.find((u) => u.id === id);
 
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const canUpdateStatus = hasPermission(currentUser.type, "UPDATE_USER_STATUS");
   const userBookings = bookingData
-    ? bookingData.filter((b) => b.userId === user.id)
+    ? bookingData.filter((b) => b.userId === user?.id)
     : [];
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+            User Not Found
+          </h2>
+          <p className="text-[#717685] mb-6">
+            The user you're looking for doesn't exist
+          </p>
+          <button
+            onClick={() => navigate("/users")}
+            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+          >
+            Back to Users
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleStatusChange = (status) => {
     setNewStatus(status);
@@ -67,7 +91,7 @@ export default function UserDetail({
 
   return (
     <div>
-      {/* header */}
+      {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -95,9 +119,9 @@ export default function UserDetail({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* main content */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* personal information */}
+          {/* Personal Information */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Personal Information
@@ -172,7 +196,7 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* activity statistics */}
+          {/* Activity Statistics */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Activity Statistics
@@ -180,7 +204,7 @@ export default function UserDetail({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
                 <p className="text-3xl font-bold text-[#6679C0] mb-1">
-                  {user.totalBookings}
+                  {user.totalBookings || 0}
                 </p>
                 <p className="text-sm text-[#717685]">Total Bookings</p>
               </div>
@@ -199,7 +223,7 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* additional info for car owners */}
+          {/* Car Owner Statistics */}
           {user.type === "owner" && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">
@@ -237,8 +261,7 @@ export default function UserDetail({
             </div>
           )}
 
-          {/* recent activity */}
-          {/* booking history */}
+          {/* Recent Bookings */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[#131A34]">
@@ -246,7 +269,7 @@ export default function UserDetail({
               </h2>
               {userBookings.length > 3 && (
                 <button
-                  onClick={() => navigate(`/admin/bookings?userId=${user.id}`)}
+                  onClick={() => navigate(`/bookings?userId=${user.id}`)}
                   className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
                 >
                   See More
@@ -255,25 +278,19 @@ export default function UserDetail({
             </div>
             <div className="space-y-4">
               {userBookings.length > 0 ? (
-                userBookings.slice(0, 3).map((booking, idx) => {
+                userBookings.slice(0, 3).map((booking) => {
                   const car = carData?.find((c) => c.id === booking.carId);
                   const statusColors = {
                     completed: "bg-green-50 text-green-700",
                     ongoing: "bg-blue-50 text-blue-700",
                     cancelled: "bg-red-50 text-red-700",
+                    upcoming: "bg-purple-50 text-purple-700",
                   };
-                  const amount =
-                    typeof booking.amount === "string"
-                      ? booking.amount
-                      : new Intl.NumberFormat("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        }).format(booking.amount);
 
                   return (
                     <div
-                      key={idx}
-                      onClick={() => navigate(`/admin/bookings/${booking.id}`)}
+                      key={booking.id}
+                      onClick={() => navigate(`/bookings/${booking.id}`)}
                       className="flex items-start gap-3 p-4 bg-[#F8F9FF] rounded-xl hover:bg-[#DBE3FF] cursor-pointer transition-all"
                     >
                       {car && (
@@ -299,10 +316,13 @@ export default function UserDetail({
                           </span>
                         </div>
                         <p className="text-sm text-[#717685]">
-                          {new Date(booking.date).toLocaleDateString()}
+                          {new Date(booking.createdDate).toLocaleDateString()}
                         </p>
                         <p className="text-sm font-bold text-[#6679C0] mt-1">
-                          {amount}
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(booking.total)}
                         </p>
                       </div>
                     </div>
@@ -316,11 +336,11 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* Reviews section for owners */}
+          {/* Reviews for Owners */}
           {user.type === "owner" && reviewData && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">
-                Đánh giá từ khách hàng (
+                Reviews from Customers (
                 {reviewData.filter((r) => r.ownerId === user.id).length})
               </h2>
               <ReviewList
@@ -331,9 +351,9 @@ export default function UserDetail({
           )}
         </div>
 
-        {/* sidebar */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* account status */}
+          {/* Account Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Account Status
@@ -368,80 +388,82 @@ export default function UserDetail({
             </div>
           </div>
 
-          {/* status update */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Update Status
-            </h2>
+          {/* Status Update - Only show for admin */}
+          {canUpdateStatus && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="text-lg font-bold text-[#131A34] mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Update Status
+              </h2>
 
-            {!showStatusUpdate ? (
-              <button
-                onClick={() => setShowStatusUpdate(true)}
-                className="w-full px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-              >
-                Change User Status
-              </button>
-            ) : (
-              <div className="space-y-3">
+              {!showStatusUpdate ? (
                 <button
-                  onClick={() => handleStatusChange("normal")}
-                  disabled={user.status === "normal"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "normal"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-green-50 text-green-700 hover:bg-green-100"
-                  }`}
+                  onClick={() => setShowStatusUpdate(true)}
+                  className="w-full px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
                 >
-                  Set as Normal
+                  Change User Status
                 </button>
-                <button
-                  onClick={() => handleStatusChange("stopped")}
-                  disabled={user.status === "stopped"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "stopped"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                  }`}
-                >
-                  Suspend Account
-                </button>
-                <button
-                  onClick={() => handleStatusChange("banned")}
-                  disabled={user.status === "banned"}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
-                    user.status === "banned"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-50 text-red-700 hover:bg-red-100"
-                  }`}
-                >
-                  Ban User
-                </button>
-                <button
-                  onClick={() => setShowStatusUpdate(false)}
-                  className="w-full px-6 py-3 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleStatusChange("normal")}
+                    disabled={user.status === "normal"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      user.status === "normal"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-green-50 text-green-700 hover:bg-green-100"
+                    }`}
+                  >
+                    Set as Normal
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange("stopped")}
+                    disabled={user.status === "stopped"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      user.status === "stopped"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                    }`}
+                  >
+                    Suspend Account
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange("banned")}
+                    disabled={user.status === "banned"}
+                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-all ${
+                      user.status === "banned"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-red-50 text-red-700 hover:bg-red-100"
+                    }`}
+                  >
+                    Ban User
+                  </button>
+                  <button
+                    onClick={() => setShowStatusUpdate(false)}
+                    className="w-full px-6 py-3 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* quick actions */}
+          {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Quick Actions
             </h2>
             <div className="space-y-3">
               <button
-                onClick={() => navigate(`/admin/bookings?userId=${user.id}`)}
+                onClick={() => navigate(`/bookings?userId=${user.id}`)}
                 className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
               >
                 View All Bookings
               </button>
               {user.type === "owner" && (
                 <button
-                  onClick={() => navigate(`/admin/cars?ownerId=${user.id}`)}
+                  onClick={() => navigate(`/cars?ownerId=${user.id}`)}
                   className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
                 >
                   View Owner's Cars
@@ -452,15 +474,17 @@ export default function UserDetail({
         </div>
       </div>
 
-      {/* confirmation dialog */}
-      <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirm}
-        title={`Change Status to ${newStatus}?`}
-        message={`Are you sure you want to change this user's status to ${newStatus}? This action will affect their access to the platform.`}
-        type="approve"
-      />
+      {/* Confirmation Dialog */}
+      {canUpdateStatus && (
+        <ConfirmDialog
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={handleConfirm}
+          title={`Change Status to ${newStatus}?`}
+          message={`Are you sure you want to change this user's status to ${newStatus}? This action will affect their access to the platform.`}
+          type="approve"
+        />
+      )}
     </div>
   );
 }

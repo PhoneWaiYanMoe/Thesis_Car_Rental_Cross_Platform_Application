@@ -107,8 +107,10 @@ function AppContent() {
             <Layout>
               <Routes>
                 {/* Default redirect */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
+                <Route
+                  path="/"
+                  element={<Navigate to="/dashboard" replace />}
+                />
                 {/* Dashboard */}
                 <Route
                   path="/dashboard"
@@ -121,7 +123,6 @@ function AppContent() {
                     />
                   }
                 />
-
                 {/* Cars */}
                 <Route
                   path="/cars"
@@ -143,7 +144,6 @@ function AppContent() {
                     />
                   }
                 />
-
                 {/* Users */}
                 <Route
                   path="/users"
@@ -166,7 +166,6 @@ function AppContent() {
                     />
                   }
                 />
-
                 {/* Bookings */}
                 <Route
                   path="/bookings"
@@ -189,13 +188,12 @@ function AppContent() {
                   }
                 />
 
-                {/* Requests */}
+                {/* Request Management */}
                 <Route
                   path="/requests"
-                  element={
-                    <RequestList requests={requests} />
-                  }
+                  element={<RequestList requests={requests} />}
                 />
+
                 <Route
                   path="/requests/:id"
                   element={
@@ -234,9 +232,11 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
-
                 {/* Fallback */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route
+                  path="*"
+                  element={<Navigate to="/dashboard" replace />}
+                />
               </Routes>
             </Layout>
           </ProtectedRoute>

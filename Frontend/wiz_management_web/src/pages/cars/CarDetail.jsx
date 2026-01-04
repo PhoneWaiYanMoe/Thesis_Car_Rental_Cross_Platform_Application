@@ -22,9 +22,7 @@ export default function CarDetail({
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Check if user can update car status
   const canUpdateStatus = hasPermission(user.type, "UPDATE_CAR_STATUS");
-
   const carImages = car ? car.images || [car.image] : [];
 
   if (!car) {
@@ -233,6 +231,20 @@ export default function CarDetail({
               </div>
             </div>
           </div>
+
+          {/* Reviews Section */}
+          {reviewData && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="text-lg font-bold text-[#131A34] mb-4">
+                Customer Reviews (
+                {reviewData.filter((r) => r.carId === car.id).length})
+              </h2>
+              <ReviewList
+                reviews={reviewData.filter((r) => r.carId === car.id)}
+                itemsPerPage={10}
+              />
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -265,7 +277,7 @@ export default function CarDetail({
               </div>
               <button
                 onClick={() => {
-                  const owner = userData?.find((u) => u.name === car.ownerName);
+                  const owner = userData?.find((u) => u.id === car.ownerId);
                   if (owner) navigate(`/users/${owner.id}`);
                 }}
                 className="w-full mt-2 px-4 py-2 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
@@ -335,24 +347,23 @@ export default function CarDetail({
               )}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Reviews Section */}
-      {reviewData && (
-        <div className="mt-6">
+          {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
-              Customer Reviews (
-              {reviewData.filter((r) => r.carId === car.id).length})
+              Quick Actions
             </h2>
-            <ReviewList
-              reviews={reviewData.filter((r) => r.carId === car.id)}
-              itemsPerPage={10}
-            />
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate(`/bookings?carId=${car.id}`)}
+                className="w-full px-6 py-3 bg-[#F8F9FF] text-[#6679C0] rounded-xl font-semibold hover:bg-[#DBE3FF] transition-all"
+              >
+                View Booking History
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Confirmation Dialog */}
       {canUpdateStatus && (

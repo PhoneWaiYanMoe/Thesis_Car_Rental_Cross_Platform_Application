@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Search,
-  Filter,
-  Eye,
-  ChevronDown,
-  User as UserIcon,
-} from "lucide-react";
-
+import { Search, Filter, ChevronDown, User as UserIcon } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
-import UserCard from '../../components/common/UserCard';
+import UserCard from "../../components/common/UserCard";
 
 export default function UserManagement({ userData, onUpdateUserStatus }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const typeParam = searchParams.get("type");
-  const sortByParam = searchParams.get("sortBy");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [sortBy, setSortBy] = useState(sortByParam || "name");
+  const [sortBy, setSortBy] = useState("name");
   const [showFilters, setShowFilters] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,7 +30,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // sort
+  // Sort
   filteredUsers = [...filteredUsers].sort((a, b) => {
     switch (sortBy) {
       case "name":
@@ -47,26 +38,13 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
       case "joined":
         return new Date(b.joinedDate) - new Date(a.joinedDate);
       case "bookings":
-        return b.totalBookings - a.totalBookings;
+        return (b.totalBookings || 0) - (a.totalBookings || 0);
       case "rentals":
         return (b.totalRentals || 0) - (a.totalRentals || 0);
       default:
         return 0;
     }
   });
-
-  const getStatusBadge = (status) => {
-    const badges = {
-      normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
-      stopped: {
-        bg: "bg-yellow-50",
-        text: "text-yellow-700",
-        label: "Stopped",
-      },
-      banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
-    };
-    return badges[status];
-  };
 
   const statusCounts = {
     all: userData.length,
@@ -75,7 +53,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
     banned: userData.filter((u) => u.status === "banned").length,
   };
 
-  // Calculate pagination
+  // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -88,7 +66,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
 
   return (
     <div>
-      {/* header */}
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#131A34] mb-2">
           User Management
@@ -96,7 +74,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         <p className="text-[#717685]">Manage all users on the platform</p>
       </div>
 
-      {/* status tabs */}
+      {/* Status Tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: "all", label: "All Users" },
@@ -127,10 +105,10 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         ))}
       </div>
 
-      {/* search and filters */}
+      {/* Search and Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* search */}
+          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
             <input
@@ -142,7 +120,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
             />
           </div>
 
-          {/* filter button */}
+          {/* Filter Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-6 py-3 border border-gray-200 rounded-xl hover:bg-[#F8F9FF] transition-all font-semibold text-[#131A34]"
@@ -156,7 +134,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
             />
           </button>
 
-          {/* sort */}
+          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -169,7 +147,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
           </select>
         </div>
 
-        {/* advanced filters */}
+        {/* Advanced Filters */}
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <div>
@@ -196,7 +174,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         )}
       </div>
 
-      {/* results count */}
+      {/* Results Count */}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[#717685]">
           Showing{" "}
@@ -223,7 +201,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         )}
       </div>
 
-      {/* user list */}
+      {/* User List */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {currentUsers.length === 0 ? (
           <div className="p-12 text-center">
@@ -236,7 +214,7 @@ export default function UserManagement({ userData, onUpdateUserStatus }) {
         ) : (
           <div className="divide-y divide-gray-100">
             {currentUsers.map((user) => (
-              <UserCard key={user.id} user={user} basePath="/admin/users" />
+              <UserCard key={user.id} user={user} basePath="/users" />
             ))}
           </div>
         )}

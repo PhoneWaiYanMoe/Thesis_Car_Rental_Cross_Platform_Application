@@ -36,8 +36,10 @@ export default function RequestDetail({
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Check if user can handle requests
-  const canHandleRequests = hasPermission(user.type, 'HANDLE_REQUESTS');
+  // Allow both admin and support to handle requests
+  const canHandleRequests =
+    hasPermission(user.type, "HANDLE_REQUESTS") ||
+    hasPermission(user.type, "VIEW_ALL_STAFF_REQUESTS");
 
   // Get related data
   const relatedBooking = request?.bookingId
@@ -382,21 +384,23 @@ export default function RequestDetail({
           )}
 
           {/* denial input */}
-          {showDenialInput && request.status === "pending" && canHandleRequests && (
-            <div className="bg-white rounded-2xl border border-red-200 p-6">
-              <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                Denial Reason Required
-              </h2>
-              <textarea
-                value={denialReason}
-                onChange={(e) => setDenialReason(e.target.value)}
-                className="w-full px-4 py-3 border border-red-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none"
-                rows="5"
-                placeholder="Please provide a clear explanation for denying this request. This message will be sent to the customer."
-              />
-            </div>
-          )}
+          {showDenialInput &&
+            request.status === "pending" &&
+            canHandleRequests && (
+              <div className="bg-white rounded-2xl border border-red-200 p-6">
+                <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Denial Reason Required
+                </h2>
+                <textarea
+                  value={denialReason}
+                  onChange={(e) => setDenialReason(e.target.value)}
+                  className="w-full px-4 py-3 border border-red-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none"
+                  rows="5"
+                  placeholder="Please provide a clear explanation for denying this request. This message will be sent to the customer."
+                />
+              </div>
+            )}
         </div>
 
         {/* sidebar */}
@@ -488,7 +492,8 @@ export default function RequestDetail({
               </div>
             </div>
           </div>
-          {/* actions - Only show for pending requests and if user has permission */}
+
+          {/* actions - Show for pending requests if user has permission */}
           {request.status === "pending" && canHandleRequests && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">Actions</h2>
