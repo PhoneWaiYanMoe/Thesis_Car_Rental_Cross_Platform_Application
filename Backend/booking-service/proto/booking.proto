@@ -1,17 +1,30 @@
+// Backend/booking-service/proto/booking.proto
+// ✅ UPDATED: Added payment integration methods
+
 syntax = "proto3";
 
 package booking;
 
 service BookingService {
-  // Verify booking for review eligibility
+  // ==================== REVIEW-RELATED ====================
   rpc VerifyBookingForReview(VerifyBookingRequest) returns (VerifyBookingResponse);
+  rpc MarkAsReviewed(MarkAsReviewedRequest) returns (MarkAsReviewedResponse);
   
-  // Get booking details
+  // ==================== PAYMENT INTEGRATION ====================
+  // Get booking details (with ALL payment fields)
   rpc GetBookingDetails(GetBookingDetailsRequest) returns (GetBookingDetailsResponse);
   
-  // Mark booking as reviewed
-  rpc MarkAsReviewed(MarkAsReviewedRequest) returns (MarkAsReviewedResponse);
+  // ✅ NEW: Update booking payment status (called by payment service after payment)
+  rpc UpdateBookingPaymentStatus(UpdatePaymentStatusRequest) returns (UpdatePaymentStatusResponse);
+  
+  // ✅ NEW: Update booking status after deposit payment
+  rpc UpdateBookingAfterDepositPayment(UpdateAfterDepositRequest) returns (UpdateAfterDepositResponse);
+  
+  // ✅ NEW: Update booking status after final payment
+  rpc UpdateBookingAfterFinalPayment(UpdateAfterFinalRequest) returns (UpdateAfterFinalResponse);
 }
+
+// ==================== REVIEW MESSAGES ====================
 
 message VerifyBookingRequest {
   string booking_id = 1;
@@ -25,6 +38,18 @@ message VerifyBookingResponse {
   bool is_customer = 4;
 }
 
+message MarkAsReviewedRequest {
+  string booking_id = 1;
+  string review_type = 2; // "vehicle" or "owner"
+}
+
+message MarkAsReviewedResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// ==================== PAYMENT INTEGRATION MESSAGES ====================
+
 message GetBookingDetailsRequest {
   string booking_id = 1;
 }
@@ -35,14 +60,55 @@ message GetBookingDetailsResponse {
   string owner_id = 3;
   string vehicle_id = 4;
   string status = 5;
+  
+  // Payment fields
+  int32 rental_price = 6;
+  int32 insurance_fee = 7;
+  int32 total_amount = 8;
+  int32 deposit_amount = 9;
+  int32 remaining_payment = 10;
+  bool deposit_paid = 11;
+  bool final_payment_paid = 12;
+  
+  // Booking timeline
+  string start_date = 13;
+  string end_date = 14;
+  int32 duration_days = 15;
 }
 
-message MarkAsReviewedRequest {
+// ✅ UPDATED: Generic payment status update
+message UpdatePaymentStatusRequest {
   string booking_id = 1;
-  string review_type = 2; // "vehicle" or "owner"
+  string payment_type = 2; // "deposit" or "final_payment"
+  bool paid = 3;
+  string transaction_id = 4;
 }
 
-message MarkAsReviewedResponse {
+message UpdatePaymentStatusResponse {
   bool success = 1;
   string message = 2;
+}
+
+// ✅ NEW: Specific update after deposit payment
+message UpdateAfterDepositRequest {
+  string booking_id = 1;
+  string transaction_id = 2;
+}
+
+message UpdateAfterDepositResponse {
+  bool success = 1;
+  string message = 2;
+  string new_status = 3; // Should be "pending"
+}
+
+// ✅ NEW: Specific update after final payment
+message UpdateAfterFinalRequest {
+  string booking_id = 1;
+  string transaction_id = 2;
+}
+
+message UpdateAfterFinalResponse {
+  bool success = 1;
+  string message = 2;
+  string new_status = 3; // Should remain "booking"
 }

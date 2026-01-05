@@ -1,4 +1,3 @@
-// Backend/payment-service/src/grpc/booking_grpc_client.js
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
@@ -27,7 +26,8 @@ class BookingGrpcClient {
     console.log(`📡 Booking gRPC client connected to ${bookingServiceUrl}`);
   }
 
-  // ✅ UPDATED: Now returns ALL payment fields
+  // ==================== EXISTING METHODS ====================
+
   getBookingDetails(bookingId) {
     return new Promise((resolve, reject) => {
       this.client.GetBookingDetails(
@@ -51,7 +51,6 @@ class BookingGrpcClient {
     });
   }
 
-  // ✅ UPDATED: Properly updates booking payment status
   updateBookingPaymentStatus(bookingId, paymentType, paid, transactionId) {
     return new Promise((resolve, reject) => {
       this.client.UpdateBookingPaymentStatus(
@@ -68,6 +67,58 @@ class BookingGrpcClient {
           } else {
             console.log(
               `✅ Updated booking payment: ${bookingId} - ${paymentType} = ${paid}`
+            );
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  // ✅ NEW: Update booking after deposit payment (status: pending_payment → pending)
+  updateBookingAfterDepositPayment(bookingId, transactionId) {
+    return new Promise((resolve, reject) => {
+      this.client.UpdateBookingAfterDepositPayment(
+        {
+          booking_id: bookingId,
+          transaction_id: transactionId,
+        },
+        (error, response) => {
+          if (error) {
+            console.error(
+              "❌ gRPC updateBookingAfterDepositPayment error:",
+              error
+            );
+            reject(error);
+          } else {
+            console.log(
+              `✅ Booking ${bookingId} updated after deposit payment: status = ${response.new_status}`
+            );
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  // ✅ NEW: Update booking after final payment (remains in 'booking' status, but fully paid)
+  updateBookingAfterFinalPayment(bookingId, transactionId) {
+    return new Promise((resolve, reject) => {
+      this.client.UpdateBookingAfterFinalPayment(
+        {
+          booking_id: bookingId,
+          transaction_id: transactionId,
+        },
+        (error, response) => {
+          if (error) {
+            console.error(
+              "❌ gRPC updateBookingAfterFinalPayment error:",
+              error
+            );
+            reject(error);
+          } else {
+            console.log(
+              `✅ Booking ${bookingId} updated after final payment: status = ${response.new_status}`
             );
             resolve(response);
           }

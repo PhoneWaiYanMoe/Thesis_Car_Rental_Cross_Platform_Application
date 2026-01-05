@@ -2,27 +2,35 @@ openapi: 3.0.3
 info:
   title: Wiz Booking Service API
   description: |
-    Complete Booking Service APIs with updated flow:
+    Complete Booking Service APIs with integrated payment flow:
     
-    **Booking Flow:**
-    1. pending → (owner accepts) → booking
-    2. booking → (customer signs contract + picks up car with 3 photos) → picked_up
-    3. picked_up → (customer returns car with 3 photos) → return_submitted
-    4. return_submitted → (owner confirms):
-       - complete → completed
-       - dispute → dispute_opened → under_review (CS) → completed/completed_with_charge
+    **📋 Booking Flow with Payment:**
+    1. **Create Booking** → Status: `pending_payment`
+       - System automatically creates deposit payment intent
+       - User receives payment URL (VNPay/Stripe/PayPal)
     
-    **No-Show Policy:**
+    2. **User Pays Deposit** → Status: `pending`
+       - Payment webhook updates status automatically
+       - Owner receives notification
+    
+    3. **Owner Approves** → Status: `booking`
+       - Booking is confirmed
+       - User can now pay remaining payment
+    
+    4. **User Pays Final Payment** → Status: `booking` (fully paid)
+       - Booking ready for rental day
+    
+    **🚫 No-Show Policy:**
     - If customer doesn't pick up car within 24 hours after start date
     - Booking automatically cancelled with NO refund
     - Checked by hourly cron job
     
-    **Roles:**
-    - customer: Books vehicles
-    - owner: Manages vehicle rentals
-    - customer-support: Handles disputes
-    - admin: System administration
-  version: 3.0.0
+    **👥 Roles:**
+    - **customer**: Books vehicles
+    - **owner**: Manages vehicle rentals
+    - **customer-support**: Handles disputes
+    - **admin**: System administration
+  version: 3.1.0
 
 servers:
   - url: http://localhost:3004
@@ -35,6 +43,8 @@ tags:
     description: Customer booking management
   - name: Owner
     description: Owner rental request management
+  - name: Payment
+    description: Payment status and information
 
 paths:
   # ==================== VERIFICATION ====================
@@ -71,7 +81,16 @@ paths:
   # ==================== CUSTOMER BOOKINGS ====================
   /bookings:
     post:
-      summary: Create new booking
+      summary: Create new booking (with automatic payment intent)
+      description: |
+        Creates booking with status `pending_payment` and automatically generates payment intent.
+        
+        **Flow:**
+        1. Validates user verification
+        2. Checks vehicle availability
+        3. Creates booking (status: `pending_payment`)
+        4. Calls Payment Service to create deposit intent
+        5. Returns booking details + payment URL
       tags: [Customer]
       security:
         - bearerAuth: []
@@ -83,7 +102,78 @@ paths:
               $ref: '#/components/schemas/CreateBookingRequest'
       responses:
         '201':
-          description: Booking created
+          description: Booking created with payment intent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking created successfully. Please complete payment to confirm."
+                  booking:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      vehicleId:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: "pending_payment"
+                      startDate:
+                        type: string
+                        format: date-time
+                      endDate:
+                        type: string
+                        format: date-time
+                      duration:
+                        type: string
+                        example: "3 days"
+                      pricing:
+                        type: object
+                        properties:
+                          rentalPrice:
+                            type: integer
+                            example: 1125000
+                          insuranceFee:
+                            type: integer
+                            example: 90000
+                          total:
+                            type: integer
+                            example: 1215000
+                          deposit:
+                            type: integer
+                            example: 364500
+                          remainingPayment:
+                            type: integer
+                            example: 850500
+                  payment:
+                    type: object
+                    properties:
+                      intentId:
+                        type: string
+                        example: "1704384000000"
+                      provider:
+                        type: string
+                        example: "vnpay"
+                      amount:
+                        type: integer
+                        example: 364500
+                      currency:
+                        type: string
+                        example: "VND"
+                      status:
+                        type: string
+                        example: "pending"
+                      paymentUrl:
+                        type: string
+                        example: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?..."
+                      message:
+                        type: string
+                        example: "Complete payment to confirm booking"
 
   /bookings/my-bookings:
     get:
@@ -96,7 +186,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, pending, booking, picked_up, return_submitted, completed, cancelled]
+            enum: [all, pending_payment, pending, booking, picked_up, return_submitted, completed, cancelled]
         - name: page
           in: query
           schema:
@@ -126,7 +216,55 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Booking details
+          description: Booking details with payment status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: "pending"
+                      billing:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          deposit:
+                            type: integer
+                          depositPaid:
+                            type: boolean
+                            example: true
+                          remainingPayment:
+                            type: integer
+                          finalPaymentPaid:
+                            type: boolean
+                            example: false
+                      actions:
+                        type: object
+                        properties:
+                          needsDepositPayment:
+                            type: boolean
+                            example: false
+                          needsFinalPayment:
+                            type: boolean
+                            example: true
+                          canSignContract:
+                            type: boolean
+                          canSubmitPickupPhotos:
+                            type: boolean
+                          canSubmitReturnPhotos:
+                            type: boolean
+                          canReview:
+                            type: boolean
+                          canCancel:
+                            type: boolean
 
   /bookings/{id}/sign-contract:
     post:
@@ -154,10 +292,8 @@ paths:
                 signature:
                   type: string
                   description: Base64 signature
-                  example: "data:image/png;base64,iVBORw0KGgo..."
                 agreedToTerms:
                   type: boolean
-                  example: true
       responses:
         '200':
           description: Contract signed
@@ -191,31 +327,13 @@ paths:
                   items:
                     type: string
                   minItems: 3
-                  description: Array of 3+ photo URLs
-                  example: 
-                    - "https://cdn.com/pickup1.jpg"
-                    - "https://cdn.com/pickup2.jpg"
-                    - "https://cdn.com/pickup3.jpg"
                 odometerReading:
                   type: integer
-                  example: 109211
                 notes:
                   type: string
-                  example: "Car is in excellent condition"
       responses:
         '200':
           description: Pickup confirmed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Car pickup confirmed"
-                  bookingStatus:
-                    type: string
-                    example: "picked_up"
 
   /bookings/{id}/confirm-return:
     post:
@@ -246,35 +364,22 @@ paths:
                   items:
                     type: string
                   minItems: 3
-                  description: Array of 3+ photo URLs
-                  example:
-                    - "https://cdn.com/return1.jpg"
-                    - "https://cdn.com/return2.jpg"
-                    - "https://cdn.com/return3.jpg"
                 odometerReading:
                   type: integer
-                  example: 109461
                 notes:
                   type: string
-                  example: "Returned in good condition"
       responses:
         '200':
           description: Return submitted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Return submitted"
-                  bookingStatus:
-                    type: string
-                    example: "return_submitted"
 
   /bookings/{id}/cancel:
     post:
       summary: Cancel booking
+      description: |
+        Cancel booking with refund policy:
+        - More than 24 hours before start: Full deposit refund
+        - 12-24 hours before start: 50% deposit refund
+        - Less than 12 hours: No refund
       tags: [Customer]
       security:
         - bearerAuth: []
@@ -296,7 +401,6 @@ paths:
               properties:
                 reason:
                   type: string
-                  example: "Change of plans"
       responses:
         '200':
           description: Booking cancelled
@@ -336,6 +440,9 @@ paths:
   /bookings/owner/{id}/accept:
     post:
       summary: Accept booking request
+      description: |
+        Owner accepts booking after deposit is paid.
+        Status changes from 'pending' to 'booking'.
       tags: [Owner]
       security:
         - bearerAuth: []
@@ -353,7 +460,7 @@ paths:
   /bookings/owner/{id}/reject:
     post:
       summary: Reject booking request
-      description: Owner must specify refund amount (typically full refund for owner rejection)
+      description: Owner must specify refund amount (typically full refund)
       tags: [Owner]
       security:
         - bearerAuth: []
@@ -376,25 +483,11 @@ paths:
               properties:
                 reason:
                   type: string
-                  example: "Vehicle not available"
                 refundAmount:
                   type: number
-                  description: Refund amount (cannot exceed deposit)
-                  example: 255000
       responses:
         '200':
           description: Booking rejected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Booking rejected"
-                  refundAmount:
-                    type: number
-                    example: 255000
 
   /bookings/owner/{id}/confirm-return:
     post:
@@ -402,7 +495,7 @@ paths:
       description: |
         Owner confirms return with 3+ photos and chooses action:
         - **complete**: No issues, booking completed
-        - **dispute**: Issues found, opens dispute for customer support review
+        - **dispute**: Issues found, opens dispute for CS review
       tags: [Owner]
       security:
         - bearerAuth: []
@@ -430,42 +523,18 @@ paths:
                   items:
                     type: string
                   minItems: 3
-                  description: Array of 3+ photo URLs
-                  example:
-                    - "https://cdn.com/owner-return1.jpg"
-                    - "https://cdn.com/owner-return2.jpg"
-                    - "https://cdn.com/owner-return3.jpg"
                 conditionNotes:
                   type: string
-                  example: "Minor scratches on rear bumper"
                 damagesReported:
                   type: boolean
-                  example: false
                 odometerReading:
                   type: integer
-                  example: 109461
                 action:
                   type: string
                   enum: [complete, dispute]
-                  description: |
-                    - complete: Booking completed, no issues
-                    - dispute: Open dispute for CS review
-                  example: "complete"
       responses:
         '200':
           description: Return confirmed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Return confirmed, booking completed"
-                  bookingStatus:
-                    type: string
-                    enum: [completed, dispute_opened]
-                    example: "completed"
 
 # ==================== COMPONENTS ====================
 components:
@@ -528,20 +597,41 @@ components:
         - dropoffLocation
         - insuranceCoverage
         - paymentMethodId
+        - provider
       properties:
         vehicleId:
           type: string
           format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
         startDate:
           type: string
           format: date-time
+          example: "2026-01-10T10:00:00Z"
         endDate:
           type: string
           format: date-time
+          example: "2026-01-13T10:00:00Z"
         pickupLocation:
           type: object
+          properties:
+            lat:
+              type: number
+              example: 10.8231
+            lng:
+              type: number
+              example: 106.6297
+            address:
+              type: string
+              example: "District 1, Ho Chi Minh City"
         dropoffLocation:
           type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            address:
+              type: string
         driverRequired:
           type: boolean
           default: false
@@ -549,7 +639,15 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+          example: 50
+          description: "Insurance coverage percentage (0, 30, 50, 70, 100)"
         paymentMethodId:
           type: string
+          example: "pm_123456"
+        provider:
+          type: string
+          enum: [stripe, paypal, vnpay]
+          example: "vnpay"
+          description: "Payment provider to use"
         additionalNotes:
           type: string

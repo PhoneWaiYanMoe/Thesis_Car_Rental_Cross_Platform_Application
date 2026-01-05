@@ -1,4 +1,3 @@
-// Backend/booking-service/src/grpc/payment_grpc_client.js
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
@@ -19,7 +18,8 @@ class PaymentGrpcClient {
     const paymentServiceUrl =
       process.env.PAYMENT_SERVICE_GRPC_URL || "localhost:50056";
 
-    this.client = new paymentProto.PaymentService.service(
+    // ✅ FIXED: Removed .service - this is the correct way to create a gRPC client
+    this.client = new paymentProto.PaymentService(
       paymentServiceUrl,
       grpc.credentials.createInsecure()
     );
@@ -97,6 +97,31 @@ class PaymentGrpcClient {
         (error, response) => {
           if (error) {
             console.error("❌ gRPC verifyPaymentStatus error:", error);
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Process refund
+   */
+  processRefund(bookingId, userId, amount, reason, notes) {
+    return new Promise((resolve, reject) => {
+      this.client.ProcessRefund(
+        {
+          booking_id: bookingId,
+          user_id: userId,
+          amount: amount,
+          reason: reason,
+          notes: notes || "",
+        },
+        (error, response) => {
+          if (error) {
+            console.error("❌ gRPC processRefund error:", error);
             reject(error);
           } else {
             resolve(response);

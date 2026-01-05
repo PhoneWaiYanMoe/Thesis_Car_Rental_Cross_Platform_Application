@@ -1,17 +1,55 @@
+// Backend/payment-service/proto/payment.proto
+// ✅ UPDATED: Added webhook handler for payment success
+
 syntax = "proto3";
 
 package payment;
 
 service PaymentService {
+  // ==================== PAYMENT INTENT CREATION ====================
+  // Create deposit payment intent (30% of total)
+  rpc CreateDepositIntent(CreatePaymentIntentRequest) returns (CreatePaymentIntentResponse);
+  
+  // Create final payment intent (70% of total)
+  rpc CreateFinalPaymentIntent(CreatePaymentIntentRequest) returns (CreatePaymentIntentResponse);
+  
+  // ==================== PAYMENT STATUS & VERIFICATION ====================
   // Verify payment status for booking
   rpc VerifyPaymentStatus(VerifyPaymentRequest) returns (VerifyPaymentResponse);
   
   // Get transaction details
   rpc GetTransactionDetails(GetTransactionRequest) returns (TransactionDetails);
   
+  // ==================== REFUND PROCESSING ====================
   // Process automatic refund
   rpc ProcessRefund(RefundRequest) returns (RefundResponse);
+  
+  // ✅ NEW: Handle payment success webhook (called internally by webhook controller)
+  rpc HandlePaymentSuccess(PaymentSuccessRequest) returns (PaymentSuccessResponse);
 }
+
+// ==================== PAYMENT INTENT MESSAGES ====================
+
+message CreatePaymentIntentRequest {
+  string booking_id = 1;
+  string user_id = 2;
+  int32 amount = 3;
+  string provider = 4; // "stripe", "paypal", "vnpay"
+  string payment_method_id = 5; // Optional
+}
+
+message CreatePaymentIntentResponse {
+  string intent_id = 1;
+  string client_secret = 2;
+  string payment_url = 3; // For VNPay redirect
+  string status = 4;
+  string provider = 5;
+  int32 amount = 6;
+  string currency = 7;
+  string message = 8;
+}
+
+// ==================== VERIFICATION MESSAGES ====================
 
 message VerifyPaymentRequest {
   string booking_id = 1;
@@ -24,6 +62,8 @@ message VerifyPaymentResponse {
   int32 final_payment_amount = 4;
   string status = 5;
 }
+
+// ==================== TRANSACTION MESSAGES ====================
 
 message GetTransactionRequest {
   string transaction_id = 1;
@@ -39,6 +79,8 @@ message TransactionDetails {
   string provider = 7;
 }
 
+// ==================== REFUND MESSAGES ====================
+
 message RefundRequest {
   string booking_id = 1;
   string user_id = 2;
@@ -53,4 +95,17 @@ message RefundResponse {
   int32 amount = 3;
   string status = 4;
   string message = 5;
+}
+
+// ✅ NEW: WEBHOOK INTEGRATION MESSAGES ====================
+
+message PaymentSuccessRequest {
+  string transaction_id = 1;
+  string booking_id = 2;
+  string payment_type = 3; // "deposit" or "final_payment"
+}
+
+message PaymentSuccessResponse {
+  bool success = 1;
+  string message = 2;
 }

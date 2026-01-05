@@ -1,9 +1,12 @@
 // Backend/payment-service/src/grpc/payment_grpc_server.js
+// ✅ UPDATED: Integrated webhook flow for automatic booking status updates
+
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
 const pool = require("../config/database");
 const paymentService = require("../services/payment_service");
+const bookingGrpcClient = require("./booking_grpc_client");
 
 const PROTO_PATH = path.join(__dirname, "../../proto/payment.proto");
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -21,7 +24,8 @@ class PaymentGrpcServer {
     this.server = new grpc.Server();
   }
 
-  // ✅ NEW: Create deposit payment intent (called by booking service)
+  // ==================== PAYMENT INTENT CREATION ====================
+
   async createDepositIntent(call, callback) {
     try {
       const { booking_id, user_id, amount, provider, payment_method_id } =
@@ -60,7 +64,6 @@ class PaymentGrpcServer {
     }
   }
 
-  // ✅ NEW: Create final payment intent (called by booking service)
   async createFinalPaymentIntent(call, callback) {
     try {
       const { booking_id, user_id, amount, provider, payment_method_id } =
@@ -97,6 +100,8 @@ class PaymentGrpcServer {
       });
     }
   }
+
+  // ==================== PAYMENT STATUS & VERIFICATION ====================
 
   async verifyPaymentStatus(call, callback) {
     try {
@@ -172,6 +177,8 @@ class PaymentGrpcServer {
     }
   }
 
+  // ==================== REFUND PROCESSING ====================
+
   async processRefund(call, callback) {
     try {
       const { booking_id, user_id, amount, reason, notes } = call.request;
@@ -200,6 +207,47 @@ class PaymentGrpcServer {
     }
   }
 
+  // ✅ NEW: Webhook handler to update booking after successful payment
+  async handlePaymentSuccess(call, callback) {
+    try {
+      const { transaction_id, booking_id, payment_type } = call.request;
+
+      console.log(
+        `🎯 Handling payment success: ${booking_id}, type: ${payment_type}`
+      );
+
+      // Update booking status via Booking Service gRPC
+      if (payment_type === "deposit") {
+        await bookingGrpcClient.updateBookingAfterDepositPayment(
+          booking_id,
+          transaction_id
+        );
+        console.log(
+          `✅ Booking ${booking_id} status updated to 'pending' after deposit payment`
+        );
+      } else if (payment_type === "final_payment") {
+        await bookingGrpcClient.updateBookingAfterFinalPayment(
+          booking_id,
+          transaction_id
+        );
+        console.log(
+          `✅ Booking ${booking_id} marked as fully paid after final payment`
+        );
+      }
+
+      callback(null, {
+        success: true,
+        message: "Booking updated after payment success",
+      });
+    } catch (error) {
+      console.error("❌ gRPC handlePaymentSuccess error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
   start(port = 50056) {
     this.server.addService(paymentProto.PaymentService.service, {
       CreateDepositIntent: this.createDepositIntent.bind(this),
@@ -207,6 +255,7 @@ class PaymentGrpcServer {
       VerifyPaymentStatus: this.verifyPaymentStatus.bind(this),
       GetTransactionDetails: this.getTransactionDetails.bind(this),
       ProcessRefund: this.processRefund.bind(this),
+      HandlePaymentSuccess: this.handlePaymentSuccess.bind(this),
     });
 
     this.server.bindAsync(
