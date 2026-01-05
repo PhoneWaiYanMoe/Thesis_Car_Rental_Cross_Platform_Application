@@ -1,10 +1,11 @@
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const path = require('path');
-const pool = require('../config/database');
-const paymentService = require('../services/payment_service');
+// Backend/payment-service/src/grpc/payment_grpc_server.js
+const grpc = require("@grpc/grpc-js");
+const protoLoader = require("@grpc/proto-loader");
+const path = require("path");
+const pool = require("../config/database");
+const paymentService = require("../services/payment_service");
 
-const PROTO_PATH = path.join(__dirname, '../../proto/payment.proto');
+const PROTO_PATH = path.join(__dirname, "../../proto/payment.proto");
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
   longs: String,
@@ -18,6 +19,83 @@ const paymentProto = grpc.loadPackageDefinition(packageDefinition).payment;
 class PaymentGrpcServer {
   constructor() {
     this.server = new grpc.Server();
+  }
+
+  // ✅ NEW: Create deposit payment intent (called by booking service)
+  async createDepositIntent(call, callback) {
+    try {
+      const { booking_id, user_id, amount, provider, payment_method_id } =
+        call.request;
+
+      console.log(
+        `📝 Creating deposit intent: ${booking_id}, ${amount} VND, ${provider}`
+      );
+
+      // Create payment intent
+      const result = await paymentService.createPaymentIntent(
+        booking_id,
+        user_id,
+        amount,
+        "deposit",
+        provider,
+        payment_method_id || null
+      );
+
+      callback(null, {
+        intent_id: result.intentId || result.orderId || "",
+        client_secret: result.clientSecret || "",
+        payment_url: result.paymentUrl || "",
+        status: result.status || "pending",
+        provider: provider,
+        amount: amount,
+        currency: "VND",
+        message: "Deposit payment intent created successfully",
+      });
+    } catch (error) {
+      console.error("❌ gRPC createDepositIntent error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
+  // ✅ NEW: Create final payment intent (called by booking service)
+  async createFinalPaymentIntent(call, callback) {
+    try {
+      const { booking_id, user_id, amount, provider, payment_method_id } =
+        call.request;
+
+      console.log(
+        `📝 Creating final payment intent: ${booking_id}, ${amount} VND, ${provider}`
+      );
+
+      const result = await paymentService.createPaymentIntent(
+        booking_id,
+        user_id,
+        amount,
+        "final_payment",
+        provider,
+        payment_method_id || null
+      );
+
+      callback(null, {
+        intent_id: result.intentId || result.orderId || "",
+        client_secret: result.clientSecret || "",
+        payment_url: result.paymentUrl || "",
+        status: result.status || "pending",
+        provider: provider,
+        amount: amount,
+        currency: "VND",
+        message: "Final payment intent created successfully",
+      });
+    } catch (error) {
+      console.error("❌ gRPC createFinalPaymentIntent error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
   }
 
   async verifyPaymentStatus(call, callback) {
@@ -42,10 +120,15 @@ class PaymentGrpcServer {
         final_payment_paid: row.final_paid > 0,
         deposit_amount: parseInt(row.deposit_amount) || 0,
         final_payment_amount: parseInt(row.final_amount) || 0,
-        status: row.final_paid > 0 ? 'fully_paid' : row.deposit_paid > 0 ? 'deposit_paid' : 'unpaid',
+        status:
+          row.final_paid > 0
+            ? "fully_paid"
+            : row.deposit_paid > 0
+            ? "deposit_paid"
+            : "unpaid",
       });
     } catch (error) {
-      console.error('❌ gRPC verifyPaymentStatus error:', error);
+      console.error("❌ gRPC verifyPaymentStatus error:", error);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -58,14 +141,14 @@ class PaymentGrpcServer {
       const { transaction_id } = call.request;
 
       const result = await pool.query(
-        'SELECT * FROM transactions WHERE transaction_id = $1',
+        "SELECT * FROM transactions WHERE transaction_id = $1",
         [transaction_id]
       );
 
       if (result.rows.length === 0) {
         return callback({
           code: grpc.status.NOT_FOUND,
-          message: 'Transaction not found',
+          message: "Transaction not found",
         });
       }
 
@@ -81,7 +164,7 @@ class PaymentGrpcServer {
         provider: tx.provider,
       });
     } catch (error) {
-      console.error('❌ gRPC getTransactionDetails error:', error);
+      console.error("❌ gRPC getTransactionDetails error:", error);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -106,10 +189,10 @@ class PaymentGrpcServer {
         refund_id: result.refundId,
         amount: result.amount,
         status: result.status,
-        message: 'Refund processed successfully',
+        message: "Refund processed successfully",
       });
     } catch (error) {
-      console.error('❌ gRPC processRefund error:', error);
+      console.error("❌ gRPC processRefund error:", error);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -119,6 +202,8 @@ class PaymentGrpcServer {
 
   start(port = 50056) {
     this.server.addService(paymentProto.PaymentService.service, {
+      CreateDepositIntent: this.createDepositIntent.bind(this),
+      CreateFinalPaymentIntent: this.createFinalPaymentIntent.bind(this),
       VerifyPaymentStatus: this.verifyPaymentStatus.bind(this),
       GetTransactionDetails: this.getTransactionDetails.bind(this),
       ProcessRefund: this.processRefund.bind(this),
@@ -129,7 +214,7 @@ class PaymentGrpcServer {
       grpc.ServerCredentials.createInsecure(),
       (err, port) => {
         if (err) {
-          console.error('❌ Failed to start gRPC server:', err);
+          console.error("❌ Failed to start gRPC server:", err);
           return;
         }
         console.log(`✅ Payment gRPC server running on port ${port}`);
@@ -139,7 +224,7 @@ class PaymentGrpcServer {
 
   stop() {
     this.server.tryShutdown(() => {
-      console.log('gRPC server stopped');
+      console.log("gRPC server stopped");
     });
   }
 }
