@@ -1,76 +1,80 @@
 const crypto = require("crypto");
 const { vnpayConfig } = require("../config/payment_providers");
-const querystring = require("querystring");
 
 class VNPayService {
   /**
    * Create VNPay payment URL
-   * Based on official VNPay documentation
+   * Fixed signature generation according to VNPay specification
    */
   createPaymentUrl(amount, orderInfo, ipAddr, returnUrl) {
     try {
-      // VNPay expects date in UTC+7 (Vietnam timezone) format: yyyyMMddHHmmss
       const date = new Date();
       const createDate = this.formatDate(date);
       const orderId = date.getTime().toString();
-      
-      // Debug: Log hash secret (first 4 chars only for security)
-      const hashSecretPreview = vnpayConfig.hashSecret 
-        ? `${vnpayConfig.hashSecret.substring(0, 4)}...` 
-        : 'NOT SET';
-      console.log(`🔑 VNPay Hash Secret: ${hashSecretPreview}`);
-      console.log(`🔑 VNPay TMN Code: ${vnpayConfig.tmnCode}`);
 
-      // Create params object (exclude hash fields from signing)
+      console.log(`🔑 VNPay TMN Code: ${vnpayConfig.tmnCode}`);
+      console.log(
+        `🔑 VNPay Hash Secret: ${vnpayConfig.hashSecret.substring(0, 4)}...`
+      );
+
+      // ✅ FIX: Build params object WITHOUT SecureHash fields first
       let vnpParams = {
         vnp_Version: "2.1.0",
         vnp_Command: "pay",
         vnp_TmnCode: vnpayConfig.tmnCode,
-        vnp_Locale: "vn",
+        vnp_Amount: amount * 100, // Convert to smallest unit (VND doesn't have decimals, but VNPay wants amount * 100)
         vnp_CurrCode: "VND",
         vnp_TxnRef: orderId,
         vnp_OrderInfo: orderInfo,
         vnp_OrderType: "other",
-        vnp_Amount: amount * 100,
+        vnp_Locale: "vn",
         vnp_ReturnUrl: returnUrl || vnpayConfig.returnUrl,
         vnp_IpAddr: ipAddr,
         vnp_CreateDate: createDate,
       };
 
-      // Sort params by key alphabetically
+      // ✅ FIX: Sort params alphabetically
       vnpParams = this.sortObject(vnpParams);
 
-      // Build sign data (raw values, not URL-encoded) per VNPay spec
-      // Ensure keys are sorted alphabetically
-      const sortedKeys = Object.keys(vnpParams).sort();
-      const signData = sortedKeys
-        .map((key) => `${key}=${vnpParams[key]}`)
-        .join("&");
+      // ✅ FIX: Build signature data (key=value pairs joined by &)
+      // CRITICAL: Use the RAW VALUES, not URL-encoded values
+      const signDataArray = [];
+      for (const key in vnpParams) {
+        if (vnpParams.hasOwnProperty(key)) {
+          const value = vnpParams[key];
+          // Skip empty values
+          if (value !== null && value !== undefined && value !== "") {
+            signDataArray.push(`${key}=${value}`);
+          }
+        }
+      }
+      const signData = signDataArray.join("&");
 
-      // Create HMAC-SHA512 signature
+      // ✅ FIX: Create HMAC-SHA512 signature
       const hmac = crypto.createHmac("sha512", vnpayConfig.hashSecret);
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-      // Add signature fields AFTER signing (do not include in signData)
-      vnpParams["vnp_SecureHashType"] = "SHA512";
+      // ✅ NOW add signature fields (AFTER signing)
       vnpParams["vnp_SecureHash"] = signed;
 
-      // Build final URL with proper URL encoding
-      // Sort again to ensure consistent order (including hash fields)
+      // ✅ FIX: Build final URL with proper encoding
+      // Re-sort to include the hash field
       const finalParams = this.sortObject(vnpParams);
-      const urlParams = Object.keys(finalParams)
+      const queryString = Object.keys(finalParams)
         .map((key) => {
-          const value = String(finalParams[key]);
-          return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+          return `${encodeURIComponent(key)}=${encodeURIComponent(
+            finalParams[key]
+          )}`;
         })
         .join("&");
-      const paymentUrl = `${vnpayConfig.url}?${urlParams}`;
+
+      const paymentUrl = `${vnpayConfig.url}?${queryString}`;
 
       console.log(`✅ VNPay Payment URL created for order: ${orderId}`);
       console.log(`📝 Sign data (raw): ${signData}`);
       console.log(`🔐 Signature: ${signed}`);
       console.log(`📝 CreateDate: ${createDate}`);
-      console.log(`🔗 Payment URL (first 100 chars): ${paymentUrl.substring(0, 100)}...`);
+      console.log(`🔗 Full Payment URL: ${paymentUrl}`);
 
       return {
         orderId: orderId,
@@ -89,30 +93,32 @@ class VNPayService {
   verifyReturnUrl(vnpParams) {
     try {
       const secureHash = vnpParams["vnp_SecureHash"];
-      delete vnpParams["vnp_SecureHash"];
-      delete vnpParams["vnp_SecureHashType"];
+
+      // Remove hash fields before verification
+      const paramsToVerify = { ...vnpParams };
+      delete paramsToVerify["vnp_SecureHash"];
+      delete paramsToVerify["vnp_SecureHashType"];
 
       // Sort params
-      const sortedParams = this.sortObject(vnpParams);
+      const sortedParams = this.sortObject(paramsToVerify);
 
-      // Build signature string manually (same way as creation)
-      const signDataParts = [];
+      // Build signature string (same as creation)
+      const signDataArray = [];
       for (const key in sortedParams) {
-        if (
-          sortedParams.hasOwnProperty(key) &&
-          sortedParams[key] !== null &&
-          sortedParams[key] !== ""
-        ) {
-          signDataParts.push(`${key}=${sortedParams[key]}`);
+        if (sortedParams.hasOwnProperty(key)) {
+          const value = sortedParams[key];
+          if (value !== null && value !== undefined && value !== "") {
+            signDataArray.push(`${key}=${value}`);
+          }
         }
       }
-      const signData = signDataParts.join("&");
+      const signData = signDataArray.join("&");
 
       // Calculate signature
       const hmac = crypto.createHmac("sha512", vnpayConfig.hashSecret);
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-      console.log(`📝 Verify sign data (raw): ${signData}`);
+      console.log(`📝 Verify sign data: ${signData}`);
       console.log(`🔐 Expected signature: ${signed}`);
       console.log(`🔐 Received signature: ${secureHash}`);
 
@@ -129,6 +135,7 @@ class VNPayService {
         };
       }
 
+      console.error("❌ Signature mismatch!");
       return { valid: false };
     } catch (error) {
       console.error("❌ VNPay verifyReturnUrl error:", error);
