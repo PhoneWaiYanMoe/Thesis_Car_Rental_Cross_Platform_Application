@@ -1,4 +1,6 @@
 // Mobile/wiz/lib/screens/Payment/services/payment_api_service.dart
+// ✅ FIXED: Don't send provider name as paymentMethodId
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
@@ -21,7 +23,7 @@ class PaymentApiService {
   Future<PaymentIntentResponse> createDepositIntent({
     required String bookingId,
     String provider = 'stripe',
-    String? paymentMethodId,
+    String? paymentMethodId, // ✅ This should be null for new payments
   }) async {
     try {
       final token = await _getAuthToken();
@@ -31,13 +33,19 @@ class PaymentApiService {
 
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
+      // ✅ FIX: Only include paymentMethodId if it's actually provided (not the provider name)
       final body = jsonEncode({
         'bookingId': bookingId,
         'provider': provider,
-        if (paymentMethodId != null) 'paymentMethodId': paymentMethodId,
+        // ✅ Don't include paymentMethodId if it's null
+        if (paymentMethodId != null && paymentMethodId.isNotEmpty) 'paymentMethodId': paymentMethodId,
       });
 
       print('📤 Creating deposit payment intent for booking: $bookingId');
+      print('   Provider: $provider');
+      if (paymentMethodId != null && paymentMethodId.isNotEmpty) {
+        print('   Payment Method ID: $paymentMethodId');
+      }
 
       final response = await http.post(Uri.parse('$baseUrl/payment/deposit/intent'), headers: headers, body: body);
 
@@ -59,7 +67,7 @@ class PaymentApiService {
   Future<PaymentIntentResponse> createFinalPaymentIntent({
     required String bookingId,
     String provider = 'stripe',
-    String? paymentMethodId,
+    String? paymentMethodId, // ✅ This should be null for new payments
   }) async {
     try {
       final token = await _getAuthToken();
@@ -69,13 +77,19 @@ class PaymentApiService {
 
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
+      // ✅ FIX: Only include paymentMethodId if it's actually provided (not the provider name)
       final body = jsonEncode({
         'bookingId': bookingId,
         'provider': provider,
-        if (paymentMethodId != null) 'paymentMethodId': paymentMethodId,
+        // ✅ Don't include paymentMethodId if it's null
+        if (paymentMethodId != null && paymentMethodId.isNotEmpty) 'paymentMethodId': paymentMethodId,
       });
 
       print('📤 Creating final payment intent for booking: $bookingId');
+      print('   Provider: $provider');
+      if (paymentMethodId != null && paymentMethodId.isNotEmpty) {
+        print('   Payment Method ID: $paymentMethodId');
+      }
 
       final response = await http.post(Uri.parse('$baseUrl/payment/final/intent'), headers: headers, body: body);
 

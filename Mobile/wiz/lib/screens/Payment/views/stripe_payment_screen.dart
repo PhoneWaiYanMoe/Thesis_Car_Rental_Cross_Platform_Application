@@ -1,5 +1,5 @@
 // Mobile/wiz/lib/screens/Payment/views/stripe_payment_screen.dart
-// ✅ FIXED: Real Stripe integration using flutter_stripe package
+// ✅ FIXED: Proper lifecycle management and error handling
 
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -26,10 +26,15 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _processPayment();
+    // ✅ FIX: Delay processing until after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processPayment();
+    });
   }
 
   Future<void> _processPayment() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -46,9 +51,19 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
       PaymentIntentResponse paymentIntent;
 
       if (widget.paymentType == 'deposit') {
-        paymentIntent = await _paymentApi.createDepositIntent(bookingId: widget.bookingId, provider: 'stripe');
+        paymentIntent = await _paymentApi.createDepositIntent(
+          bookingId: widget.bookingId,
+          provider: 'stripe',
+          // ✅ FIX: Don't pass paymentMethodId - let Stripe collect it in the payment sheet
+          paymentMethodId: null,
+        );
       } else {
-        paymentIntent = await _paymentApi.createFinalPaymentIntent(bookingId: widget.bookingId, provider: 'stripe');
+        paymentIntent = await _paymentApi.createFinalPaymentIntent(
+          bookingId: widget.bookingId,
+          provider: 'stripe',
+          // ✅ FIX: Don't pass paymentMethodId - let Stripe collect it in the payment sheet
+          paymentMethodId: null,
+        );
       }
 
       print('✅ Payment intent created: ${paymentIntent.intentId}');
@@ -99,8 +114,12 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
         print('   Error code: ${stripeError.error.code}');
         print('   Error type: ${stripeError.error.type}');
         print('   Localized message: ${stripeError.error.localizedMessage}');
-        throw Exception('Stripe initialization failed: ${stripeError.error.message ?? stripeError.error.localizedMessage ?? "Unknown error"}');
+        throw Exception(
+          'Stripe initialization failed: ${stripeError.error.message ?? stripeError.error.localizedMessage ?? "Unknown error"}',
+        );
       }
+
+      if (!mounted) return;
 
       setState(() {
         _isLoading = false;
@@ -113,41 +132,41 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
       print('   Error code: ${e.error.code}');
       print('   Error type: ${e.error.type}');
       print('   Localized message: ${e.error.localizedMessage}');
-      
+
       String errorMessage = 'Payment initialization failed';
       if (e.error.message != null) {
         errorMessage = e.error.message!;
       } else if (e.error.localizedMessage != null) {
         errorMessage = e.error.localizedMessage!;
       }
-      
+
+      if (!mounted) return;
+
       setState(() {
         _error = errorMessage;
         _isLoading = false;
       });
 
-      // Show error and close
-      if (mounted) {
-        _showErrorDialog(errorMessage);
-      }
+      // ✅ FIX: Show error dialog after build is complete
+      _showErrorDialog(errorMessage);
     } catch (e) {
       print('❌ Payment initialization error: $e');
       print('   Error type: ${e.runtimeType}');
-      
+
       String errorMessage = e.toString();
       if (e.toString().contains('StripeConfigException')) {
         errorMessage = 'Stripe configuration error. Please check your Stripe keys are correctly set.';
       }
-      
+
+      if (!mounted) return;
+
       setState(() {
         _error = errorMessage;
         _isLoading = false;
       });
 
-      // Show error and close
-      if (mounted) {
-        _showErrorDialog(errorMessage);
-      }
+      // ✅ FIX: Show error dialog after build is complete
+      _showErrorDialog(errorMessage);
     }
   }
 
@@ -221,6 +240,9 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
   }
 
   void _showErrorDialog(String message) {
+    // ✅ FIX: Check if widget is mounted before showing dialog
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
