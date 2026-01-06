@@ -1,8 +1,7 @@
-// Backend/booking-service/src/controllers/booking_controller.js
 const pool = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
-const paymentGrpcClient = require("../grpc/payment_grpc_client"); // ✅ NEW
+const paymentGrpcClient = require("../grpc/payment_grpc_client");
 
 class BookingController {
   // ==================== HELPER FUNCTIONS ====================
@@ -44,7 +43,6 @@ class BookingController {
   }
 
   isActionAllowedByDate(booking, actionType) {
-    // ✅ TESTING MODE: Bypass date checks
     if (process.env.BYPASS_DATE_CHECK === "true") {
       console.log(`⚠️  TESTING MODE: Date check bypassed for ${actionType}`);
       return { allowed: true, reason: "Testing mode enabled" };
@@ -153,34 +151,31 @@ class BookingController {
         !licenseFrontPhoto ||
         !licenseBackPhoto
       ) {
-        return res.status(400).json({
-          error: "Missing required license fields",
-        });
+        return res
+          .status(400)
+          .json({ error: "Missing required license fields" });
       }
 
       if (!frontSelfie || !leftSelfie || !rightSelfie) {
-        return res.status(400).json({
-          error: "All 3 selfies are required (front, left, right)",
-        });
+        return res
+          .status(400)
+          .json({ error: "All 3 selfies are required (front, left, right)" });
       }
 
       const expiry = new Date(expiryDate);
       const now = new Date();
       if (expiry <= now) {
-        return res.status(400).json({
-          error: "License has expired or is expiring today",
-        });
+        return res
+          .status(400)
+          .json({ error: "License has expired or is expiring today" });
       }
 
       await pool.query(
         `INSERT INTO user_verifications (
-          user_id, 
-          license_full_name, license_number, license_expiry_date, 
+          user_id, license_full_name, license_number, license_expiry_date, 
           license_front_photo, license_back_photo, license_verified,
-          front_selfie, left_selfie, right_selfie, selfies_verified,
-          is_verified
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          front_selfie, left_selfie, right_selfie, selfies_verified, is_verified
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         ON CONFLICT (user_id) DO UPDATE
         SET license_full_name = EXCLUDED.license_full_name,
             license_number = EXCLUDED.license_number,
@@ -225,7 +220,6 @@ class BookingController {
 
   // ==================== BOOKING MANAGEMENT ====================
 
-  // ✅ FULLY UPDATED: Integrated with Payment Service
   async createBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -243,13 +237,12 @@ class BookingController {
         insuranceCoverage,
         paymentMethodId,
         additionalNotes,
-        provider = "vnpay", // ✅ NEW: Default payment provider
+        provider = "vnpay",
       } = req.body;
 
       // Check verification
       const verificationResult = await client.query(
-        `SELECT * FROM user_verifications 
-         WHERE user_id = $1 AND is_verified = true`,
+        `SELECT * FROM user_verifications WHERE user_id = $1 AND is_verified = true`,
         [userId]
       );
 
@@ -288,7 +281,7 @@ class BookingController {
           .json({ error: "End date must be after start date" });
       }
 
-      // FETCH VEHICLE FROM VEHICLE-SERVICE VIA GRPC
+      // Fetch vehicle
       let vehicle;
       try {
         vehicle = await vehicleGrpcClient.getVehicleInfo(vehicleId);
@@ -300,9 +293,9 @@ class BookingController {
       }
 
       if (vehicle.status !== "active") {
-        return res.status(400).json({
-          error: "Vehicle is not available for booking",
-        });
+        return res
+          .status(400)
+          .json({ error: "Vehicle is not available for booking" });
       }
 
       const vehicleOwnerId = vehicle.owner_id;
@@ -311,14 +304,13 @@ class BookingController {
         return res.status(400).json({ error: "Cannot book your own vehicle" });
       }
 
-      // CHECK VEHICLE AVAILABILITY VIA GRPC
+      // Check availability
       try {
         const availability = await vehicleGrpcClient.checkAvailability(
           vehicleId,
           startDate,
           endDate
         );
-
         if (!availability.is_available) {
           return res.status(400).json({
             error: "Vehicle is not available for selected dates",
@@ -336,7 +328,7 @@ class BookingController {
       const deposit = Math.round(total * 0.3);
       const remainingPayment = total - deposit;
 
-      // ✅ Create booking with status "pending_payment"
+      // Create booking
       const bookingId = uuidv4();
       await client.query(
         `INSERT INTO bookings (
@@ -367,13 +359,13 @@ class BookingController {
           remainingPayment,
           paymentMethodId,
           additionalNotes,
-          "pending_payment", // ✅ NEW: Status indicates payment needed
+          "pending_payment",
         ]
       );
 
       await client.query("COMMIT");
 
-      // ✅ SYNC TO VEHICLE UNAVAILABILITY
+      // Sync to vehicle unavailability
       await this.syncVehicleUnavailability(
         vehicleId,
         startDate,
@@ -382,7 +374,7 @@ class BookingController {
         "add"
       );
 
-      // ✅ CREATE DEPOSIT PAYMENT INTENT via gRPC
+      // ✅ TRY to create payment intent (but don't fail booking if it fails)
       let paymentIntent = null;
       let paymentError = null;
 
@@ -396,18 +388,17 @@ class BookingController {
         );
         console.log(`✅ Payment intent created for booking: ${bookingId}`);
       } catch (error) {
-        console.error("⚠️  Failed to create payment intent:", error.message);
-        paymentError = error.message;
-        // Continue - user can try payment later via separate endpoint
+        console.error("⚠️  Payment service unavailable:", error.message);
+        paymentError =
+          "Payment service is temporarily unavailable. You can pay later from your bookings page.";
       }
 
       console.log(`✅ Booking created: ${bookingId}`);
 
-      // ✅ RETURN BOOKING + PAYMENT INFO
       const response = {
         message: paymentIntent
-          ? "Booking created successfully. Please complete payment to confirm."
-          : "Booking created. Please complete payment manually.",
+          ? "Booking created successfully. Please complete deposit payment to confirm."
+          : "Booking created successfully. Please complete payment from your bookings page.",
         booking: {
           id: bookingId,
           vehicleId: vehicleId,
@@ -428,7 +419,6 @@ class BookingController {
         },
       };
 
-      // Add payment info if successful
       if (paymentIntent) {
         response.payment = {
           intentId: paymentIntent.intent_id,
@@ -437,14 +427,14 @@ class BookingController {
           amount: deposit,
           currency: "VND",
           status: paymentIntent.status,
-          paymentUrl: paymentIntent.payment_url, // For VNPay redirect
+          paymentUrl: paymentIntent.payment_url,
           message: "Complete payment to confirm booking",
         };
       } else {
         response.payment = {
-          message: "Payment intent creation failed. Please try again.",
-          error: paymentError,
-          manualPaymentUrl: `/payment/deposit/intent`,
+          message: paymentError,
+          manualPaymentUrl: `/bookings/${bookingId}`,
+          canPayLater: true,
         };
       }
 
@@ -471,20 +461,12 @@ class BookingController {
 
       let query = `
         SELECT 
-          b.booking_id,
-          b.vehicle_id,
-          b.status,
-          b.start_date,
-          b.end_date,
-          b.duration_days,
-          b.total_amount,
-          b.deposit_amount,
-          b.remaining_payment,
-          b.deposit_paid,
-          b.final_payment_paid,
-          b.vehicle_reviewed,
-          b.owner_reviewed,
-          b.created_at
+          b.booking_id, b.vehicle_id, b.status,
+          b.start_date, b.end_date, b.duration_days,
+          b.total_amount, b.deposit_amount, b.remaining_payment,
+          b.deposit_paid, b.final_payment_paid,
+          b.contract_signed_at,
+          b.vehicle_reviewed, b.owner_reviewed, b.created_at
         FROM bookings b
         WHERE b.customer_id = $1
       `;
@@ -504,7 +486,6 @@ class BookingController {
 
       const result = await pool.query(query, params);
 
-      // Fetch vehicle info for all bookings via gRPC
       const vehicleIds = [...new Set(result.rows.map((row) => row.vehicle_id))];
       let vehicles = {};
 
@@ -533,6 +514,21 @@ class BookingController {
             owner_id: null,
           };
 
+          // ✅ UPDATED: New logic for actions
+          const needsDepositPayment =
+            row.status === "pending_payment" && !row.deposit_paid;
+          const needsOwnerApproval =
+            row.status === "pending" && row.deposit_paid;
+          const needsContractSigning =
+            row.status === "booking" &&
+            row.deposit_paid &&
+            !row.contract_signed_at;
+          const needsFinalPayment =
+            row.status === "booking" &&
+            row.contract_signed_at &&
+            !row.final_payment_paid;
+          const isFullyPaid = row.deposit_paid && row.final_payment_paid;
+
           return {
             id: row.booking_id,
             status: row.status,
@@ -551,7 +547,12 @@ class BookingController {
               depositPaid: row.deposit_paid,
               finalPaymentPaid: row.final_payment_paid,
             },
-            needsPayment: row.status === "pending_payment" && !row.deposit_paid,
+            contractSigned: !!row.contract_signed_at,
+            fullyPaid: isFullyPaid,
+            needsDepositPayment,
+            needsOwnerApproval,
+            needsContractSigning,
+            needsFinalPayment,
             canCancel:
               ["pending", "pending_payment", "booking"].includes(row.status) &&
               new Date(row.start_date) > now,
@@ -589,7 +590,6 @@ class BookingController {
 
       const booking = result.rows[0];
 
-      // Fetch vehicle info via gRPC
       let vehicle;
       try {
         vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
@@ -597,7 +597,6 @@ class BookingController {
         vehicle = { name: "Unknown Vehicle", owner_id: null };
       }
 
-      // Check authorization
       if (booking.customer_id !== userId && vehicle.owner_id !== userId) {
         return res.status(403).json({ error: "Access denied" });
       }
@@ -614,11 +613,10 @@ class BookingController {
         isTestingMode || endDate.toDateString() === now.toDateString();
       const isAfterReturnDay = isTestingMode || now >= endDate;
 
-      // Parse JSON safely
-      let pickupLocation = null;
-      let dropoffLocation = null;
-      let pickupPhotos = null;
-      let returnPhotos = null;
+      let pickupLocation = null,
+        dropoffLocation = null,
+        pickupPhotos = null,
+        returnPhotos = null;
 
       try {
         pickupLocation =
@@ -660,15 +658,33 @@ class BookingController {
         console.error("Failed to parse return_photos:", e);
       }
 
+      // ✅ UPDATED: New action logic
+      const needsDepositPayment =
+        booking.status === "pending_payment" && !booking.deposit_paid;
+
+      const needsOwnerApproval =
+        booking.status === "pending" && booking.deposit_paid;
+
+      // Can sign contract only if: status=booking, deposit paid, contract not signed yet
       const canSignContract =
         booking.status === "booking" &&
-        isAfterBookingDay &&
-        !booking.contract_signed_at;
+        booking.deposit_paid &&
+        !booking.contract_signed_at &&
+        isAfterBookingDay;
 
+      // Can pay final payment only if: status=booking, contract signed, final payment not paid
+      const needsFinalPayment =
+        booking.status === "booking" &&
+        booking.contract_signed_at &&
+        !booking.final_payment_paid;
+
+      // Can submit pickup photos only if: fully paid, contract signed, on/after booking day
       const canSubmitPickupPhotos =
         booking.status === "booking" &&
-        isAfterBookingDay &&
+        booking.deposit_paid &&
+        booking.final_payment_paid &&
         booking.contract_signed_at &&
+        isAfterBookingDay &&
         !pickupPhotos;
 
       const canSubmitReturnPhotos =
@@ -683,14 +699,7 @@ class BookingController {
         ["pending", "pending_payment", "booking"].includes(booking.status) &&
         startDate > now;
 
-      // ✅ NEW: Check if payment is needed
-      const needsDepositPayment =
-        booking.status === "pending_payment" && !booking.deposit_paid;
-
-      const needsFinalPayment =
-        booking.status === "booking" &&
-        booking.deposit_paid &&
-        !booking.final_payment_paid;
+      const isFullyPaid = booking.deposit_paid && booking.final_payment_paid;
 
       res.json({
         booking: {
@@ -706,11 +715,11 @@ class BookingController {
             startDate: booking.start_date,
             endDate: booking.end_date,
             duration: `${booking.duration_days} days`,
-            isBookingDay: isBookingDay,
-            isAfterBookingDay: isAfterBookingDay,
-            isReturnDay: isReturnDay,
-            isAfterReturnDay: isAfterReturnDay,
-            isTestingMode: isTestingMode,
+            isBookingDay,
+            isAfterBookingDay,
+            isReturnDay,
+            isAfterReturnDay,
+            isTestingMode,
           },
           pickup: pickupLocation,
           dropoff: dropoffLocation,
@@ -724,12 +733,13 @@ class BookingController {
             depositPaid: booking.deposit_paid,
             remainingPayment: booking.remaining_payment,
             finalPaymentPaid: booking.final_payment_paid,
+            fullyPaid: isFullyPaid,
           },
           insurance: {
             coverage: booking.insurance_coverage,
           },
-          pickupPhotos: pickupPhotos,
-          returnPhotos: returnPhotos,
+          pickupPhotos,
+          returnPhotos,
           additionalNotes: booking.additional_notes,
           contract: booking.contract_signed_at
             ? {
@@ -738,13 +748,14 @@ class BookingController {
               }
             : null,
           actions: {
+            needsDepositPayment,
+            needsOwnerApproval,
             canSignContract,
+            needsFinalPayment,
             canSubmitPickupPhotos,
             canSubmitReturnPhotos,
             canReview,
             canCancel,
-            needsDepositPayment, // ✅ NEW
-            needsFinalPayment, // ✅ NEW
           },
         },
       });
@@ -754,6 +765,7 @@ class BookingController {
     }
   }
 
+  // ✅ UPDATED: Sign contract (must be done BEFORE final payment)
   async signContract(req, res, next) {
     const client = await pool.connect();
 
@@ -765,164 +777,7 @@ class BookingController {
       const { signature, agreedToTerms } = req.body;
 
       if (!agreedToTerms) {
-        return res.status(400).json({
-          error: "You must agree to the terms",
-        });
-      }
-
-      const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
-      );
-
-      if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      const booking = bookingResult.rows[0];
-
-      if (booking.status !== "booking") {
-        return res.status(400).json({
-          error: "Contract can only be signed for confirmed bookings",
-        });
-      }
-
-      const dateCheck = this.isActionAllowedByDate(booking, "sign_contract");
-      if (!dateCheck.allowed) {
-        return res.status(400).json({ error: dateCheck.reason });
-      }
-
-      await client.query(
-        `UPDATE bookings 
-         SET customer_signature = $1,
-             contract_signed_at = NOW(),
-             updated_at = NOW()
-         WHERE booking_id = $2`,
-        [signature, id]
-      );
-
-      await client.query("COMMIT");
-
-      console.log(`✅ Contract signed for booking: ${id}`);
-
-      res.json({
-        message: "Contract signed successfully",
-        contractUrl: `https://cdn.com/contracts/${id}.pdf`,
-      });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Sign contract error:", error);
-      next(error);
-    } finally {
-      client.release();
-    }
-  }
-
-  async confirmPickup(req, res, next) {
-    const client = await pool.connect();
-
-    try {
-      await client.query("BEGIN");
-
-      const userId = req.user.userId;
-      const { id } = req.params;
-      const { pickupPhotos, odometerReading, notes } = req.body;
-
-      if (
-        !pickupPhotos ||
-        !Array.isArray(pickupPhotos) ||
-        pickupPhotos.length < 3
-      ) {
-        return res.status(400).json({
-          error: "Please provide at least 3 pickup photos",
-        });
-      }
-
-      const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
-      );
-
-      if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      const booking = bookingResult.rows[0];
-
-      if (booking.status !== "booking") {
-        return res.status(400).json({
-          error: `Cannot confirm pickup. Current status: ${booking.status}`,
-        });
-      }
-
-      if (!booking.contract_signed_at) {
-        return res.status(400).json({
-          error: "Please sign the contract before pickup",
-        });
-      }
-
-      const dateCheck = this.isActionAllowedByDate(booking, "pickup");
-      if (!dateCheck.allowed) {
-        return res.status(400).json({ error: dateCheck.reason });
-      }
-
-      const photoUrls = pickupPhotos.map((photo, index) => {
-        if (typeof photo === "string" && photo.startsWith("http")) {
-          return photo;
-        }
-        return `https://mock-cdn.wiz.com/pickup/${id}_${Date.now()}_${
-          index + 1
-        }.jpg`;
-      });
-
-      await client.query(
-        `UPDATE bookings 
-         SET pickup_condition_photos = $1,
-             pickup_condition_notes = $2,
-             pickup_odometer_reading = $3,
-             pickup_confirmed_at = NOW(),
-             status = 'picked_up',
-             updated_at = NOW()
-         WHERE booking_id = $4`,
-        [JSON.stringify(photoUrls), notes, odometerReading, id]
-      );
-
-      await client.query("COMMIT");
-
-      console.log(`✅ Pickup confirmed for booking: ${id} (status: picked_up)`);
-
-      res.json({
-        message: "Car pickup confirmed. Have a safe journey!",
-        bookingStatus: "picked_up",
-        photos: photoUrls,
-      });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Confirm pickup error:", error);
-      next(error);
-    } finally {
-      client.release();
-    }
-  }
-
-  async confirmReturn(req, res, next) {
-    const client = await pool.connect();
-
-    try {
-      await client.query("BEGIN");
-
-      const userId = req.user.userId;
-      const { id } = req.params;
-      const { returnPhotos, odometerReading, notes } = req.body;
-
-      if (
-        !returnPhotos ||
-        !Array.isArray(returnPhotos) ||
-        returnPhotos.length < 3
-      ) {
-        return res.status(400).json({
-          error: "Please provide at least 3 return photos",
-        });
+        return res.status(400).json({ error: "You must agree to the terms" });
       }
 
       const bookingResult = await client.query(
@@ -959,7 +814,7 @@ class BookingController {
       await client.query(
         `UPDATE bookings 
          SET return_photos = $1,
-         return_odometer_reading = $2,
+             return_odometer_reading = $2,
              return_notes = $3,
              return_confirmed_at = NOW(),
              status = 'return_submitted',
@@ -986,6 +841,87 @@ class BookingController {
       next(error);
     } finally {
       client.release();
+    }
+  }
+
+  // ✅ NEW: Pay final payment (after signing contract)
+  async payFinalPayment(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+      const { provider = "vnpay", paymentMethodId } = req.body;
+
+      const bookingResult = await pool.query(
+        "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+        [id, userId]
+      );
+
+      if (bookingResult.rows.length === 0) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      const booking = bookingResult.rows[0];
+
+      if (booking.status !== "booking") {
+        return res.status(400).json({
+          error:
+            "Final payment can only be made for confirmed bookings (status: booking)",
+        });
+      }
+
+      if (!booking.deposit_paid) {
+        return res.status(400).json({
+          error: "Deposit must be paid first",
+        });
+      }
+
+      if (!booking.contract_signed_at) {
+        return res.status(400).json({
+          error: "Contract must be signed before paying final payment",
+        });
+      }
+
+      if (booking.final_payment_paid) {
+        return res.status(400).json({
+          error: "Final payment already completed",
+        });
+      }
+
+      // Create final payment intent via Payment Service gRPC
+      try {
+        const paymentIntent = await paymentGrpcClient.createFinalPaymentIntent(
+          id,
+          userId,
+          booking.remaining_payment,
+          provider,
+          paymentMethodId
+        );
+
+        console.log(`✅ Final payment intent created for booking: ${id}`);
+
+        res.json({
+          message: "Final payment intent created. Please complete payment.",
+          payment: {
+            intentId: paymentIntent.intent_id,
+            clientSecret: paymentIntent.client_secret,
+            provider: provider,
+            amount: booking.remaining_payment,
+            currency: "VND",
+            status: paymentIntent.status,
+            paymentUrl: paymentIntent.payment_url,
+          },
+        });
+      } catch (error) {
+        console.error("⚠️  Payment service error:", error.message);
+        return res.status(503).json({
+          error:
+            "Payment service is temporarily unavailable. Please try again later.",
+          details: error.message,
+        });
+      }
+    } catch (error) {
+      console.error("Pay final payment error:", error);
+      next(error);
     }
   }
 
@@ -1027,12 +963,16 @@ class BookingController {
       let refundAmount = 0;
       const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
 
-      // ✅ Only refund if deposit was actually paid
-      if (booking.deposit_paid) {
+      // Calculate refund based on what was paid
+      const totalPaid =
+        (booking.deposit_paid ? booking.deposit_amount : 0) +
+        (booking.final_payment_paid ? booking.remaining_payment : 0);
+
+      if (totalPaid > 0) {
         if (hoursUntilStart > 24) {
-          refundAmount = booking.deposit_amount; // Full refund
+          refundAmount = totalPaid; // Full refund
         } else if (hoursUntilStart > 12) {
-          refundAmount = Math.round(booking.deposit_amount * 0.5); // 50% refund
+          refundAmount = Math.round(totalPaid * 0.5); // 50% refund
         }
         // else: No refund if < 12 hours
       }
@@ -1067,7 +1007,7 @@ class BookingController {
         console.error(`⚠️  Could not remove unavailability: ${error.message}`);
       }
 
-      // ✅ Process refund if applicable via gRPC
+      // Process refund if applicable
       if (refundAmount > 0) {
         try {
           await paymentGrpcClient.processRefund(

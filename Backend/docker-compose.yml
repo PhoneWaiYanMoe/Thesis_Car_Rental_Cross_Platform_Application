@@ -10,7 +10,6 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      # ✅ ADDED wiz_payment to the list
       POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment
     ports:
       - "5432:5432"
@@ -177,6 +176,54 @@ services:
     networks:
       - wiz-network
 
+  # ==================== PAYMENT SERVICE ====================
+  payment-service:
+    build: ./payment-service
+    container_name: wiz-payment-service
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+      - "50056:50056"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_payment
+      - PORT=3006
+      - GRPC_PORT=50056
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3006
+      - JWT_SECRET=${JWT_SECRET}
+      - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_MODE=sandbox
+      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
+      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
+      - VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - VNPAY_RETURN_URL=https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay
+      - FRONTEND_URL=https://master-albacore-urgently.ngrok-free.app
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ENCRYPTION_IV=${ENCRYPTION_IV}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./payment-service/src:/app/src
+      - ./payment-service/proto:/app/proto
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # ==================== BOOKING SERVICE ====================
   booking-service:
     build: ./booking-service
@@ -200,6 +247,7 @@ services:
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
+      - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
     depends_on:
       postgres:
         condition: service_healthy
@@ -209,8 +257,11 @@ services:
         condition: service_started
       user-service:
         condition: service_healthy
+      payment-service:
+        condition: service_healthy
     volumes:
       - ./booking-service/src:/app/src
+      - ./booking-service/proto:/app/proto
     networks:
       - wiz-network
 
@@ -245,50 +296,6 @@ services:
         condition: service_healthy
     volumes:
       - ./review-service/src:/app/src
-    networks:
-      - wiz-network
-
-  # ==================== PAYMENT SERVICE ====================
-  payment-service:
-    build: ./payment-service
-    container_name: wiz-payment-service
-    restart: unless-stopped
-    ports:
-      - "3006:3006"
-      - "50056:50056"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=wiz_payment
-      - PORT=3006
-      - GRPC_PORT=50056
-      - NODE_ENV=development
-      - BASE_URL=http://localhost:3006
-      - JWT_SECRET=${JWT_SECRET}
-      - BOOKING_SERVICE_GRPC_URL=booking-service:50052
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
-      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
-      - PAYPAL_MODE=sandbox
-      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
-      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
-      - VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNPAY_RETURN_URL=https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay
-      - FRONTEND_URL=https://master-albacore-urgently.ngrok-free.app
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - ENCRYPTION_IV=${ENCRYPTION_IV}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      booking-service:
-        condition: service_started
-    volumes:
-      - ./payment-service/src:/app/src
-      - ./payment-service/proto:/app/proto
     networks:
       - wiz-network
 

@@ -1,4 +1,6 @@
 // Backend/booking-service/src/routes/booking_routes.js
+// ✅ UPDATED: Added final payment endpoint
+
 const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/booking_controller");
@@ -17,7 +19,6 @@ router.post("/verification", (req, res, next) =>
 );
 
 // ==================== BOOKING ROUTES ====================
-// ✅ FIX: Wrap in arrow functions to preserve 'this' context
 router.post("/", validateBooking, (req, res, next) =>
   bookingController.createBooking(req, res, next)
 );
@@ -32,6 +33,12 @@ router.get("/:id", (req, res, next) =>
 router.post("/:id/sign-contract", (req, res, next) =>
   bookingController.signContract(req, res, next)
 );
+
+// ✅ NEW: Final payment endpoint (must be called AFTER signing contract)
+router.post("/:id/pay-final", (req, res, next) =>
+  bookingController.payFinalPayment(req, res, next)
+);
+
 router.post("/:id/confirm-pickup", (req, res, next) =>
   bookingController.confirmPickup(req, res, next)
 );
