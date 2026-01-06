@@ -4,7 +4,7 @@ const { vnpayConfig } = require("../config/payment_providers");
 class VNPayService {
   /**
    * Create VNPay payment URL
-   * Fixed signature generation according to VNPay specification
+   * ✅ FIXED: Proper IP handling and parameter encoding
    */
   createPaymentUrl(amount, orderInfo, ipAddr, returnUrl) {
     try {
@@ -16,28 +16,42 @@ class VNPayService {
       console.log(
         `🔑 VNPay Hash Secret: ${vnpayConfig.hashSecret.substring(0, 4)}...`
       );
+      console.log(`🌐 Client IP: ${ipAddr}`);
 
-      // ✅ FIX: Build params object WITHOUT SecureHash fields first
+      // ✅ FIX: Use real IP, fallback to a valid public IP if localhost
+      let clientIp = ipAddr;
+      if (
+        !clientIp ||
+        clientIp === "127.0.0.1" ||
+        clientIp === "::1" ||
+        clientIp === "localhost"
+      ) {
+        // Use a valid public IP as fallback (you can use your server's IP)
+        clientIp = "118.71.221.0"; // Example public IP in Vietnam
+        console.log(`⚠️  Using fallback IP: ${clientIp}`);
+      }
+
+      // ✅ Build params object WITHOUT SecureHash fields first
       let vnpParams = {
         vnp_Version: "2.1.0",
         vnp_Command: "pay",
         vnp_TmnCode: vnpayConfig.tmnCode,
-        vnp_Amount: amount * 100, // Convert to smallest unit (VND doesn't have decimals, but VNPay wants amount * 100)
+        vnp_Amount: amount * 100, // VNPay requires amount * 100
         vnp_CurrCode: "VND",
         vnp_TxnRef: orderId,
         vnp_OrderInfo: orderInfo,
         vnp_OrderType: "other",
         vnp_Locale: "vn",
         vnp_ReturnUrl: returnUrl || vnpayConfig.returnUrl,
-        vnp_IpAddr: ipAddr,
+        vnp_IpAddr: clientIp, // ✅ Use proper IP
         vnp_CreateDate: createDate,
       };
 
-      // ✅ FIX: Sort params alphabetically
+      // ✅ Sort params alphabetically
       vnpParams = this.sortObject(vnpParams);
 
-      // ✅ FIX: Build signature data (key=value pairs joined by &)
-      // CRITICAL: Use the RAW VALUES, not URL-encoded values
+      // ✅ Build signature data (key=value pairs joined by &)
+      // CRITICAL: Use RAW VALUES (not URL-encoded) for signature
       const signDataArray = [];
       for (const key in vnpParams) {
         if (vnpParams.hasOwnProperty(key)) {
@@ -50,15 +64,14 @@ class VNPayService {
       }
       const signData = signDataArray.join("&");
 
-      // ✅ FIX: Create HMAC-SHA512 signature
+      // ✅ Create HMAC-SHA512 signature
       const hmac = crypto.createHmac("sha512", vnpayConfig.hashSecret);
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-      // ✅ NOW add signature fields (AFTER signing)
+      // ✅ Add signature field (AFTER signing)
       vnpParams["vnp_SecureHash"] = signed;
 
-      // ✅ FIX: Build final URL with proper encoding
-      // Re-sort to include the hash field
+      // ✅ Build final URL with proper encoding
       const finalParams = this.sortObject(vnpParams);
       const queryString = Object.keys(finalParams)
         .map((key) => {

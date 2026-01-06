@@ -1,5 +1,5 @@
 // Backend/payment-service/src/grpc/payment_grpc_server.js
-// ✅ UPDATED: Integrated webhook flow for automatic booking status updates
+// ✅ UPDATED: Extract client IP from gRPC metadata
 
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
@@ -24,25 +24,55 @@ class PaymentGrpcServer {
     this.server = new grpc.Server();
   }
 
-  // ==================== PAYMENT INTENT CREATION ====================
+  /**
+   * ✅ Helper: Extract client IP from gRPC call metadata
+   */
+  getClientIp(call) {
+    try {
+      const metadata = call.metadata;
+      // Try to get forwarded IP first (if behind proxy)
+      const forwardedIp = metadata.get("x-forwarded-for")[0];
+      if (forwardedIp) {
+        return forwardedIp.split(",")[0].trim();
+      }
+
+      // Try peer address
+      const peer = call.getPeer();
+      if (peer) {
+        // Format: "ipv4:127.0.0.1:54321" or "ipv6:[::1]:54321"
+        const match = peer.match(/\d+\.\d+\.\d+\.\d+/);
+        if (match) {
+          return match[0];
+        }
+      }
+    } catch (error) {
+      console.warn("⚠️  Could not extract client IP:", error.message);
+    }
+
+    // Fallback to a valid public IP
+    return "118.71.221.0"; // Example Vietnamese IP
+  }
 
   async createDepositIntent(call, callback) {
     try {
       const { booking_id, user_id, amount, provider, payment_method_id } =
         call.request;
 
+      // ✅ Extract client IP
+      const clientIp = this.getClientIp(call);
       console.log(
-        `📝 Creating deposit intent: ${booking_id}, ${amount} VND, ${provider}`
+        `📝 Creating deposit intent: ${booking_id}, ${amount} VND, ${provider}, IP: ${clientIp}`
       );
 
-      // Create payment intent
+      // Create payment intent with client IP
       const result = await paymentService.createPaymentIntent(
         booking_id,
         user_id,
         amount,
         "deposit",
         provider,
-        payment_method_id || null
+        payment_method_id || null,
+        clientIp // ✅ Pass client IP
       );
 
       callback(null, {
@@ -69,8 +99,10 @@ class PaymentGrpcServer {
       const { booking_id, user_id, amount, provider, payment_method_id } =
         call.request;
 
+      // ✅ Extract client IP
+      const clientIp = this.getClientIp(call);
       console.log(
-        `📝 Creating final payment intent: ${booking_id}, ${amount} VND, ${provider}`
+        `📝 Creating final payment intent: ${booking_id}, ${amount} VND, ${provider}, IP: ${clientIp}`
       );
 
       const result = await paymentService.createPaymentIntent(
@@ -79,7 +111,8 @@ class PaymentGrpcServer {
         amount,
         "final_payment",
         provider,
-        payment_method_id || null
+        payment_method_id || null,
+        clientIp // ✅ Pass client IP
       );
 
       callback(null, {
@@ -100,8 +133,6 @@ class PaymentGrpcServer {
       });
     }
   }
-
-  // ==================== PAYMENT STATUS & VERIFICATION ====================
 
   async verifyPaymentStatus(call, callback) {
     try {
@@ -177,8 +208,6 @@ class PaymentGrpcServer {
     }
   }
 
-  // ==================== REFUND PROCESSING ====================
-
   async processRefund(call, callback) {
     try {
       const { booking_id, user_id, amount, reason, notes } = call.request;
@@ -207,7 +236,6 @@ class PaymentGrpcServer {
     }
   }
 
-  // ✅ NEW: Webhook handler to update booking after successful payment
   async handlePaymentSuccess(call, callback) {
     try {
       const { transaction_id, booking_id, payment_type } = call.request;
@@ -216,7 +244,6 @@ class PaymentGrpcServer {
         `🎯 Handling payment success: ${booking_id}, type: ${payment_type}`
       );
 
-      // Update booking status via Booking Service gRPC
       if (payment_type === "deposit") {
         await bookingGrpcClient.updateBookingAfterDepositPayment(
           booking_id,
