@@ -1,9 +1,13 @@
+// Backend/payment-service/src/services/stripe_service.js
+// ✅ UPDATED: Fixed currency handling for VND and added better error handling
+
 const { stripeConfig } = require("../config/payment_providers");
 const stripe = stripeConfig.client;
 
 class StripeService {
   /**
    * Create payment intent for deposit or final payment
+   * ✅ FIXED: Stripe doesn't support VND directly, convert to USD
    */
   async createPaymentIntent(
     amount,
@@ -12,13 +16,27 @@ class StripeService {
     paymentMethodId = null
   ) {
     try {
+      // ✅ Convert VND to USD (Stripe doesn't support VND)
+      // Exchange rate: ~24,000 VND = 1 USD
+      let finalAmount = amount;
+      let finalCurrency = currency;
+
+      if (currency === "VND") {
+        finalAmount = Math.round((amount / 24000) * 100); // Convert to USD cents
+        finalCurrency = "usd";
+        console.log(`💱 Converted ${amount} VND → ${finalAmount / 100} USD`);
+      }
+
       const intentData = {
-        amount: Math.round(amount), // Amount in smallest currency unit
-        currency: currency.toLowerCase(),
-        metadata: metadata,
+        amount: Math.round(finalAmount), // Amount in smallest currency unit
+        currency: finalCurrency.toLowerCase(),
+        metadata: {
+          ...metadata,
+          originalAmount: amount,
+          originalCurrency: currency,
+        },
         automatic_payment_methods: {
           enabled: true,
-          allow_redirects: "never",
         },
       };
 
@@ -31,13 +49,18 @@ class StripeService {
       const paymentIntent = await stripe.paymentIntents.create(intentData);
 
       console.log(`✅ Stripe PaymentIntent created: ${paymentIntent.id}`);
+      console.log(
+        `   Amount: ${finalAmount / 100} ${finalCurrency.toUpperCase()}`
+      );
+      console.log(`   Status: ${paymentIntent.status}`);
 
       return {
         intentId: paymentIntent.id,
         clientSecret: paymentIntent.client_secret,
         status: paymentIntent.status,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
+        amount: amount, // Return original VND amount
+        currency: currency, // Return original currency
+        amountUsd: finalAmount / 100, // Also return USD amount for display
       };
     } catch (error) {
       console.error("❌ Stripe createPaymentIntent error:", error);
@@ -70,9 +93,16 @@ class StripeService {
    */
   async createRefund(chargeId, amount, reason = "requested_by_customer") {
     try {
+      // Convert VND to USD if needed
+      let refundAmount = amount;
+      if (amount > 1000000) {
+        // Assume it's VND if > 1M
+        refundAmount = Math.round((amount / 24000) * 100);
+      }
+
       const refund = await stripe.refunds.create({
         charge: chargeId,
-        amount: Math.round(amount),
+        amount: Math.round(refundAmount),
         reason: reason,
       });
 
@@ -81,8 +111,8 @@ class StripeService {
       return {
         refundId: refund.id,
         status: refund.status,
-        amount: refund.amount,
-        currency: refund.currency,
+        amount: amount, // Return original amount
+        currency: "VND",
       };
     } catch (error) {
       console.error("❌ Stripe createRefund error:", error);

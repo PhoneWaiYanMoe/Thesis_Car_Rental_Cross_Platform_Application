@@ -196,6 +196,7 @@ services:
       - BASE_URL=http://localhost:3006
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - MOCK_PAYMENT=${MOCK_PAYMENT:-false} 
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
@@ -223,7 +224,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
   # ==================== BOOKING SERVICE ====================
   booking-service:
     build: ./booking-service

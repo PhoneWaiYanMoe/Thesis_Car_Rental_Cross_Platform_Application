@@ -1,9 +1,10 @@
 // Backend/payment-service/src/controllers/webhook_controller.js
-// ✅ UPDATED: Integrated automatic booking status updates after payment
+// ✅ UPDATED: Better Stripe webhook handling
 
 const pool = require("../config/database");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
-const paymentService = require("../services/payment_service");
+
+const MOCK_MODE = process.env.MOCK_PAYMENT === "true";
 
 class WebhookController {
   // ==================== STRIPE WEBHOOK ====================
@@ -12,7 +13,8 @@ class WebhookController {
     try {
       const event = req.webhookEvent; // Set by verification middleware
 
-      console.log(`📨 Stripe webhook: ${event.type}`);
+      console.log(`📨 Stripe webhook received: ${event.type}`);
+      console.log(`   Event ID: ${event.id}`);
 
       // Check for duplicate events
       const existingEvent = await pool.query(
@@ -35,16 +37,27 @@ class WebhookController {
       // Handle different event types
       switch (event.type) {
         case "payment_intent.succeeded":
+          console.log(`✅ Stripe payment succeeded: ${event.data.object.id}`);
           await this.handlePaymentSuccess(event.data.object, "stripe");
           break;
 
         case "payment_intent.payment_failed":
+          console.log(`❌ Stripe payment failed: ${event.data.object.id}`);
           await this.handlePaymentFailed(event.data.object);
           break;
 
+        case "payment_intent.canceled":
+          console.log(`🚫 Stripe payment canceled: ${event.data.object.id}`);
+          await this.handlePaymentCanceled(event.data.object);
+          break;
+
         case "charge.refunded":
+          console.log(`💰 Stripe refund processed: ${event.data.object.id}`);
           await this.handleRefundCompleted(event.data.object);
           break;
+
+        default:
+          console.log(`ℹ️  Unhandled Stripe event type: ${event.type}`);
       }
 
       // Mark as processed
@@ -64,7 +77,6 @@ class WebhookController {
 
   async handlePayPalWebhook(req, res, next) {
     console.log("📨 PayPal webhook received");
-    // PayPal webhook implementation
     res.json({ received: true });
   }
 
@@ -72,15 +84,32 @@ class WebhookController {
 
   async handleVNPayReturn(req, res, next) {
     try {
-      const result = req.webhookEvent; // Set by verification middleware
+      let result;
 
-      if (!result.valid) {
-        console.log("❌ VNPay invalid signature");
-        return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
+      if (MOCK_MODE) {
+        console.log(
+          "🎭 [MOCK] VNPay return received (skipping signature check)"
+        );
+
+        const { vnp_TxnRef, vnp_ResponseCode, vnp_TransactionNo } = req.query;
+
+        result = {
+          valid: true,
+          success: vnp_ResponseCode === "00",
+          orderId: vnp_TxnRef,
+          transactionNo: vnp_TransactionNo || `mock_txn_${Date.now()}`,
+          responseCode: vnp_ResponseCode,
+        };
+      } else {
+        result = req.webhookEvent;
+
+        if (!result.valid) {
+          console.log("❌ VNPay invalid signature");
+          return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
+        }
       }
 
       if (result.success) {
-        // Find transaction by orderId (which is the intent_id in VNPay)
         const txResult = await pool.query(
           `SELECT transaction_id, booking_id, type 
            FROM transactions 
@@ -98,7 +127,6 @@ class WebhookController {
 
         const transaction = txResult.rows[0];
 
-        // Update transaction status
         await pool.query(
           `UPDATE transactions
            SET status = 'succeeded',
@@ -109,9 +137,9 @@ class WebhookController {
           [result.transactionNo, transaction.transaction_id]
         );
 
-        console.log(`✅ VNPay payment success: ${result.orderId}`);
+        const mode = MOCK_MODE ? "[MOCK]" : "";
+        console.log(`✅ ${mode} VNPay payment success: ${result.orderId}`);
 
-        // ✅ TRIGGER BOOKING STATUS UPDATE
         await this.updateBookingAfterPayment(
           transaction.booking_id,
           transaction.transaction_id,
@@ -138,7 +166,27 @@ class WebhookController {
       const { id, metadata } = paymentIntent;
       const { bookingId, type } = metadata;
 
-      console.log(`💳 Processing payment success: ${bookingId} (${type})`);
+      console.log(`💳 Processing payment success for booking: ${bookingId}`);
+      console.log(`   Type: ${type}`);
+      console.log(`   Provider: ${provider}`);
+      console.log(`   Payment Intent ID: ${id}`);
+
+      // Find transaction by booking_id and type
+      const txResult = await pool.query(
+        `SELECT transaction_id FROM transactions 
+         WHERE booking_id = $1 AND type = $2 AND status = 'pending'
+         ORDER BY created_at DESC LIMIT 1`,
+        [bookingId, type]
+      );
+
+      if (txResult.rows.length === 0) {
+        console.error(
+          `❌ No pending transaction found for booking: ${bookingId}`
+        );
+        return;
+      }
+
+      const transactionId = txResult.rows[0].transaction_id;
 
       // Update transaction status
       await pool.query(
@@ -147,31 +195,23 @@ class WebhookController {
              provider_transaction_id = $1,
              completed_at = NOW(),
              updated_at = NOW()
-         WHERE booking_id = $2 AND type = $3 AND status = 'pending'`,
-        [id, bookingId, type]
+         WHERE transaction_id = $2`,
+        [id, transactionId]
       );
 
-      // ✅ TRIGGER BOOKING STATUS UPDATE VIA GRPC
-      const txResult = await pool.query(
-        `SELECT transaction_id FROM transactions 
-         WHERE booking_id = $1 AND type = $2 AND status = 'succeeded'
-         ORDER BY completed_at DESC LIMIT 1`,
-        [bookingId, type]
-      );
+      console.log(`✅ Transaction updated: ${transactionId}`);
 
-      if (txResult.rows.length > 0) {
-        const transactionId = txResult.rows[0].transaction_id;
-        await this.updateBookingAfterPayment(bookingId, transactionId, type);
-      }
+      // Update booking status via gRPC
+      await this.updateBookingAfterPayment(bookingId, transactionId, type);
 
-      console.log(`✅ Payment success handled: ${bookingId} (${type})`);
+      console.log(`✅ Payment success handled completely`);
     } catch (error) {
       console.error("❌ handlePaymentSuccess error:", error);
       throw error;
     }
   }
 
-  // ✅ NEW: Update booking status after successful payment
+  // ✅ Update booking status after successful payment
   async updateBookingAfterPayment(bookingId, transactionId, paymentType) {
     try {
       console.log(
@@ -179,7 +219,6 @@ class WebhookController {
       );
 
       if (paymentType === "deposit") {
-        // Update booking: status = "pending" (waiting for owner approval)
         await bookingGrpcClient.updateBookingAfterDepositPayment(
           bookingId,
           transactionId
@@ -188,7 +227,6 @@ class WebhookController {
           `✅ Booking ${bookingId}: status updated to "pending" (deposit paid)`
         );
       } else if (paymentType === "final_payment") {
-        // Update booking: final_payment_paid = true (remains in "booking" status)
         await bookingGrpcClient.updateBookingAfterFinalPayment(
           bookingId,
           transactionId
@@ -202,7 +240,6 @@ class WebhookController {
         `❌ Failed to update booking ${bookingId} after payment:`,
         error
       );
-      // Don't throw - payment is successful, booking update failure is non-critical
     }
   }
 
@@ -213,7 +250,11 @@ class WebhookController {
       const { id, metadata, last_payment_error } = paymentIntent;
       const { bookingId, type } = metadata;
 
-      console.log(`❌ Payment failed: ${bookingId} (${type})`);
+      console.log(`❌ Payment failed for booking: ${bookingId}`);
+      console.log(`   Type: ${type}`);
+      console.log(
+        `   Error: ${last_payment_error?.message || "Unknown error"}`
+      );
 
       await pool.query(
         `UPDATE transactions
@@ -224,9 +265,33 @@ class WebhookController {
         [last_payment_error?.message || "Payment failed", bookingId, type]
       );
 
-      console.log(`❌ Payment failed recorded: ${bookingId} (${type})`);
+      console.log(`✅ Payment failure recorded`);
     } catch (error) {
       console.error("❌ handlePaymentFailed error:", error);
+      throw error;
+    }
+  }
+
+  // ==================== PAYMENT CANCELED HANDLER ====================
+
+  async handlePaymentCanceled(paymentIntent) {
+    try {
+      const { id, metadata } = paymentIntent;
+      const { bookingId, type } = metadata;
+
+      console.log(`🚫 Payment canceled for booking: ${bookingId}`);
+
+      await pool.query(
+        `UPDATE transactions
+         SET status = 'cancelled',
+             updated_at = NOW()
+         WHERE booking_id = $1 AND type = $2 AND status = 'pending'`,
+        [bookingId, type]
+      );
+
+      console.log(`✅ Payment cancellation recorded`);
+    } catch (error) {
+      console.error("❌ handlePaymentCanceled error:", error);
       throw error;
     }
   }
@@ -234,16 +299,21 @@ class WebhookController {
   // ==================== REFUND HANDLER ====================
 
   async handleRefundCompleted(charge) {
-    console.log(`✅ Refund completed: ${charge.id}`);
+    try {
+      console.log(`✅ Refund completed: ${charge.id}`);
 
-    // Update refund status in database
-    await pool.query(
-      `UPDATE refunds 
-       SET status = 'succeeded',
-           completed_at = NOW()
-       WHERE provider_refund_id = $1`,
-      [charge.refund]
-    );
+      await pool.query(
+        `UPDATE refunds 
+         SET status = 'succeeded',
+             completed_at = NOW()
+         WHERE provider_refund_id = $1`,
+        [charge.refund]
+      );
+
+      console.log(`✅ Refund status updated in database`);
+    } catch (error) {
+      console.error("❌ handleRefundCompleted error:", error);
+    }
   }
 }
 
