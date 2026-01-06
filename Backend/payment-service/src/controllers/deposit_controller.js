@@ -14,9 +14,17 @@ class DepositController {
         return res.status(403).json({ error: 'Not authorized for this booking' });
       }
 
-      if (booking.status !== 'pending') {
+      // Allow deposit payment when status is 'pending_payment' (new booking) or 'pending' (retry)
+      if (booking.status !== 'pending_payment' && booking.status !== 'pending') {
         return res.status(400).json({
-          error: `Cannot process deposit. Booking status: ${booking.status}`,
+          error: `Cannot process deposit. Booking status: ${booking.status}. Expected: pending_payment or pending`,
+        });
+      }
+
+      // Check if deposit is already paid
+      if (booking.deposit_paid) {
+        return res.status(400).json({
+          error: 'Deposit has already been paid for this booking',
         });
       }
 

@@ -101,6 +101,7 @@ class BookingApiService {
     required bool driverRequired,
     required int insuranceCoverage,
     required String paymentMethodId,
+    String? provider,
     String? additionalNotes,
   }) async {
     try {
@@ -120,10 +121,12 @@ class BookingApiService {
         'driverRequired': driverRequired,
         'insuranceCoverage': insuranceCoverage,
         'paymentMethodId': paymentMethodId,
+        if (provider != null) 'provider': provider,
         if (additionalNotes != null) 'additionalNotes': additionalNotes,
       });
 
       print('📝 Creating booking for vehicle: $vehicleId');
+      print('📦 Request body: $body');
 
       final response = await http.post(Uri.parse('$baseUrl/bookings'), headers: headers, body: body);
 
@@ -132,9 +135,27 @@ class BookingApiService {
         print('✅ Booking created successfully: ${data['booking']['id']}');
         return CreateBookingResponse.fromJson(data);
       } else {
-        final errorData = jsonDecode(response.body);
-        print('❌ Create booking failed: ${response.statusCode} - ${errorData['error']}');
-        throw Exception(errorData['error'] ?? 'Failed to create booking');
+        final responseBody = response.body;
+        print('❌ Create booking failed: ${response.statusCode}');
+        print('❌ Response body: $responseBody');
+        
+        try {
+          final errorData = jsonDecode(responseBody);
+          final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Failed to create booking';
+          
+          // Check for validation errors
+          if (errorData['errors'] != null) {
+            final validationErrors = (errorData['errors'] as List)
+                .map((e) => e['msg'] ?? e['message'] ?? e.toString())
+                .join(', ');
+            throw Exception('Validation error: $validationErrors');
+          }
+          
+          throw Exception(errorMessage);
+        } catch (e) {
+          if (e is Exception) rethrow;
+          throw Exception('Failed to create booking: ${response.statusCode}');
+        }
       }
     } catch (e) {
       print('❌ Create booking error: $e');

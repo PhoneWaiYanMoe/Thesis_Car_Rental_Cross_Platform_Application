@@ -7,6 +7,7 @@ extension PaymentMethodExt on PaymentMethod {
   String get displayName {
     return switch (this) {
       PaymentMethod.none => 'Choose Payment Method',
+      PaymentMethod.stripe => 'Stripe',
       PaymentMethod.momo => 'Momo',
       PaymentMethod.zaloPay => 'ZaloPay',
       PaymentMethod.bankTransfer => 'Bank Transfer',
@@ -15,10 +16,21 @@ extension PaymentMethodExt on PaymentMethod {
 
   String get iconAsset {
     return switch (this) {
+      PaymentMethod.stripe => 'assets/logo/stripe.png',
       PaymentMethod.momo => 'assets/logo/momo.png',
       PaymentMethod.zaloPay => 'assets/logo/zalo.png',
       PaymentMethod.bankTransfer => 'assets/logo/bank.png',
       _ => 'assets/icons/payment.png',
+    };
+  }
+
+  IconData get icon {
+    return switch (this) {
+      PaymentMethod.stripe => Icons.credit_card,
+      PaymentMethod.momo => Icons.account_balance_wallet,
+      PaymentMethod.zaloPay => Icons.account_balance_wallet,
+      PaymentMethod.bankTransfer => Icons.account_balance,
+      _ => Icons.payment,
     };
   }
 }
@@ -63,12 +75,14 @@ class _PaymentMethodCardState extends State<PaymentMethodCard> {
                   child: Row(
                     children: [
                       if (method != PaymentMethod.none)
-                        Image.asset(
-                          method.iconAsset,
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.payment, size: 20),
-                        ),
+                        method == PaymentMethod.stripe
+                            ? Icon(method.icon, size: 20, color: AppStyles.primary)
+                            : Image.asset(
+                                method.iconAsset,
+                                width: 24,
+                                height: 24,
+                                errorBuilder: (_, __, ___) => Icon(method.icon, size: 20),
+                              ),
                       SizedBox(width: 12),
                       Text(method.displayName),
                     ],

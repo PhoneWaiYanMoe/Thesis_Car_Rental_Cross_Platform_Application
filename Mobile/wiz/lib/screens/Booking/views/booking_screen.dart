@@ -8,6 +8,7 @@ import 'package:wiz/screens/Cars/views/widgets/_buildCarOwnerInfo.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
+import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 
@@ -398,6 +399,27 @@ class _BookingScreenState extends State<BookingScreen> {
         insuranceCoverage = 0;
       }
 
+      // Map payment method to provider string
+      String paymentMethodId = 'default';
+      String? paymentProvider;
+      if (_bookingData.paymentMethod == PaymentMethod.stripe) {
+        paymentMethodId = 'stripe';
+        paymentProvider = 'stripe';
+      } else if (_bookingData.paymentMethod == PaymentMethod.momo) {
+        paymentMethodId = 'momo';
+        paymentProvider = 'momo';
+      } else if (_bookingData.paymentMethod == PaymentMethod.zaloPay) {
+        paymentMethodId = 'zalopay';
+        paymentProvider = 'zalopay';
+      } else if (_bookingData.paymentMethod == PaymentMethod.bankTransfer) {
+        paymentMethodId = 'bank_transfer';
+        paymentProvider = 'vnpay';
+      } else {
+        // Default to vnpay if no payment method selected
+        paymentMethodId = 'default';
+        paymentProvider = 'vnpay';
+      }
+
       // Create booking
       final response = await _bookingApiService.createBooking(
         vehicleId: car.id,
@@ -407,7 +429,8 @@ class _BookingScreenState extends State<BookingScreen> {
         dropoffLocation: dropoffLocation,
         driverRequired: _bookingData.withDriver,
         insuranceCoverage: insuranceCoverage,
-        paymentMethodId: 'default', // TODO: Get from payment method selection
+        paymentMethodId: paymentMethodId,
+        provider: paymentProvider,
         additionalNotes: _messageController.text.isNotEmpty ? _messageController.text : null,
       );
 
@@ -415,29 +438,75 @@ class _BookingScreenState extends State<BookingScreen> {
         _isSubmitting = false;
       });
 
-      // Show success dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: AppStyles.surface(context),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text('Booking Confirmed!', style: AppStyles.h2(context)),
-            content: Text(
-              'Your booking has been submitted successfully. Booking ID: ${response.booking.id.substring(0, 8)}...\n\nThe owner will review and respond shortly.',
-              style: AppStyles.body(context),
+      // If Stripe is selected and booking status is pending_payment, navigate to payment screen
+      if (mounted && paymentProvider == 'stripe' && response.booking.status == 'pending_payment') {
+        // Navigate to Stripe payment screen for deposit
+        final depositAmount = (_bookingData.totalPrice * 0.30).round();
+        final paymentResult = await Navigator.push<Map<String, dynamic>>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StripePaymentScreen(
+              bookingId: response.booking.id,
+              paymentType: 'deposit',
+              amount: depositAmount,
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                child: Text('OK', style: TextStyle(color: AppStyles.primary)),
-              ),
-            ],
           ),
         );
+
+        if (paymentResult != null && paymentResult['success'] == true) {
+          // Payment successful, show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Deposit paid successfully! Waiting for owner approval.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            // Navigate back to home or bookings list
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
+        } else {
+          // Payment failed or cancelled, show message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Booking created. You can pay the deposit later from your bookings page.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 4),
+              ),
+            );
+            Navigator.pop(context);
+          }
+        }
+      } else {
+        // Show success dialog for non-Stripe payments or if status is not pending_payment
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: AppStyles.surface(context),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text('Booking Created!', style: AppStyles.h2(context)),
+              content: Text(
+                paymentProvider == 'stripe'
+                    ? 'Your booking has been created. Please pay the deposit to proceed.\n\nBooking ID: ${response.booking.id.substring(0, 8)}...'
+                    : 'Your booking has been submitted successfully. Booking ID: ${response.booking.id.substring(0, 8)}...\n\nThe owner will review and respond shortly.',
+                style: AppStyles.body(context),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  child: Text('OK', style: TextStyle(color: AppStyles.primary)),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() {

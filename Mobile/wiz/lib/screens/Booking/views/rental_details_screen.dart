@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
+import 'package:wiz/screens/Payment/utils/payment_helper.dart';
 import 'package:wiz/utils/app_routes.dart';
 
 class RentalDetailsScreen extends StatefulWidget {
@@ -56,24 +57,50 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     if (_booking == null) return {'show': false};
 
     final actions = _booking!.actions;
+    final billing = _booking!.billing;
+    // Priority 1: Deposit Payment (if not paid)
+    if (!billing.depositPaid) {
+      return {
+        'show': true,
+        'text': 'Pay Deposit (${PaymentHelper.formatPrice(billing.deposit)} ₫)',
+        'action': 'pay_deposit',
+        'color': AppStyles.primary,
+        'subtitle': '30% of total amount',
+      };
+    }
 
-    // Priority order for actions
+    // Priority 2: Sign Contract (after deposit paid)
     if (actions.canSignContract) {
       return {'show': true, 'text': 'Sign Contract', 'action': 'sign_contract', 'color': AppStyles.primary};
     }
 
+    // Priority 3: Final Payment (after contract signed)
+    if (!billing.finalPaymentPaid && billing.depositPaid) {
+      return {
+        'show': true,
+        'text': 'Pay Final Amount (${PaymentHelper.formatPrice(billing.remainingPayment)} ₫)',
+        'action': 'pay_final',
+        'color': AppStyles.primary,
+        'subtitle': '70% of total amount',
+      };
+    }
+
+    // Priority 4: Submit Pickup Photos
     if (actions.canSubmitPickupPhotos) {
       return {'show': true, 'text': 'Submit Pickup Photos', 'action': 'submit_pickup', 'color': AppStyles.primary};
     }
 
+    // Priority 5: Submit Return Photos
     if (actions.canSubmitReturnPhotos) {
       return {'show': true, 'text': 'Submit Return Photos', 'action': 'submit_return', 'color': AppStyles.primary};
     }
 
+    // Priority 6: Rate & Review
     if (actions.canReview) {
       return {'show': true, 'text': 'Rate & Review', 'action': 'rate_review', 'color': Colors.amber};
     }
 
+    // Priority 7: Cancel
     if (actions.canCancel) {
       return {'show': true, 'text': 'Cancel Booking', 'action': 'cancel', 'color': Colors.red};
     }
@@ -252,6 +279,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     String label;
 
     switch (status) {
+      case 'pending_payment':
+        color = Colors.red;
+        label = 'PENDING PAYMENT';
+        break;
       case 'pending':
         color = Colors.orange;
         label = 'PENDING APPROVAL';
@@ -304,6 +335,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
 
   void _handleButtonPress(String action) async {
     switch (action) {
+      case 'pay_deposit':
+        await _handlePayDeposit();
+        break;
+      case 'pay_final':
+        await _handlePayFinal();
+        break;
       case 'sign_contract':
         await _handleSignContract();
         break;
@@ -319,6 +356,85 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       case 'cancel':
         _showCancelDialog();
         break;
+    }
+  }
+
+  Future<void> _handlePayDeposit() async {
+    if (_booking == null) return;
+
+    try {
+      // Show payment method selection (for now, only Stripe)
+      final provider = await PaymentHelper.selectPaymentMethod(context);
+
+      if (provider == null) return;
+
+      // Navigate to Stripe payment screen
+      final result = await PaymentHelper.processStripePayment(
+        context: context,
+        bookingId: widget.bookingId,
+        paymentType: 'deposit',
+        amount: _booking!.billing.deposit,
+        returnUrl: 'http://10.0.2.2:3006/payment/success',
+      );
+
+      if (result != null && result['success'] == true) {
+        // Reload booking details after successful payment
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          _loadBookingDetails();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Payment error: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _handlePayFinal() async {
+    if (_booking == null) return;
+
+    // Check if contract is signed
+    if (_booking!.contract == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign the contract before making final payment'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Show payment method selection (for now, only Stripe)
+      final provider = await PaymentHelper.selectPaymentMethod(context);
+
+      if (provider == null) return;
+
+      // Navigate to Stripe payment screen
+      final result = await PaymentHelper.processStripePayment(
+        context: context,
+        bookingId: widget.bookingId,
+        paymentType: 'final_payment',
+        amount: _booking!.billing.remainingPayment,
+        returnUrl: 'http://10.0.2.2:3006/payment/success',
+      );
+
+      if (result != null && result['success'] == true) {
+        // Reload booking details after successful payment
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          _loadBookingDetails();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Payment error: $e'), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -566,36 +682,122 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Text('Billing Details', style: AppStyles.h3(context)),
             const SizedBox(height: 16),
-            _buildBillingRow('Rental (${billing.numberOfDays} days)', '${_formatPrice(billing.rentalPrice)} ₫'),
-            const SizedBox(height: 8),
-            _buildBillingRow('Insurance', '${_formatPrice(billing.insuranceFee)} ₫'),
-            const Divider(height: 24),
-            _buildBillingRow('Total', '${_formatPrice(billing.total)} ₫', isTotal: true),
-            const SizedBox(height: 16),
-            _buildBillingRow('Deposit (30%)', '${_formatPrice(billing.deposit)} ₫'),
-            Row(
-              children: [
-                Icon(
-                  billing.depositPaid ? Icons.check_circle : Icons.cancel,
-                  size: 16,
-                  color: billing.depositPaid ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 4),
-                Text(billing.depositPaid ? 'Paid' : 'Unpaid', style: AppStyles.caption(context)),
-              ],
+
+            _buildBillingRow(
+              'Rental (${billing.numberOfDays} days)',
+              '${PaymentHelper.formatPrice(billing.rentalPrice)} ₫',
             ),
+            const SizedBox(height: 8),
+
+            _buildBillingRow('Insurance', '${PaymentHelper.formatPrice(billing.insuranceFee)} ₫'),
+            const Divider(height: 24),
+
+            _buildBillingRow('Total', '${PaymentHelper.formatPrice(billing.total)} ₫', isTotal: true),
+            const SizedBox(height: 16),
+
+            // Deposit section with payment status
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: billing.depositPaid ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: billing.depositPaid ? Colors.green : Colors.orange),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            PaymentHelper.getPaymentStatusIcon(billing.depositPaid),
+                            size: 20,
+                            color: PaymentHelper.getPaymentStatusColor(billing.depositPaid),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('Deposit (30%)', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      Text(
+                        '${PaymentHelper.formatPrice(billing.deposit)} ₫',
+                        style: AppStyles.body(context).copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: billing.depositPaid ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const SizedBox(width: 28),
+                      Text(
+                        billing.depositPaid ? 'Paid ✓' : 'Pending Payment',
+                        style: AppStyles.caption(context).copyWith(
+                          color: billing.depositPaid ? Colors.green : Colors.orange,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 12),
-            _buildBillingRow('Remaining Payment', '${_formatPrice(billing.remainingPayment)} ₫'),
-            Row(
-              children: [
-                Icon(
-                  billing.finalPaymentPaid ? Icons.check_circle : Icons.cancel,
-                  size: 16,
-                  color: billing.finalPaymentPaid ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 4),
-                Text(billing.finalPaymentPaid ? 'Paid' : 'Unpaid', style: AppStyles.caption(context)),
-              ],
+
+            // Final payment section with payment status
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: billing.finalPaymentPaid ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: billing.finalPaymentPaid ? Colors.green : Colors.grey),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            PaymentHelper.getPaymentStatusIcon(billing.finalPaymentPaid),
+                            size: 20,
+                            color: PaymentHelper.getPaymentStatusColor(billing.finalPaymentPaid),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Final Payment (70%)',
+                            style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${PaymentHelper.formatPrice(billing.remainingPayment)} ₫',
+                        style: AppStyles.body(context).copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: billing.finalPaymentPaid ? Colors.green : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const SizedBox(width: 28),
+                      Text(
+                        billing.finalPaymentPaid ? 'Paid ✓' : 'Pay on booking day',
+                        style: AppStyles.caption(context).copyWith(
+                          color: billing.finalPaymentPaid ? Colors.green : Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

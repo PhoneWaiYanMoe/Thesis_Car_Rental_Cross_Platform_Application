@@ -18,12 +18,26 @@ class BookingGrpcClient {
     const bookingServiceUrl =
       process.env.BOOKING_SERVICE_GRPC_URL || "localhost:50052";
 
+    // Use DNS resolver for Docker networking
+    const target = bookingServiceUrl.includes(':') 
+      ? bookingServiceUrl 
+      : `${bookingServiceUrl}:50052`;
+
     this.client = new bookingProto.BookingService(
-      bookingServiceUrl,
-      grpc.credentials.createInsecure()
+      target,
+      grpc.credentials.createInsecure(),
+      {
+        // Add retry and keepalive options for better connection handling
+        'grpc.keepalive_time_ms': 30000,
+        'grpc.keepalive_timeout_ms': 5000,
+        'grpc.keepalive_permit_without_calls': true,
+        'grpc.http2.max_pings_without_data': 0,
+        'grpc.http2.min_time_between_pings_ms': 10000,
+        'grpc.http2.min_ping_interval_without_data_ms': 300000,
+      }
     );
 
-    console.log(`📡 Booking gRPC client connected to ${bookingServiceUrl}`);
+    console.log(`📡 Booking gRPC client configured for ${target}`);
   }
 
   // ==================== EXISTING METHODS ====================

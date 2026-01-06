@@ -25,6 +25,7 @@ import 'package:wiz/screens/Home/views/home_screen.dart';
 import 'package:wiz/screens/Location/views/location_search_screen.dart';
 import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/screens/Owner/views/owner_booking_screen.dart';
+import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/screens/Profile/profile_screen.dart';
 import 'package:wiz/screens/Settings/views/license_upload_screen.dart';
 import 'package:wiz/screens/Owner/views/owner_vehicles_screen.dart';
@@ -55,6 +56,7 @@ class AppRoutes {
   static const String rateReview = '/rate-review';
   static const String chatList = '/chat-list';
   static const String chatDetail = '/chat-detail';
+  static const String stripePayment = '/stripe-payment';
 
   // Owner routes
   static const String ownerVehicles = '/owner/vehicles';
@@ -108,6 +110,23 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null) {
           return MaterialPageRoute(builder: (_) => BookingScreen(arguments: args));
+        }
+        return null;
+        
+      case stripePayment:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null &&
+            args.containsKey('bookingId') &&
+            args.containsKey('paymentType') &&
+            args.containsKey('amount')) {
+          return MaterialPageRoute(
+            builder: (_) => StripePaymentScreen(
+              bookingId: args['bookingId'] as String,
+              paymentType: args['paymentType'] as String,
+              amount: args['amount'] as int,
+              returnUrl: args['returnUrl'] as String?,
+            ),
+          );
         }
         return null;
 
