@@ -1,22 +1,17 @@
 // Mobile/wiz/lib/screens/Payment/views/stripe_payment_screen.dart
+// ✅ FIXED: Real Stripe integration using flutter_stripe package
+
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Payment/services/payment_api_service.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 class StripePaymentScreen extends StatefulWidget {
   final String bookingId;
   final String paymentType; // 'deposit' or 'final_payment'
   final int amount;
-  final String? returnUrl;
 
-  const StripePaymentScreen({
-    super.key,
-    required this.bookingId,
-    required this.paymentType,
-    required this.amount,
-    this.returnUrl,
-  });
+  const StripePaymentScreen({super.key, required this.bookingId, required this.paymentType, required this.amount});
 
   @override
   State<StripePaymentScreen> createState() => _StripePaymentScreenState();
@@ -25,24 +20,29 @@ class StripePaymentScreen extends StatefulWidget {
 class _StripePaymentScreenState extends State<StripePaymentScreen> {
   final PaymentApiService _paymentApi = PaymentApiService();
 
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _error;
-  String? _paymentUrl;
-  late WebViewController _webViewController;
 
   @override
   void initState() {
     super.initState();
-    _initializePayment();
+    _processPayment();
   }
 
-  Future<void> _initializePayment() async {
+  Future<void> _processPayment() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
+      // Verify Stripe publishable key is set
+      if (Stripe.publishableKey == null || Stripe.publishableKey!.isEmpty) {
+        throw Exception('Stripe publishable key is not configured. Please check your app initialization.');
+      }
+      print('🔑 Stripe publishable key is set: ${Stripe.publishableKey!.substring(0, 20)}...');
+
+      // Step 1: Create payment intent
       PaymentIntentResponse paymentIntent;
 
       if (widget.paymentType == 'deposit') {
@@ -55,57 +55,139 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
       print('   Client Secret: ${paymentIntent.clientSecret}');
       print('   Amount: ${paymentIntent.amount} ${paymentIntent.currency}');
 
-      // For Stripe, we need to show Stripe's payment page
-      // In a real app, you would use stripe_flutter package
-      // For now, we'll simulate with a mock payment page
+      if (paymentIntent.clientSecret == null || paymentIntent.clientSecret!.isEmpty) {
+        throw Exception('No client secret received from server');
+      }
 
-      final mockPaymentUrl =
-          'http://10.0.2.2:3006/mock-payment?orderId=${paymentIntent.intentId}&amount=${paymentIntent.amount}&provider=stripe&returnUrl=${Uri.encodeComponent(widget.returnUrl ?? 'http://localhost:3006/payment/success')}';
+      // Trim and validate client secret format
+      final clientSecret = paymentIntent.clientSecret!.trim();
+      if (!clientSecret.startsWith('pi_') || !clientSecret.contains('_secret_')) {
+        throw Exception('Invalid client secret format: $clientSecret');
+      }
 
-      setState(() {
-        _paymentUrl = mockPaymentUrl;
-        _isLoading = false;
-      });
+      print('🔐 Validated client secret format');
 
-      // Initialize WebView
-      _webViewController = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onPageStarted: (String url) {
-              print('🔄 Page started loading: $url');
-            },
-            onPageFinished: (String url) {
-              print('✅ Page finished loading: $url');
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              print('🔗 Navigation request: ${request.url}');
+      // Step 2: Initialize payment sheet with Stripe
+      try {
+        print('📱 Initializing Stripe payment sheet...');
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            // Merchant info
+            merchantDisplayName: 'Wiz Car Rental',
 
-              // Check if payment was successful or failed
-              if (request.url.contains('/payment/success') || request.url.contains('vnp_ResponseCode=00')) {
-                _handlePaymentSuccess();
-                return NavigationDecision.prevent;
-              } else if (request.url.contains('/payment/failed') || request.url.contains('vnp_ResponseCode=24')) {
-                _handlePaymentFailed();
-                return NavigationDecision.prevent;
-              }
+            // Payment intent
+            paymentIntentClientSecret: clientSecret,
 
-              return NavigationDecision.navigate;
-            },
+            // Customer info (optional, for saved payment methods)
+            // customerId: 'cus_xxxxx',
+            // customerEphemeralKeySecret: 'ek_xxxxx',
+
+            // Styling
+            style: ThemeMode.system,
+            appearance: PaymentSheetAppearance(
+              colors: PaymentSheetAppearanceColors(primary: AppStyles.primary, background: Colors.white),
+              shapes: PaymentSheetShape(borderRadius: 12),
+            ),
+
+            // Allow saving payment methods
+            allowsDelayedPaymentMethods: true,
           ),
-        )
-        ..loadRequest(Uri.parse(mockPaymentUrl));
-    } catch (e) {
-      print('❌ Initialize payment error: $e');
+        );
+        print('✅ Payment sheet initialized successfully');
+      } on StripeException catch (stripeError) {
+        print('❌ Stripe initialization error: ${stripeError.error.message}');
+        print('   Error code: ${stripeError.error.code}');
+        print('   Error type: ${stripeError.error.type}');
+        print('   Localized message: ${stripeError.error.localizedMessage}');
+        throw Exception('Stripe initialization failed: ${stripeError.error.message ?? stripeError.error.localizedMessage ?? "Unknown error"}');
+      }
+
       setState(() {
-        _error = e.toString();
         _isLoading = false;
       });
+
+      // Step 3: Present payment sheet
+      await _presentPaymentSheet();
+    } on StripeException catch (e) {
+      print('❌ Stripe payment initialization error: ${e.error.message}');
+      print('   Error code: ${e.error.code}');
+      print('   Error type: ${e.error.type}');
+      print('   Localized message: ${e.error.localizedMessage}');
+      
+      String errorMessage = 'Payment initialization failed';
+      if (e.error.message != null) {
+        errorMessage = e.error.message!;
+      } else if (e.error.localizedMessage != null) {
+        errorMessage = e.error.localizedMessage!;
+      }
+      
+      setState(() {
+        _error = errorMessage;
+        _isLoading = false;
+      });
+
+      // Show error and close
+      if (mounted) {
+        _showErrorDialog(errorMessage);
+      }
+    } catch (e) {
+      print('❌ Payment initialization error: $e');
+      print('   Error type: ${e.runtimeType}');
+      
+      String errorMessage = e.toString();
+      if (e.toString().contains('StripeConfigException')) {
+        errorMessage = 'Stripe configuration error. Please check your Stripe keys are correctly set.';
+      }
+      
+      setState(() {
+        _error = errorMessage;
+        _isLoading = false;
+      });
+
+      // Show error and close
+      if (mounted) {
+        _showErrorDialog(errorMessage);
+      }
+    }
+  }
+
+  Future<void> _presentPaymentSheet() async {
+    try {
+      // Show Stripe's payment sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // ✅ Payment successful!
+      print('✅ Payment completed successfully');
+
+      if (mounted) {
+        _handlePaymentSuccess();
+      }
+    } on StripeException catch (e) {
+      print('❌ Stripe error: ${e.error.localizedMessage}');
+
+      if (e.error.code == FailureCode.Canceled) {
+        // User cancelled
+        print('ℹ️ User cancelled payment');
+        if (mounted) {
+          _handlePaymentCancelled();
+        }
+      } else {
+        // Payment failed
+        print('❌ Payment failed: ${e.error.message}');
+        if (mounted) {
+          _showErrorDialog(e.error.localizedMessage ?? 'Payment failed');
+        }
+      }
+    } catch (e) {
+      print('❌ Unexpected error: $e');
+      if (mounted) {
+        _showErrorDialog('An unexpected error occurred');
+      }
     }
   }
 
   void _handlePaymentSuccess() {
-    // Show success message first
+    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -119,19 +201,43 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
     );
 
     // Return success result
-    Navigator.pop(context, {'success': true, 'bookingId': widget.bookingId, 'paymentType': widget.paymentType});
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        Navigator.pop(context, {'success': true, 'bookingId': widget.bookingId, 'paymentType': widget.paymentType});
+      }
+    });
   }
 
-  void _handlePaymentFailed() {
+  void _handlePaymentCancelled() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Payment failed or cancelled'),
-        backgroundColor: Colors.red,
+        content: Text('Payment cancelled'),
+        backgroundColor: Colors.orange,
         duration: Duration(seconds: 2),
       ),
     );
 
-    Navigator.pop(context, {'success': false, 'bookingId': widget.bookingId, 'paymentType': widget.paymentType});
+    Navigator.pop(context, {'success': false, 'cancelled': true, 'bookingId': widget.bookingId});
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppStyles.surface(context),
+        title: const Text('Payment Failed'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context, {'success': false, 'error': message}); // Close payment screen
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -139,7 +245,10 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => _showCancelDialog()),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context, {'success': false, 'cancelled': true}),
+        ),
         title: Text(widget.paymentType == 'deposit' ? 'Pay Deposit' : 'Pay Final Amount', style: AppStyles.h2(context)),
         centerTitle: true,
         backgroundColor: AppStyles.background(context),
@@ -149,7 +258,7 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
           ? _buildLoadingState()
           : _error != null
           ? _buildErrorState()
-          : _buildPaymentWebView(),
+          : const SizedBox.shrink(),
     );
   }
 
@@ -163,6 +272,30 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
           Text('Preparing secure payment...', style: AppStyles.body(context)),
           const SizedBox(height: 8),
           Text('${_formatPrice(widget.amount)} VND', style: AppStyles.h2(context).copyWith(color: AppStyles.primary)),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock, color: Colors.blue, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Secure payment powered by Stripe',
+                    style: AppStyles.caption(context).copyWith(color: Colors.blue.shade900),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -183,110 +316,13 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               style: AppStyles.primaryButtonStyle(context),
-              onPressed: _initializePayment,
+              onPressed: _processPayment,
               child: const Text('Try Again'),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, {'success': false}), child: const Text('Cancel')),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPaymentWebView() {
-    return Column(
-      children: [
-        // Payment info header
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppStyles.surface(context),
-            border: Border(bottom: BorderSide(color: AppStyles.textSecondary(context).withOpacity(0.2))),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Amount to Pay:', style: AppStyles.body(context)),
-                  Text(
-                    '${_formatPrice(widget.amount)} VND',
-                    style: AppStyles.h3(context).copyWith(color: AppStyles.primary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Payment Type:', style: AppStyles.caption(context)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue),
-                    ),
-                    child: Text(
-                      widget.paymentType == 'deposit' ? 'Deposit (30%)' : 'Final Payment (70%)',
-                      style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // WebView
-        Expanded(
-          child: _paymentUrl != null
-              ? WebViewWidget(controller: _webViewController)
-              : const Center(child: Text('Loading payment page...')),
-        ),
-
-        // Security notice
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            border: Border(top: BorderSide(color: Colors.green.withOpacity(0.3))),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.lock, color: Colors.green, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Secure payment powered by Stripe',
-                  style: AppStyles.caption(context).copyWith(color: Colors.green),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showCancelDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppStyles.surface(context),
-        title: Text('Cancel Payment?', style: AppStyles.h2(context)),
-        content: Text('Are you sure you want to cancel this payment?', style: AppStyles.body(context)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context, {'success': false, 'cancelled': true}); // Close payment screen
-            },
-            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }

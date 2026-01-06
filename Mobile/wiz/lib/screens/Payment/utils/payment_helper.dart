@@ -18,7 +18,7 @@ class PaymentHelper {
           bookingId: bookingId,
           paymentType: paymentType,
           amount: amount,
-          returnUrl: returnUrl,
+    //      returnUrl: returnUrl,
         ),
       ),
     );

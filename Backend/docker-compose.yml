@@ -213,8 +213,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      booking-service:
-        condition: service_started
     volumes:
       - ./payment-service/src:/app/src
       - ./payment-service/proto:/app/proto
@@ -260,7 +258,7 @@ services:
       user-service:
         condition: service_healthy
       payment-service:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./booking-service/src:/app/src
       - ./booking-service/proto:/app/proto

@@ -112,7 +112,7 @@ class AppRoutes {
           return MaterialPageRoute(builder: (_) => BookingScreen(arguments: args));
         }
         return null;
-        
+
       case stripePayment:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null &&
@@ -124,7 +124,7 @@ class AppRoutes {
               bookingId: args['bookingId'] as String,
               paymentType: args['paymentType'] as String,
               amount: args['amount'] as int,
-              returnUrl: args['returnUrl'] as String?,
+              //      returnUrl: args['returnUrl'] as String?,
             ),
           );
         }

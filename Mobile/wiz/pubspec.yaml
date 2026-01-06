@@ -53,6 +53,7 @@ dependencies:
   geocoding: ^3.0.0
   http: ^1.2.2
   webview_flutter: ^4.13.0
+  flutter_stripe: ^11.3.0
 
 
 
