@@ -1,14 +1,13 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.wiz"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36  
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -16,25 +15,20 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.wiz"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = flutter.minSdkVersion  // Changed to fixed value
+        targetSdk = 36  
+        versionCode = 1
+        versionName = "1.0"
         multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -43,16 +37,17 @@ android {
 flutter {
     source = "../.."
 }
+
 dependencies {
-    // ✅ REQUIRED: Material Components for Stripe compatibility
+    // Material Components (required for Stripe)
     implementation("com.google.android.material:material:1.11.0")
     
-    // ✅ REQUIRED: AndroidX AppCompat
+    // AndroidX AppCompat
     implementation("androidx.appcompat:appcompat:1.6.1")
     
-    // ✅ OPTIONAL: Multidex support
+    // Multidex support
     implementation("androidx.multidex:multidex:2.0.1")
     
-    // ✅ REQUIRED: Core KTX (helps with Kotlin compatibility)
+    // Core KTX
     implementation("androidx.core:core-ktx:1.12.0")
 }
