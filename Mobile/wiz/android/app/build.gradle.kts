@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.wiz"
-        minSdk = flutter.minSdkVersion  // Changed to fixed value
+        minSdk = 24
         targetSdk = 36  
         versionCode = 1
         versionName = "1.0"
@@ -39,15 +39,18 @@ flutter {
 }
 
 dependencies {
-    // Material Components (required for Stripe)
-    implementation("com.google.android.material:material:1.11.0")
+    // AppCompat (REQUIRED for Stripe)
+    implementation("androidx.appcompat:appcompat:1.7.0")
     
-    // AndroidX AppCompat
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    // Material Components (REQUIRED for Stripe)
+    implementation("com.google.android.material:material:1.12.0")
+    
+    // Fragment KTX (REQUIRED for FlutterFragmentActivity)
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+    
+    // Core KTX
+    implementation("androidx.core:core-ktx:1.13.1")
     
     // Multidex support
     implementation("androidx.multidex:multidex:2.0.1")
-    
-    // Core KTX
-    implementation("androidx.core:core-ktx:1.12.0")
 }
