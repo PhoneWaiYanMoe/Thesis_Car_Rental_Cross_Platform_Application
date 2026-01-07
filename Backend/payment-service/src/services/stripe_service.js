@@ -1,5 +1,5 @@
 // Backend/payment-service/src/services/stripe_service.js
-// ✅ UPDATED: Fixed currency handling for VND and added better error handling
+// ✅ FIXED: Better handling of payment method ID
 
 const { stripeConfig } = require("../config/payment_providers");
 const stripe = stripeConfig.client;
@@ -41,10 +41,22 @@ class StripeService {
         },
       };
 
-      // If payment method provided, attach it
-      if (paymentMethodId) {
+      // ✅ FIX: Only attach payment method if it's a valid Stripe payment method ID
+      // Valid format: pm_xxxxx, card_xxxxx, etc.
+      if (
+        paymentMethodId &&
+        (paymentMethodId.startsWith("pm_") ||
+          paymentMethodId.startsWith("card_") ||
+          paymentMethodId.startsWith("ba_"))
+      ) {
+        console.log(`💳 Using saved payment method: ${paymentMethodId}`);
         intentData.payment_method = paymentMethodId;
         intentData.confirm = false; // Will be confirmed by client
+      } else {
+        // ✅ No payment method provided - Stripe will collect it in the payment sheet
+        console.log(
+          `💳 No payment method provided - will be collected by Stripe`
+        );
       }
 
       const paymentIntent = await stripe.paymentIntents.create(intentData);
@@ -65,6 +77,14 @@ class StripeService {
       };
     } catch (error) {
       console.error("❌ Stripe createPaymentIntent error:", error);
+
+      // ✅ Provide more helpful error messages
+      if (error.code === "resource_missing") {
+        throw new Error(
+          `Invalid payment method ID provided. Please use a valid Stripe payment method ID or omit this parameter to collect payment details from the user.`
+        );
+      }
+
       throw new Error(`Stripe error: ${error.message}`);
     }
   }

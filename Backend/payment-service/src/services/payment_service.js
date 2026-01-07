@@ -68,6 +68,9 @@ class PaymentService {
   /**
    * ✅ UPDATED: Create payment intent with better Stripe support
    */
+  // Backend/payment-service/src/services/payment_service.js
+  // ✅ COMPLETE FIX: Around line 150-180
+
   async createPaymentIntent(
     bookingId,
     userId,
@@ -168,13 +171,32 @@ class PaymentService {
         }
       }
 
+      // ✅ FIX: Validate paymentMethodId - must be UUID or null
+      // If paymentMethodId is the provider string (like "stripe"), set it to null
+      let validPaymentMethodId = null;
+
+      if (paymentMethodId) {
+        // Check if it's a valid UUID format (8-4-4-4-12 hex characters)
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (uuidRegex.test(paymentMethodId)) {
+          validPaymentMethodId = paymentMethodId;
+        } else {
+          console.log(
+            `⚠️  Invalid payment method ID (not UUID): "${paymentMethodId}" - setting to null`
+          );
+          validPaymentMethodId = null;
+        }
+      }
+
       // Save transaction record
       const transactionId = uuidv4();
       await client.query(
         `INSERT INTO transactions (
-          transaction_id, booking_id, user_id, type, amount, currency,
-          status, provider, intent_id, client_secret, payment_method_id, metadata
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        transaction_id, booking_id, user_id, type, amount, currency,
+        status, provider, intent_id, client_secret, payment_method_id, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           transactionId,
           bookingId,
@@ -186,7 +208,7 @@ class PaymentService {
           provider,
           providerResponse.intentId || providerResponse.orderId,
           providerResponse.clientSecret || null,
-          paymentMethodId,
+          validPaymentMethodId, // ✅ Use validated UUID or null
           JSON.stringify({
             amountUsd: providerResponse.amountUsd,
             originalCurrency: "VND",

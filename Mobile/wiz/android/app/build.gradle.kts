@@ -28,6 +28,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -41,4 +42,17 @@ android {
 
 flutter {
     source = "../.."
+}
+dependencies {
+    // ✅ REQUIRED: Material Components for Stripe compatibility
+    implementation("com.google.android.material:material:1.11.0")
+    
+    // ✅ REQUIRED: AndroidX AppCompat
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    
+    // ✅ OPTIONAL: Multidex support
+    implementation("androidx.multidex:multidex:2.0.1")
+    
+    // ✅ REQUIRED: Core KTX (helps with Kotlin compatibility)
+    implementation("androidx.core:core-ktx:1.12.0")
 }
