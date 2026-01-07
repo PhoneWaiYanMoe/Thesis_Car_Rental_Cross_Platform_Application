@@ -1,5 +1,5 @@
 // Backend/payment-service/src/app.js
-// ✅ FIXED: Proper raw body handling for Stripe webhooks
+// ✅ CRITICAL FIX: Proper raw body handling for Stripe webhooks
 
 require("dotenv").config();
 const express = require("express");
@@ -23,14 +23,18 @@ const PaymentGrpcServer = require("./grpc/payment_grpc_server");
 
 const app = express();
 
-// CORS
+// CORS - must be before routes
 app.use(cors());
 
-// ✅ CRITICAL FIX: Webhook route MUST come BEFORE body parsing
-// This ensures Stripe gets the raw body for signature verification
-app.use("/payment/webhook/stripe", express.raw({ type: "application/json" }));
+// ✅ CRITICAL: Webhook route with raw body MUST come BEFORE express.json()
+// This preserves the raw body for Stripe signature verification
+app.use(
+  "/payment/webhook/stripe",
+  express.raw({ type: "application/json" }),
+  require("./routes/webhook_routes")
+);
 
-// ✅ NOW add regular body parsing for other routes
+// ✅ NOW add body parsing for all OTHER routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,21 +61,22 @@ try {
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
 
-// ✅ Mock payment routes (must be BEFORE other routes)
+// ✅ Mock payment routes (if enabled)
 if (process.env.MOCK_PAYMENT === "true") {
   app.use("/", mockPaymentRoutes);
   console.log("⚠️  [MOCK MODE] Mock payment routes enabled");
 }
 
-// ✅ IMPORTANT: Webhook routes BEFORE other routes
-app.use("/payment/webhook", webhookRoutes);
-
-// Regular routes
+// ✅ Regular routes (webhook is already mounted above with raw body)
 app.use("/payment/methods", paymentMethodRoutes);
 app.use("/payment/deposit", depositRoutes);
 app.use("/payment/final", finalPaymentRoutes);
 app.use("/payment/refund", refundRoutes);
 app.use("/payment/transactions", transactionRoutes);
+
+// Other webhook routes (VNPay, PayPal) with normal body parsing
+app.use("/payment/webhook/vnpay", webhookRoutes);
+app.use("/payment/webhook/paypal", webhookRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -106,17 +111,27 @@ async function startServer() {
         console.log(`💳 Providers: Stripe, PayPal, VNPay`);
       }
 
-      // ✅ Log webhook configuration
+      // Log webhook configuration
       console.log(`\n🔗 Webhook Endpoints:`);
-      console.log(`   Stripe: http://localhost:${PORT}/payment/webhook/stripe`);
-      console.log(`   PayPal: http://localhost:${PORT}/payment/webhook/paypal`);
-      console.log(`   VNPay:  http://localhost:${PORT}/payment/webhook/vnpay`);
+      console.log(
+        `   Stripe: https://master-albacore-urgently.ngrok-free.app/payment/webhook/stripe`
+      );
+      console.log(
+        `   PayPal: https://master-albacore-urgently.ngrok-free.app/payment/webhook/paypal`
+      );
+      console.log(
+        `   VNPay:  https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay`
+      );
 
       if (process.env.STRIPE_WEBHOOK_SECRET) {
-        console.log(`   ✅ Stripe webhook secret configured`);
+        console.log(
+          `   ✅ Stripe webhook secret: ${process.env.STRIPE_WEBHOOK_SECRET.substring(
+            0,
+            15
+          )}...`
+        );
       } else {
         console.log(`   ⚠️  Stripe webhook secret NOT configured`);
-        console.log(`   Set STRIPE_WEBHOOK_SECRET in .env file`);
       }
     });
 
