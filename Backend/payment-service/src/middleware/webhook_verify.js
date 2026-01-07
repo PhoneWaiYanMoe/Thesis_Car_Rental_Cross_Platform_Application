@@ -1,5 +1,5 @@
 // Backend/payment-service/src/middleware/webhook_verify.js
-// ✅ UPDATED: Better Stripe webhook verification
+// ✅ FIXED: Proper raw body handling for Stripe signature verification
 
 const stripeService = require("../services/stripe_service");
 const crypto = require("crypto");
@@ -13,19 +13,26 @@ exports.verifyStripeWebhook = (req, res, next) => {
       return res.status(400).json({ error: "Missing signature" });
     }
 
-    // Get raw body
-    let payload;
-    if (req.rawBody) {
-      payload = req.rawBody;
-    } else if (Buffer.isBuffer(req.body)) {
-      payload = req.body;
-    } else {
-      payload = JSON.stringify(req.body);
+    // ✅ CRITICAL: req.body is already a Buffer from express.raw() in app.js
+    const payload = req.body;
+
+    // Verify it's actually a Buffer
+    if (!Buffer.isBuffer(payload)) {
+      console.error("❌ Request body is not a Buffer!");
+      console.error(`   Body type: ${typeof payload}`);
+      console.error(`   Body constructor: ${payload?.constructor?.name}`);
+      return res.status(400).json({
+        error: "Invalid body format",
+        details: "Expected raw buffer for webhook verification",
+      });
     }
 
     console.log("🔍 Verifying Stripe webhook...");
     console.log(`   Signature: ${signature.substring(0, 20)}...`);
+    console.log(`   Body size: ${payload.length} bytes`);
+    console.log(`   Body is Buffer: ${Buffer.isBuffer(payload)}`);
 
+    // Verify the webhook signature
     const event = stripeService.verifyWebhookSignature(payload, signature);
 
     console.log("✅ Stripe webhook verified successfully");
@@ -36,6 +43,16 @@ exports.verifyStripeWebhook = (req, res, next) => {
     next();
   } catch (error) {
     console.error("❌ Stripe webhook verification failed:", error.message);
+
+    // Log more details for debugging
+    if (error.type === "StripeSignatureVerificationError") {
+      console.error("   This is a signature verification error");
+      console.error("   Check that:");
+      console.error("   1. STRIPE_WEBHOOK_SECRET is correct in .env");
+      console.error("   2. Request body is being passed as raw Buffer");
+      console.error("   3. No middleware is modifying the body");
+    }
+
     return res.status(400).json({
       error: "Invalid signature",
       message: error.message,

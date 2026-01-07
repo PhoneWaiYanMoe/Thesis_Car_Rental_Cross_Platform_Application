@@ -1,28 +1,32 @@
-const express = require('express');
+// Backend/payment-service/src/routes/webhook_routes.js
+// ✅ FIXED: Remove duplicate raw body parser
+
+const express = require("express");
 const router = express.Router();
-const webhookController = require('../controllers/webhook_controller');
+const webhookController = require("../controllers/webhook_controller");
 const {
   verifyStripeWebhook,
   verifyPayPalWebhook,
   verifyVNPayWebhook,
-} = require('../middleware/webhook_verify');
+} = require("../middleware/webhook_verify");
 
-// Webhook routes (NO authentication - verified by signature)
+// ✅ Stripe webhook - raw body is already handled in app.js
 router.post(
-  '/stripe',
-  express.raw({ type: 'application/json' }),
+  "/stripe",
   verifyStripeWebhook,
   webhookController.handleStripeWebhook.bind(webhookController)
 );
 
+// PayPal webhook
 router.post(
-  '/paypal',
+  "/paypal",
   verifyPayPalWebhook,
   webhookController.handlePayPalWebhook.bind(webhookController)
 );
 
+// VNPay webhook (GET request for return URL)
 router.get(
-  '/vnpay',
+  "/vnpay",
   verifyVNPayWebhook,
   webhookController.handleVNPayReturn.bind(webhookController)
 );

@@ -1,5 +1,5 @@
 // Backend/payment-service/src/app.js
-// ✅ UPDATED: Added mock payment routes
+// ✅ FIXED: Proper raw body handling for Stripe webhooks
 
 require("dotenv").config();
 const express = require("express");
@@ -15,7 +15,7 @@ const finalPaymentRoutes = require("./routes/final_payment_routes");
 const refundRoutes = require("./routes/refund_routes");
 const transactionRoutes = require("./routes/transaction_routes");
 const webhookRoutes = require("./routes/webhook_routes");
-const mockPaymentRoutes = require("./routes/mock_payment_routes"); // ✅ NEW
+const mockPaymentRoutes = require("./routes/mock_payment_routes");
 
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -26,19 +26,20 @@ const app = express();
 // CORS
 app.use(cors());
 
-// Body parsing
+// ✅ CRITICAL FIX: Webhook route MUST come BEFORE body parsing
+// This ensures Stripe gets the raw body for signature verification
+app.use("/payment/webhook/stripe", express.raw({ type: "application/json" }));
+
+// ✅ NOW add regular body parsing for other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Store raw body for webhook signature verification
-app.use("/payment/webhook", express.raw({ type: "application/json" }));
 
 // Health check
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     service: "payment-service",
-    mockMode: process.env.MOCK_PAYMENT === "true", // ✅ Show mock mode status
+    mockMode: process.env.MOCK_PAYMENT === "true",
     timestamp: new Date().toISOString(),
   });
 });
@@ -62,13 +63,15 @@ if (process.env.MOCK_PAYMENT === "true") {
   console.log("⚠️  [MOCK MODE] Mock payment routes enabled");
 }
 
-// Routes
+// ✅ IMPORTANT: Webhook routes BEFORE other routes
+app.use("/payment/webhook", webhookRoutes);
+
+// Regular routes
 app.use("/payment/methods", paymentMethodRoutes);
 app.use("/payment/deposit", depositRoutes);
 app.use("/payment/final", finalPaymentRoutes);
 app.use("/payment/refund", refundRoutes);
 app.use("/payment/transactions", transactionRoutes);
-app.use("/payment/webhook", webhookRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -101,6 +104,19 @@ async function startServer() {
         console.log(`   Set MOCK_PAYMENT=false to use real providers\n`);
       } else {
         console.log(`💳 Providers: Stripe, PayPal, VNPay`);
+      }
+
+      // ✅ Log webhook configuration
+      console.log(`\n🔗 Webhook Endpoints:`);
+      console.log(`   Stripe: http://localhost:${PORT}/payment/webhook/stripe`);
+      console.log(`   PayPal: http://localhost:${PORT}/payment/webhook/paypal`);
+      console.log(`   VNPay:  http://localhost:${PORT}/payment/webhook/vnpay`);
+
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
+        console.log(`   ✅ Stripe webhook secret configured`);
+      } else {
+        console.log(`   ⚠️  Stripe webhook secret NOT configured`);
+        console.log(`   Set STRIPE_WEBHOOK_SECRET in .env file`);
       }
     });
 

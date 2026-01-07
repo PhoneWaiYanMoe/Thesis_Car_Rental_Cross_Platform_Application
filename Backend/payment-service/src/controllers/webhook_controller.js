@@ -1,5 +1,5 @@
 // Backend/payment-service/src/controllers/webhook_controller.js
-// ✅ UPDATED: Better Stripe webhook handling
+// ✅ COMPLETE FIX: Proper webhook handling with booking status updates
 
 const pool = require("../config/database");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
@@ -164,29 +164,49 @@ class WebhookController {
   async handlePaymentSuccess(paymentIntent, provider = "stripe") {
     try {
       const { id, metadata } = paymentIntent;
-      const { bookingId, type } = metadata;
 
-      console.log(`💳 Processing payment success for booking: ${bookingId}`);
-      console.log(`   Type: ${type}`);
-      console.log(`   Provider: ${provider}`);
+      console.log(`💳 Processing payment success webhook`);
       console.log(`   Payment Intent ID: ${id}`);
+      console.log(`   Metadata:`, metadata);
 
-      // Find transaction by booking_id and type
+      // ✅ FIX: Find transaction by provider intent_id (not metadata)
       const txResult = await pool.query(
-        `SELECT transaction_id FROM transactions 
-         WHERE booking_id = $1 AND type = $2 AND status = 'pending'
-         ORDER BY created_at DESC LIMIT 1`,
-        [bookingId, type]
+        `SELECT transaction_id, booking_id, type 
+         FROM transactions 
+         WHERE intent_id = $1 AND status = 'pending'
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [id]
       );
 
       if (txResult.rows.length === 0) {
-        console.error(
-          `❌ No pending transaction found for booking: ${bookingId}`
+        console.error(`❌ No pending transaction found for intent: ${id}`);
+
+        // Try to find ANY transaction with this intent_id for debugging
+        const debugResult = await pool.query(
+          `SELECT transaction_id, booking_id, type, status 
+           FROM transactions 
+           WHERE intent_id = $1`,
+          [id]
         );
+
+        if (debugResult.rows.length > 0) {
+          console.log(
+            `⚠️  Found transaction but status is: ${debugResult.rows[0].status}`
+          );
+        } else {
+          console.log(`⚠️  No transaction found at all with intent_id: ${id}`);
+        }
+
         return;
       }
 
-      const transactionId = txResult.rows[0].transaction_id;
+      const transaction = txResult.rows[0];
+      const { transaction_id, booking_id, type } = transaction;
+
+      console.log(`✅ Found transaction: ${transaction_id}`);
+      console.log(`   Booking: ${booking_id}`);
+      console.log(`   Type: ${type}`);
 
       // Update transaction status
       await pool.query(
@@ -196,22 +216,24 @@ class WebhookController {
              completed_at = NOW(),
              updated_at = NOW()
          WHERE transaction_id = $2`,
-        [id, transactionId]
+        [id, transaction_id]
       );
 
-      console.log(`✅ Transaction updated: ${transactionId}`);
+      console.log(`✅ Transaction ${transaction_id} marked as succeeded`);
 
-      // Update booking status via gRPC
-      await this.updateBookingAfterPayment(bookingId, transactionId, type);
+      // ✅ CRITICAL: Update booking status via gRPC
+      await this.updateBookingAfterPayment(booking_id, transaction_id, type);
 
-      console.log(`✅ Payment success handled completely`);
+      console.log(
+        `✅ Payment success handled completely for booking ${booking_id}`
+      );
     } catch (error) {
       console.error("❌ handlePaymentSuccess error:", error);
       throw error;
     }
   }
 
-  // ✅ Update booking status after successful payment
+  // ✅ CRITICAL: Update booking status after successful payment
   async updateBookingAfterPayment(bookingId, transactionId, paymentType) {
     try {
       console.log(
@@ -219,20 +241,22 @@ class WebhookController {
       );
 
       if (paymentType === "deposit") {
+        // ✅ Update booking: pending_payment → pending (waiting for owner approval)
         await bookingGrpcClient.updateBookingAfterDepositPayment(
           bookingId,
           transactionId
         );
         console.log(
-          `✅ Booking ${bookingId}: status updated to "pending" (deposit paid)`
+          `✅ Booking ${bookingId}: status updated to "pending" (deposit paid, waiting for owner)`
         );
       } else if (paymentType === "final_payment") {
+        // ✅ Update booking: mark as fully paid (but status remains 'booking')
         await bookingGrpcClient.updateBookingAfterFinalPayment(
           bookingId,
           transactionId
         );
         console.log(
-          `✅ Booking ${bookingId}: marked as fully paid (final payment)`
+          `✅ Booking ${bookingId}: marked as fully paid (final payment complete)`
         );
       }
     } catch (error) {
@@ -240,6 +264,11 @@ class WebhookController {
         `❌ Failed to update booking ${bookingId} after payment:`,
         error
       );
+      console.error(
+        `   This is a CRITICAL error - payment succeeded but booking not updated!`
+      );
+      // ✅ Don't throw - we still want to acknowledge the webhook
+      // But log it prominently so it can be fixed manually
     }
   }
 
@@ -247,11 +276,9 @@ class WebhookController {
 
   async handlePaymentFailed(paymentIntent) {
     try {
-      const { id, metadata, last_payment_error } = paymentIntent;
-      const { bookingId, type } = metadata;
+      const { id, last_payment_error } = paymentIntent;
 
-      console.log(`❌ Payment failed for booking: ${bookingId}`);
-      console.log(`   Type: ${type}`);
+      console.log(`❌ Payment failed for intent: ${id}`);
       console.log(
         `   Error: ${last_payment_error?.message || "Unknown error"}`
       );
@@ -261,14 +288,13 @@ class WebhookController {
          SET status = 'failed',
              error_message = $1,
              updated_at = NOW()
-         WHERE booking_id = $2 AND type = $3 AND status = 'pending'`,
-        [last_payment_error?.message || "Payment failed", bookingId, type]
+         WHERE intent_id = $2 AND status = 'pending'`,
+        [last_payment_error?.message || "Payment failed", id]
       );
 
       console.log(`✅ Payment failure recorded`);
     } catch (error) {
       console.error("❌ handlePaymentFailed error:", error);
-      throw error;
     }
   }
 
@@ -276,23 +302,21 @@ class WebhookController {
 
   async handlePaymentCanceled(paymentIntent) {
     try {
-      const { id, metadata } = paymentIntent;
-      const { bookingId, type } = metadata;
+      const { id } = paymentIntent;
 
-      console.log(`🚫 Payment canceled for booking: ${bookingId}`);
+      console.log(`🚫 Payment canceled for intent: ${id}`);
 
       await pool.query(
         `UPDATE transactions
          SET status = 'cancelled',
              updated_at = NOW()
-         WHERE booking_id = $1 AND type = $2 AND status = 'pending'`,
-        [bookingId, type]
+         WHERE intent_id = $1 AND status = 'pending'`,
+        [id]
       );
 
       console.log(`✅ Payment cancellation recorded`);
     } catch (error) {
       console.error("❌ handlePaymentCanceled error:", error);
-      throw error;
     }
   }
 
