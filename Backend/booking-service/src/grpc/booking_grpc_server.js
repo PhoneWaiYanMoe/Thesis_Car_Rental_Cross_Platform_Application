@@ -1,5 +1,5 @@
 // Backend/booking-service/src/grpc/booking_grpc_server.js
-// ✅ UPDATED: Added payment integration handlers
+// ✅ VERIFICATION: Ensure all methods are properly registered
 
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
@@ -237,10 +237,14 @@ class BookingGrpcServer {
     }
   }
 
-  // ✅ NEW: Update booking after deposit payment
+  // ✅ CRITICAL: Update booking after deposit payment
   async updateBookingAfterDepositPayment(call, callback) {
     try {
       const { booking_id, transaction_id } = call.request;
+
+      console.log(`\n🔄 gRPC: Updating booking after deposit payment`);
+      console.log(`   Booking ID: ${booking_id}`);
+      console.log(`   Transaction ID: ${transaction_id}`);
 
       // Update booking: deposit_paid = true, status = "pending"
       const result = await pool.query(
@@ -251,20 +255,49 @@ class BookingGrpcServer {
              updated_at = NOW()
          WHERE booking_id = $2
          AND status = 'pending_payment'
-         RETURNING booking_id, status`,
+         RETURNING booking_id, status, deposit_paid`,
         [transaction_id, booking_id]
       );
 
       if (result.rows.length === 0) {
+        console.error(`❌ Booking not found or not in pending_payment status`);
+        console.error(`   Booking ID: ${booking_id}`);
+
+        // Check current status
+        const checkResult = await pool.query(
+          `SELECT booking_id, status, deposit_paid FROM bookings WHERE booking_id = $1`,
+          [booking_id]
+        );
+
+        if (checkResult.rows.length > 0) {
+          const currentStatus = checkResult.rows[0];
+          console.error(`   Current status: ${currentStatus.status}`);
+          console.error(`   Deposit paid: ${currentStatus.deposit_paid}`);
+
+          // If already in pending status and deposit paid, consider it success
+          if (
+            currentStatus.status === "pending" &&
+            currentStatus.deposit_paid
+          ) {
+            console.log(`✅ Booking already updated (idempotent success)`);
+            return callback(null, {
+              success: true,
+              message: "Booking already updated after deposit payment",
+              new_status: "pending",
+            });
+          }
+        }
+
         return callback({
           code: grpc.status.FAILED_PRECONDITION,
           message: "Booking not found or not in pending_payment status",
         });
       }
 
-      console.log(
-        `✅ Booking ${booking_id} updated after deposit payment: status = pending`
-      );
+      const updatedBooking = result.rows[0];
+      console.log(`✅ Booking ${booking_id} updated successfully`);
+      console.log(`   New status: ${updatedBooking.status}`);
+      console.log(`   Deposit paid: ${updatedBooking.deposit_paid}`);
 
       callback(null, {
         success: true,
@@ -273,6 +306,7 @@ class BookingGrpcServer {
       });
     } catch (error) {
       console.error("❌ gRPC updateBookingAfterDepositPayment error:", error);
+      console.error("   Stack:", error.stack);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -280,10 +314,14 @@ class BookingGrpcServer {
     }
   }
 
-  // ✅ NEW: Update booking after final payment
+  // ✅ CRITICAL: Update booking after final payment
   async updateBookingAfterFinalPayment(call, callback) {
     try {
       const { booking_id, transaction_id } = call.request;
+
+      console.log(`\n🔄 gRPC: Updating booking after final payment`);
+      console.log(`   Booking ID: ${booking_id}`);
+      console.log(`   Transaction ID: ${transaction_id}`);
 
       // Update booking: final_payment_paid = true
       const result = await pool.query(
@@ -293,11 +331,39 @@ class BookingGrpcServer {
              updated_at = NOW()
          WHERE booking_id = $2
          AND status = 'booking'
-         RETURNING booking_id, status`,
+         RETURNING booking_id, status, final_payment_paid`,
         [transaction_id, booking_id]
       );
 
       if (result.rows.length === 0) {
+        console.error(`❌ Booking not found or not in booking status`);
+
+        // Check current status
+        const checkResult = await pool.query(
+          `SELECT booking_id, status, final_payment_paid FROM bookings WHERE booking_id = $1`,
+          [booking_id]
+        );
+
+        if (checkResult.rows.length > 0) {
+          const currentStatus = checkResult.rows[0];
+          console.error(`   Current status: ${currentStatus.status}`);
+          console.error(
+            `   Final payment paid: ${currentStatus.final_payment_paid}`
+          );
+
+          // If already paid, consider it success
+          if (currentStatus.final_payment_paid) {
+            console.log(
+              `✅ Final payment already recorded (idempotent success)`
+            );
+            return callback(null, {
+              success: true,
+              message: "Booking already updated after final payment",
+              new_status: currentStatus.status,
+            });
+          }
+        }
+
         return callback({
           code: grpc.status.FAILED_PRECONDITION,
           message: "Booking not found or not in booking status",
@@ -315,6 +381,7 @@ class BookingGrpcServer {
       });
     } catch (error) {
       console.error("❌ gRPC updateBookingAfterFinalPayment error:", error);
+      console.error("   Stack:", error.stack);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message,
@@ -323,7 +390,7 @@ class BookingGrpcServer {
   }
 
   start(port = 50052) {
-    this.server.addService(bookingProto.BookingService.service, {
+    const handlers = {
       VerifyBookingForReview: this.verifyBookingForReview.bind(this),
       MarkAsReviewed: this.markAsReviewed.bind(this),
       GetBookingDetails: this.getBookingDetails.bind(this),
@@ -332,7 +399,14 @@ class BookingGrpcServer {
         this.updateBookingAfterDepositPayment.bind(this),
       UpdateBookingAfterFinalPayment:
         this.updateBookingAfterFinalPayment.bind(this),
+    };
+
+    console.log(`\n📋 Registering gRPC service handlers:`);
+    Object.keys(handlers).forEach((method) => {
+      console.log(`   ✓ ${method}`);
     });
+
+    this.server.addService(bookingProto.BookingService.service, handlers);
 
     this.server.bindAsync(
       `0.0.0.0:${port}`,
