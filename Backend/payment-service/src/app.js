@@ -1,5 +1,5 @@
 // Backend/payment-service/src/app.js
-// ✅ CRITICAL FIX: Proper raw body handling for Stripe webhooks
+// ✅ FIXED: Initialize gRPC client AFTER routes are set up
 
 require("dotenv").config();
 const express = require("express");
@@ -27,7 +27,6 @@ const app = express();
 app.use(cors());
 
 // ✅ CRITICAL: Webhook route with raw body MUST come BEFORE express.json()
-// This preserves the raw body for Stripe signature verification
 app.use(
   "/payment/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -67,14 +66,14 @@ if (process.env.MOCK_PAYMENT === "true") {
   console.log("⚠️  [MOCK MODE] Mock payment routes enabled");
 }
 
-// ✅ Regular routes (webhook is already mounted above with raw body)
+// ✅ Regular routes
 app.use("/payment/methods", paymentMethodRoutes);
 app.use("/payment/deposit", depositRoutes);
 app.use("/payment/final", finalPaymentRoutes);
 app.use("/payment/refund", refundRoutes);
 app.use("/payment/transactions", transactionRoutes);
 
-// Other webhook routes (VNPay, PayPal) with normal body parsing
+// Other webhook routes (VNPay, PayPal)
 app.use("/payment/webhook/vnpay", webhookRoutes);
 app.use("/payment/webhook/paypal", webhookRoutes);
 
@@ -94,10 +93,27 @@ async function startServer() {
     console.log("🔄 Running database migrations...");
     await runMigrations();
 
+    // ✅ Initialize gRPC client AFTER migrations but BEFORE starting HTTP server
+    console.log("\n🔄 Initializing gRPC clients...");
+
+    try {
+      // This will trigger the constructor and log all initialization details
+      const bookingGrpcClient = require("./grpc/booking_grpc_client");
+      console.log("✅ Booking gRPC client ready");
+    } catch (error) {
+      console.error("❌ Failed to initialize Booking gRPC client:", error);
+      console.error("\n⚠️  CRITICAL: Cannot proceed without gRPC client");
+      console.error(
+        "   Check that booking.proto exists in:",
+        path.join(__dirname, "../proto")
+      );
+      process.exit(1);
+    }
+
     // Start HTTP server
     const PORT = process.env.PORT || 3006;
     app.listen(PORT, () => {
-      console.log(`✅ Payment Service HTTP running on port ${PORT}`);
+      console.log(`\n✅ Payment Service HTTP running on port ${PORT}`);
       console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
 
       if (process.env.MOCK_PAYMENT === "true") {
@@ -114,13 +130,20 @@ async function startServer() {
       // Log webhook configuration
       console.log(`\n🔗 Webhook Endpoints:`);
       console.log(
-        `   Stripe: https://master-albacore-urgently.ngrok-free.app/payment/webhook/stripe`
+        `   Stripe: ${
+          process.env.BASE_URL || "http://localhost:3006"
+        }/payment/webhook/stripe`
       );
       console.log(
-        `   PayPal: https://master-albacore-urgently.ngrok-free.app/payment/webhook/paypal`
+        `   PayPal: ${
+          process.env.BASE_URL || "http://localhost:3006"
+        }/payment/webhook/paypal`
       );
       console.log(
-        `   VNPay:  https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay`
+        `   VNPay:  ${
+          process.env.VNPAY_RETURN_URL ||
+          "http://localhost:3006/payment/webhook/vnpay"
+        }`
       );
 
       if (process.env.STRIPE_WEBHOOK_SECRET) {
@@ -146,7 +169,7 @@ async function startServer() {
       console.log("   ✓ End-to-End Encryption (E2EE)");
       console.log("   ✓ TLS 1.3 Transport Security");
       console.log("   ✓ Webhook Signature Verification");
-      console.log("   ✓ Tokenized Payment Storage");
+      console.log("   ✓ Tokenized Payment Storage\n");
     }
   } catch (error) {
     console.error("❌ Failed to start server:", error);

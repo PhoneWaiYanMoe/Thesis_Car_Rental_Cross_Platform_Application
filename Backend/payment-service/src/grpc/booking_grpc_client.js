@@ -1,58 +1,128 @@
 // Backend/payment-service/src/grpc/booking_grpc_client.js
-// ✅ FIXED: Proper method definitions with correct proto service methods
+// ✅ FINAL FIX: Don't check client methods with Object.keys - they're not enumerable
 
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
+const fs = require("fs");
 
 const PROTO_PATH = path.join(__dirname, "../../proto/booking.proto");
-const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
-  keepCase: true,
-  longs: String,
-  enums: String,
-  defaults: true,
-  oneofs: true,
-});
-
-const bookingProto = grpc.loadPackageDefinition(packageDefinition).booking;
 
 class BookingGrpcClient {
   constructor() {
+    console.log(`\n📡 Initializing Booking gRPC Client`);
+    console.log(`   Proto path: ${PROTO_PATH}`);
+
+    // ✅ Check if proto file exists
+    if (!fs.existsSync(PROTO_PATH)) {
+      console.error(`❌ Proto file not found: ${PROTO_PATH}`);
+      throw new Error(`Proto file not found: ${PROTO_PATH}`);
+    }
+
+    console.log(`✅ Proto file exists`);
+
+    // ✅ Load proto synchronously
+    let packageDefinition;
+    try {
+      packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        defaults: true,
+        oneofs: true,
+      });
+      console.log(`✅ Proto file loaded successfully`);
+    } catch (error) {
+      console.error(`❌ Failed to load proto file:`, error);
+      throw error;
+    }
+
+    // ✅ Load package definition
+    const grpcPackage = grpc.loadPackageDefinition(packageDefinition);
+
+    if (!grpcPackage.booking) {
+      console.error(`❌ Package 'booking' not found in proto`);
+      throw new Error("Package 'booking' not found in proto");
+    }
+
+    const bookingProto = grpcPackage.booking;
+
+    if (!bookingProto.BookingService) {
+      console.error(`❌ BookingService not found in booking package`);
+      throw new Error("BookingService not found in proto");
+    }
+
+    console.log(`✅ BookingService loaded from proto`);
+
+    // ✅ Log available service methods (from proto definition)
+    if (bookingProto.BookingService.service) {
+      const serviceMethods = Object.keys(bookingProto.BookingService.service);
+      console.log(`📋 Available service methods: ${serviceMethods.join(", ")}`);
+
+      // Store service definition for later verification
+      this.serviceDefinition = bookingProto.BookingService.service;
+    }
+
+    // ✅ Create gRPC client
     const bookingServiceUrl =
       process.env.BOOKING_SERVICE_GRPC_URL || "localhost:50052";
 
-    // Use DNS resolver for Docker networking
-    const target = bookingServiceUrl.includes(":")
-      ? bookingServiceUrl
-      : `${bookingServiceUrl}:50052`;
-
     this.client = new bookingProto.BookingService(
-      target,
+      bookingServiceUrl,
       grpc.credentials.createInsecure(),
       {
-        // Add retry and keepalive options for better connection handling
         "grpc.keepalive_time_ms": 30000,
         "grpc.keepalive_timeout_ms": 5000,
         "grpc.keepalive_permit_without_calls": true,
-        "grpc.http2.max_pings_without_data": 0,
-        "grpc.http2.min_time_between_pings_ms": 10000,
-        "grpc.http2.min_ping_interval_without_data_ms": 300000,
       }
     );
 
-    console.log(`📡 Booking gRPC client configured for ${target}`);
+    console.log(`✅ Booking gRPC client connected to ${bookingServiceUrl}`);
 
-    // ✅ Log available methods for debugging
-    console.log(
-      `📋 Available gRPC methods:`,
-      Object.keys(this.client).filter((k) => !k.startsWith("_"))
-    );
+    // ✅ CRITICAL: gRPC client methods are NOT enumerable!
+    // Object.keys() won't work. Instead, verify methods directly by checking if they exist
+    const requiredMethods = [
+      "GetBookingDetails",
+      "UpdateBookingAfterDepositPayment",
+      "UpdateBookingAfterFinalPayment",
+    ];
+
+    let allMethodsPresent = true;
+    console.log(`\n🔍 Verifying required gRPC methods:`);
+
+    requiredMethods.forEach((method) => {
+      // Check if method exists on client (even if not enumerable)
+      if (typeof this.client[method] === "function") {
+        console.log(`   ✅ ${method} - available`);
+      } else {
+        console.log(`   ❌ ${method} - MISSING!`);
+        allMethodsPresent = false;
+      }
+    });
+
+    if (!allMethodsPresent) {
+      console.error(`\n❌ Some required methods are missing!`);
+      console.error(`   This will cause runtime errors`);
+      throw new Error("Required gRPC methods are missing from client");
+    }
+
+    console.log(`\n✅ All required gRPC methods verified`);
+    console.log(`✅ Booking gRPC client initialization complete\n`);
   }
 
-  // ==================== EXISTING METHODS ====================
+  // ==================== METHODS ====================
 
   getBookingDetails(bookingId) {
     return new Promise((resolve, reject) => {
+      if (!this.client) {
+        return reject(new Error("gRPC client not initialized"));
+      }
+
+      if (typeof this.client.GetBookingDetails !== "function") {
+        console.error(`❌ GetBookingDetails is not a function`);
+        return reject(new Error("GetBookingDetails method not available"));
+      }
+
       this.client.GetBookingDetails(
         { booking_id: bookingId },
         (error, response) => {
@@ -62,9 +132,6 @@ class BookingGrpcClient {
           } else {
             console.log(`✅ Retrieved booking details: ${bookingId}`, {
               status: response.status,
-              total: response.total_amount,
-              deposit: response.deposit_amount,
-              remaining: response.remaining_payment,
               deposit_paid: response.deposit_paid,
             });
             resolve(response);
@@ -74,28 +141,24 @@ class BookingGrpcClient {
     });
   }
 
-  // ✅ FIXED: Update booking after deposit payment (status: pending_payment → pending)
   updateBookingAfterDepositPayment(bookingId, transactionId) {
     return new Promise((resolve, reject) => {
-      console.log(`🔄 Calling UpdateBookingAfterDepositPayment via gRPC`);
+      console.log(`\n🔄 Calling UpdateBookingAfterDepositPayment via gRPC`);
       console.log(`   Booking ID: ${bookingId}`);
       console.log(`   Transaction ID: ${transactionId}`);
 
-      // ✅ Check if method exists
+      if (!this.client) {
+        const error = new Error("gRPC client not initialized");
+        console.error(`❌ ${error.message}`);
+        return reject(error);
+      }
+
       if (typeof this.client.UpdateBookingAfterDepositPayment !== "function") {
-        const availableMethods = Object.keys(this.client).filter(
-          (k) => !k.startsWith("_")
+        console.error(`❌ UpdateBookingAfterDepositPayment is not a function`);
+        const error = new Error(
+          "Method UpdateBookingAfterDepositPayment not available"
         );
-        console.error(`❌ Method UpdateBookingAfterDepositPayment not found!`);
-        console.error(`   Available methods:`, availableMethods);
-        reject(
-          new Error(
-            `gRPC method UpdateBookingAfterDepositPayment not available. Available: ${availableMethods.join(
-              ", "
-            )}`
-          )
-        );
-        return;
+        return reject(error);
       }
 
       this.client.UpdateBookingAfterDepositPayment(
@@ -114,7 +177,7 @@ class BookingGrpcClient {
             reject(error);
           } else {
             console.log(
-              `✅ Booking ${bookingId} updated after deposit payment: status = ${response.new_status}`
+              `✅ Booking ${bookingId} updated: status = ${response.new_status}`
             );
             resolve(response);
           }
@@ -123,28 +186,21 @@ class BookingGrpcClient {
     });
   }
 
-  // ✅ FIXED: Update booking after final payment (remains in 'booking' status, but fully paid)
   updateBookingAfterFinalPayment(bookingId, transactionId) {
     return new Promise((resolve, reject) => {
-      console.log(`🔄 Calling UpdateBookingAfterFinalPayment via gRPC`);
+      console.log(`\n🔄 Calling UpdateBookingAfterFinalPayment via gRPC`);
       console.log(`   Booking ID: ${bookingId}`);
       console.log(`   Transaction ID: ${transactionId}`);
 
-      // ✅ Check if method exists
+      if (!this.client) {
+        return reject(new Error("gRPC client not initialized"));
+      }
+
       if (typeof this.client.UpdateBookingAfterFinalPayment !== "function") {
-        const availableMethods = Object.keys(this.client).filter(
-          (k) => !k.startsWith("_")
+        console.error(`❌ UpdateBookingAfterFinalPayment is not a function`);
+        return reject(
+          new Error("UpdateBookingAfterFinalPayment method not available")
         );
-        console.error(`❌ Method UpdateBookingAfterFinalPayment not found!`);
-        console.error(`   Available methods:`, availableMethods);
-        reject(
-          new Error(
-            `gRPC method UpdateBookingAfterFinalPayment not available. Available: ${availableMethods.join(
-              ", "
-            )}`
-          )
-        );
-        return;
       }
 
       this.client.UpdateBookingAfterFinalPayment(
@@ -158,39 +214,10 @@ class BookingGrpcClient {
               "❌ gRPC updateBookingAfterFinalPayment error:",
               error
             );
-            console.error("   Error code:", error.code);
-            console.error("   Error details:", error.details);
             reject(error);
           } else {
             console.log(
-              `✅ Booking ${bookingId} updated after final payment: status = ${response.new_status}`
-            );
-            resolve(response);
-          }
-        }
-      );
-    });
-  }
-
-  // ✅ Generic payment status update (fallback method)
-  updateBookingPaymentStatus(bookingId, paymentType, paid, transactionId) {
-    return new Promise((resolve, reject) => {
-      console.log(`🔄 Calling UpdateBookingPaymentStatus via gRPC (fallback)`);
-
-      this.client.UpdateBookingPaymentStatus(
-        {
-          booking_id: bookingId,
-          payment_type: paymentType,
-          paid: paid,
-          transaction_id: transactionId,
-        },
-        (error, response) => {
-          if (error) {
-            console.error("❌ gRPC updateBookingPaymentStatus error:", error);
-            reject(error);
-          } else {
-            console.log(
-              `✅ Updated booking payment: ${bookingId} - ${paymentType} = ${paid}`
+              `✅ Booking ${bookingId} fully paid: status = ${response.new_status}`
             );
             resolve(response);
           }

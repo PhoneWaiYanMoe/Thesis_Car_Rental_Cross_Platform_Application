@@ -1,6 +1,3 @@
-// Backend/booking-service/proto/booking.proto
-// ✅ UPDATED: Added payment integration methods
-
 syntax = "proto3";
 
 package booking;
