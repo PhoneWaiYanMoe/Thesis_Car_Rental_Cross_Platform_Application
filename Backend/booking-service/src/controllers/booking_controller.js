@@ -766,83 +766,287 @@ class BookingController {
   }
 
   // ✅ UPDATED: Sign contract (must be done BEFORE final payment)
-  async signContract(req, res, next) {
-    const client = await pool.connect();
+ // Backend/booking-service/src/controllers/booking_controller.js
+// ✅ FIXED: Sign contract function - corrected status check
 
-    try {
-      await client.query("BEGIN");
+async signContract(req, res, next) {
+  const client = await pool.connect();
 
-      const userId = req.user.userId;
-      const { id } = req.params;
-      const { signature, agreedToTerms } = req.body;
+  try {
+    await client.query("BEGIN");
 
-      if (!agreedToTerms) {
-        return res.status(400).json({ error: "You must agree to the terms" });
-      }
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { signature, agreedToTerms } = req.body;
 
-      const bookingResult = await client.query(
-        "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
-      );
-
-      if (bookingResult.rows.length === 0) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      const booking = bookingResult.rows[0];
-
-      if (booking.status !== "picked_up") {
-        return res.status(400).json({
-          error: `Cannot confirm return. Current status: ${booking.status}`,
-        });
-      }
-
-      const dateCheck = this.isActionAllowedByDate(booking, "return");
-      if (!dateCheck.allowed) {
-        return res.status(400).json({ error: dateCheck.reason });
-      }
-
-      const photoUrls = returnPhotos.map((photo, index) => {
-        if (typeof photo === "string" && photo.startsWith("http")) {
-          return photo;
-        }
-        return `https://mock-cdn.wiz.com/return/${id}_${Date.now()}_${
-          index + 1
-        }.jpg`;
-      });
-
-      await client.query(
-        `UPDATE bookings 
-         SET return_photos = $1,
-             return_odometer_reading = $2,
-             return_notes = $3,
-             return_confirmed_at = NOW(),
-             status = 'return_submitted',
-             updated_at = NOW()
-         WHERE booking_id = $4`,
-        [JSON.stringify(photoUrls), odometerReading, notes, id]
-      );
-
-      await client.query("COMMIT");
-
-      console.log(
-        `✅ Return submitted for booking: ${id} (status: return_submitted)`
-      );
-
-      res.json({
-        message: "Return submitted. You can now rate your experience!",
-        bookingStatus: "return_submitted",
-        photos: photoUrls,
-        canReview: true,
-      });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Confirm return error:", error);
-      next(error);
-    } finally {
-      client.release();
+    if (!agreedToTerms) {
+      return res.status(400).json({ error: "You must agree to the terms" });
     }
+
+    if (!signature || signature.trim() === "") {
+      return res.status(400).json({ error: "Signature is required" });
+    }
+
+    // Get booking
+    const bookingResult = await client.query(
+      "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+      [id, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingResult.rows[0];
+
+    // ✅ FIX: Check for correct status - should be "booking" not "picked_up"
+    if (booking.status !== "booking") {
+      return res.status(400).json({
+        error: `Cannot sign contract. Current status: ${booking.status}. Expected status: booking`,
+      });
+    }
+
+    // Check if deposit is paid
+    if (!booking.deposit_paid) {
+      return res.status(400).json({
+        error: "Deposit must be paid before signing contract",
+      });
+    }
+
+    // Check if contract is already signed
+    if (booking.contract_signed_at) {
+      return res.status(400).json({
+        error: "Contract has already been signed",
+      });
+    }
+
+    // Check if it's on or after the booking day
+    const dateCheck = this.isActionAllowedByDate(booking, "sign_contract");
+    if (!dateCheck.allowed) {
+      return res.status(400).json({ error: dateCheck.reason });
+    }
+
+    // Sign the contract
+    await client.query(
+      `UPDATE bookings 
+       SET customer_signature = $1,
+           contract_signed_at = NOW(),
+           updated_at = NOW()
+       WHERE booking_id = $2`,
+      [signature, id]
+    );
+
+    await client.query("COMMIT");
+
+    console.log(`✅ Contract signed for booking: ${id}`);
+
+    res.json({
+      message: "Contract signed successfully. You can now pay the remaining amount.",
+      bookingStatus: "booking",
+      contractSignedAt: new Date().toISOString(),
+      nextStep: "Pay remaining amount (final payment)",
+      canPayFinalPayment: true,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Sign contract error:", error);
+    next(error);
+  } finally {
+    client.release();
   }
+}
+
+// ✅ FIXED: Confirm pickup function
+async confirmPickup(req, res, next) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { pickupPhotos, odometerReading, notes } = req.body;
+
+    // Validate pickup photos
+    if (!pickupPhotos || !Array.isArray(pickupPhotos) || pickupPhotos.length < 3) {
+      return res.status(400).json({
+        error: "Please provide at least 3 pickup photos as an array",
+      });
+    }
+
+    if (!odometerReading) {
+      return res.status(400).json({
+        error: "Odometer reading is required",
+      });
+    }
+
+    // Get booking
+    const bookingResult = await client.query(
+      "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+      [id, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingResult.rows[0];
+
+    // Check status - must be "booking"
+    if (booking.status !== "booking") {
+      return res.status(400).json({
+        error: `Cannot confirm pickup. Current status: ${booking.status}. Expected status: booking`,
+      });
+    }
+
+    // Check if fully paid
+    if (!booking.deposit_paid || !booking.final_payment_paid) {
+      return res.status(400).json({
+        error: "Both deposit and final payment must be completed before pickup",
+      });
+    }
+
+    // Check if contract is signed
+    if (!booking.contract_signed_at) {
+      return res.status(400).json({
+        error: "Contract must be signed before pickup",
+      });
+    }
+
+    // Check if it's on or after the booking day
+    const dateCheck = this.isActionAllowedByDate(booking, "pickup");
+    if (!dateCheck.allowed) {
+      return res.status(400).json({ error: dateCheck.reason });
+    }
+
+    // Mock photo URLs for demonstration
+    const photoUrls = pickupPhotos.map((photo, index) => {
+      if (typeof photo === "string" && photo.startsWith("http")) {
+        return photo;
+      }
+      return `https://mock-cdn.wiz.com/pickup/${id}_${Date.now()}_${index + 1}.jpg`;
+    });
+
+    // Update booking to "picked_up" status
+    await client.query(
+      `UPDATE bookings 
+       SET pickup_condition_photos = $1,
+           pickup_odometer_reading = $2,
+           pickup_condition_notes = $3,
+           pickup_confirmed_at = NOW(),
+           status = 'picked_up',
+           updated_at = NOW()
+       WHERE booking_id = $4`,
+      [JSON.stringify(photoUrls), odometerReading, notes, id]
+    );
+
+    await client.query("COMMIT");
+
+    console.log(`✅ Pickup confirmed for booking: ${id} (status: picked_up)`);
+
+    res.json({
+      message: "Pickup confirmed successfully. Enjoy your ride!",
+      bookingStatus: "picked_up",
+      photos: photoUrls,
+      nextStep: "Return the vehicle on the end date and submit return photos",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Confirm pickup error:", error);
+    next(error);
+  } finally {
+    client.release();
+  }
+}
+
+// ✅ FIXED: Confirm return function
+async confirmReturn(req, res, next) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { returnPhotos, odometerReading, notes } = req.body;
+
+    // Validate return photos
+    if (!returnPhotos || !Array.isArray(returnPhotos) || returnPhotos.length < 3) {
+      return res.status(400).json({
+        error: "Please provide at least 3 return photos as an array",
+      });
+    }
+
+    if (!odometerReading) {
+      return res.status(400).json({
+        error: "Odometer reading is required",
+      });
+    }
+
+    // Get booking
+    const bookingResult = await client.query(
+      "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+      [id, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const booking = bookingResult.rows[0];
+
+    // ✅ FIX: Check for correct status - should be "picked_up"
+    if (booking.status !== "picked_up") {
+      return res.status(400).json({
+        error: `Cannot confirm return. Current status: ${booking.status}. Expected status: picked_up`,
+      });
+    }
+
+    // Check if it's on or after the return day
+    const dateCheck = this.isActionAllowedByDate(booking, "return");
+    if (!dateCheck.allowed) {
+      return res.status(400).json({ error: dateCheck.reason });
+    }
+
+    // Mock photo URLs
+    const photoUrls = returnPhotos.map((photo, index) => {
+      if (typeof photo === "string" && photo.startsWith("http")) {
+        return photo;
+      }
+      return `https://mock-cdn.wiz.com/return/${id}_${Date.now()}_${index + 1}.jpg`;
+    });
+
+    // Update booking to "return_submitted" status
+    await client.query(
+      `UPDATE bookings 
+       SET return_photos = $1,
+           return_odometer_reading = $2,
+           return_notes = $3,
+           return_confirmed_at = NOW(),
+           status = 'return_submitted',
+           updated_at = NOW()
+       WHERE booking_id = $4`,
+      [JSON.stringify(photoUrls), odometerReading, notes, id]
+    );
+
+    await client.query("COMMIT");
+
+    console.log(`✅ Return submitted for booking: ${id} (status: return_submitted)`);
+
+    res.json({
+      message: "Return submitted successfully. Waiting for owner confirmation.",
+      bookingStatus: "return_submitted",
+      photos: photoUrls,
+      nextStep: "Owner will review and confirm the return",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Confirm return error:", error);
+    next(error);
+  } finally {
+    client.release();
+  }
+}
 
   // ✅ NEW: Pay final payment (after signing contract)
   async payFinalPayment(req, res, next) {
