@@ -47,8 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _destinationLongitude;
 
   // Form data - datetime
-  Map<String, String>? _dateTime;
-
+  String? _dateTimeString;
   final List<Map<String, String>> _articles = [
     {'title': 'Terms and\nConditions', 'image': 'assets/images/article.png'},
     {'title': 'Cancellation\nrules', 'image': 'assets/images/article_2.png'},
@@ -56,9 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool get _canSearch {
     if (_selectedTab == 0) {
-      return _location != null && _dateTime != null;
+      return _location != null && _dateTimeString != null;
     } else {
-      return _pickup != null && _destination != null && _dateTime != null;
+      return _pickup != null && _destination != null && _dateTimeString != null;
     }
   }
 
@@ -100,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _pickupLatitude = _pickupLongitude = null;
                     _destination = _destinationCity = _destinationDistrict = null;
                     _destinationLatitude = _destinationLongitude = null;
-                    _dateTime = null;
+                    _dateTimeString = null;
                   });
                 },
               ),
@@ -141,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     print('   - Location: $_location');
     print('   - City: ${_selectedTab == 0 ? _locationCity : _pickupCity}');
     print('   - District: ${_selectedTab == 0 ? _locationDistrict : _pickupDistrict}');
-    print('   - DateTime: ${_dateTime!['start']} - ${_dateTime!['end']}');
+    // print('   - DateTime: ${_dateTime!['start']} - ${_dateTime!['end']}');
 
     final data = {
       'mode': _selectedTab == 0 ? 'Self Drive' : 'With Driver',
@@ -169,8 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'destinationLongitude': _destinationLongitude,
 
       // DateTime
-      'datetime': '${_dateTime!['start']} - ${_dateTime!['end']}',
-
+      'datetime': _dateTimeString ?? '',
       // Legacy field for backward compatibility
       'allCars': [],
     };
@@ -251,15 +249,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDateTimeField() {
-    final text = _dateTime != null ? '${_dateTime!['start']} - ${_dateTime!['end']}' : 'Select Date & Time';
+    final text = _dateTimeString ?? 'Select Date & Time';
+
     return ClickableField(
       icon: Icons.calendar_today,
       hint: text,
       onTap: () async {
         final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const DateTimeScreen()));
-        if (result != null) {
-          setState(() => _dateTime = result);
-          print('✅ DateTime selected: ${_dateTime!['start']} - ${_dateTime!['end']}');
+
+        if (result != null && result is Map<String, dynamic>) {
+          final newDateTime = result['datetime'] as String?;
+          if (newDateTime != null) {
+            setState(() {
+              _dateTimeString = newDateTime;
+            });
+            print('DateTime selected: $_dateTimeString');
+          }
         }
       },
     );

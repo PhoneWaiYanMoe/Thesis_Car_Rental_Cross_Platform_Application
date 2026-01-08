@@ -1,6 +1,3 @@
-// Mobile/wiz/lib/screens/Payment/services/payment_api_service.dart
-// ✅ FIXED: Don't send provider name as paymentMethodId
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';

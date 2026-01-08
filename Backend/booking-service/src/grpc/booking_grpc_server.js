@@ -314,7 +314,6 @@ class BookingGrpcServer {
     }
   }
 
-  // ✅ CRITICAL: Update booking after final payment
   async updateBookingAfterFinalPayment(call, callback) {
     try {
       const { booking_id, transaction_id } = call.request;
@@ -323,15 +322,16 @@ class BookingGrpcServer {
       console.log(`   Booking ID: ${booking_id}`);
       console.log(`   Transaction ID: ${transaction_id}`);
 
-      // Update booking: final_payment_paid = true
+      // ✅ FIX: Update booking: final_payment_paid = true AND remaining_payment = 0
       const result = await pool.query(
         `UPDATE bookings 
          SET final_payment_paid = true,
              final_payment_transaction_id = $1,
+             remaining_payment = 0,
              updated_at = NOW()
          WHERE booking_id = $2
          AND status = 'booking'
-         RETURNING booking_id, status, final_payment_paid`,
+         RETURNING booking_id, status, final_payment_paid, remaining_payment`,
         [transaction_id, booking_id]
       );
 
@@ -340,7 +340,7 @@ class BookingGrpcServer {
 
         // Check current status
         const checkResult = await pool.query(
-          `SELECT booking_id, status, final_payment_paid FROM bookings WHERE booking_id = $1`,
+          `SELECT booking_id, status, final_payment_paid, remaining_payment FROM bookings WHERE booking_id = $1`,
           [booking_id]
         );
 
@@ -349,6 +349,9 @@ class BookingGrpcServer {
           console.error(`   Current status: ${currentStatus.status}`);
           console.error(
             `   Final payment paid: ${currentStatus.final_payment_paid}`
+          );
+          console.error(
+            `   Remaining payment: ${currentStatus.remaining_payment}`
           );
 
           // If already paid, consider it success
@@ -370,9 +373,11 @@ class BookingGrpcServer {
         });
       }
 
+      const updatedBooking = result.rows[0];
       console.log(
         `✅ Booking ${booking_id} updated after final payment: fully paid`
       );
+      console.log(`   Remaining payment: ${updatedBooking.remaining_payment}`);
 
       callback(null, {
         success: true,

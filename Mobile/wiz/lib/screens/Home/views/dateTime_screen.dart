@@ -95,10 +95,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppStyles.surface(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
         child: Row(
           children: [
             Text(label, style: AppStyles.caption(context)),
@@ -112,23 +109,57 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   Widget _buildDurationAndSetButton() {
-    final days = _startDate != null && _endDate != null
-        ? _endDate!.difference(_startDate!).inDays + 1
-        : 0;
+    String durationText = 'Duration: Not selected';
+
+    if (_startDate != null && _endDate != null) {
+      // Combine dates with times
+      final startDateTime = DateTime(
+        _startDate!.year,
+        _startDate!.month,
+        _startDate!.day,
+        _startTime.hour,
+        _startTime.minute,
+      );
+
+      final endDateTime = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, _endTime.hour, _endTime.minute);
+
+      final difference = endDateTime.difference(startDateTime);
+
+      if (difference.inDays >= 1) {
+        final days = difference.inDays;
+        durationText = 'Duration: $days day${days == 1 ? '' : 's'}';
+      } else if (difference.inHours > 0) {
+        final hours = difference.inHours;
+        durationText = 'Duration: $hours hour${hours == 1 ? '' : 's'}';
+      } else if (difference.inMinutes > 0) {
+        final minutes = difference.inMinutes;
+        durationText = 'Duration: $minutes minute${minutes == 1 ? '' : 's'}';
+      } else {
+        durationText = 'Duration: Same time';
+      }
+    } else if (_startDate != null) {
+      durationText = 'Duration: Start date only';
+    }
 
     return Column(
       children: [
-        Text('Duration: ${days} days', style: AppStyles.caption(context)),
+        Text(durationText, style: AppStyles.caption(context)),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             style: AppStyles.primaryButtonStyle(context),
             onPressed: () {
-              final result = {
-                'start': '${_startTime.format(context)}, ${_startDate?.day}/${_startDate?.month}',
-                'end': '${_endTime.format(context)}, ${_endDate?.day}/${_endDate?.month}',
-              };
+              if (_startDate == null) return;
+
+              final formattedStart =
+                  '${_startTime.format(context)}, ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}';
+              final formattedEnd = _endDate != null
+                  ? '${_endTime.format(context)}, ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                  : formattedStart; // fallback if no end
+
+              final result = {'datetime': '$formattedStart - $formattedEnd'};
+
               Navigator.pop(context, result);
             },
             child: Text('Set Time', style: AppStyles.button),

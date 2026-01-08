@@ -39,7 +39,6 @@ extension BookingStatusExtension on BookingStatus {
 }
 
 /// Consolidated model for all booking-related data
-/// This eliminates the need to pass tripData and car separately
 class BookingData {
   // Trip information
   final String mode; // 'Self Drive' or 'With Driver'
@@ -47,29 +46,26 @@ class BookingData {
   final String? location; // For self-drive
   final String? pickup; // For with driver
   final String? destination; // For with driver
-  final String datetime; // Combined date-time string
-  final DateTime startDate;
-  final DateTime endDate;
-  final int days;
+  final String datetime; // Source of truth: e.g., "9:00 PM, 1/8/2026 - 8:00 PM, 2/8/2026"
 
   // Car information
   final Car car;
-  final int carIndex; // Keep if needed for navigation back
+  final int carIndex;
 
   // Booking options
   final TravelScope travelScope;
   final InsuranceOption insurance;
   final PaymentMethod paymentMethod;
 
-  // Rental information (combined from RentalBooking)
+  // Rental information
   final int? id;
   final BookingStatus? status;
   final String? price;
   final String? date;
   final String? duration;
   final bool? rated;
-  final bool? startPhotosSubmitted; // Track if start photos are submitted
-  final bool? endPhotosSubmitted; // Track if end photos are submitted
+  final bool? startPhotosSubmitted;
+  final bool? endPhotosSubmitted;
 
   // Detailed info
   final String? renterName;
@@ -85,6 +81,11 @@ class BookingData {
   final double? ownerRating;
   final int? ownerCars;
 
+  // COMPUTED GETTERS — always up-to-date based on 'datetime'
+  DateTime get startDate => _parseDateTimeString(datetime)['start'] as DateTime;
+  DateTime get endDate => _parseDateTimeString(datetime)['end'] as DateTime;
+  int get days => _parseDateTimeString(datetime)['days'] as int;
+
   BookingData({
     required this.mode,
     required this.withDriver,
@@ -92,9 +93,6 @@ class BookingData {
     this.pickup,
     this.destination,
     required this.datetime,
-    required this.startDate,
-    required this.endDate,
-    required this.days,
     required this.car,
     required this.carIndex,
     this.travelScope = TravelScope.inner,
@@ -122,24 +120,20 @@ class BookingData {
     this.endPhotosSubmitted = false,
   });
 
-  // Getters for car details (assuming Car model has name and image properties)
+  // Getters for car details
   String get carName => car.name;
-  String get carImage => car.image; // Adjust to match actual Car property (e.g., imagePath)
+  String get carImage => car.image;
 
-  // Create from Map (for navigation arguments)
-
-  // Create from Map (for navigation arguments)
+  // Factory from map (for navigation arguments)
   factory BookingData.fromMap(Map<String, dynamic> map) {
-    // ✅ CHANGED: Get car directly from map instead of using index
-    Car? car;
+    Car car;
 
     if (map.containsKey('car') && map['car'] is Car) {
-      // Car object passed directly
       car = map['car'] as Car;
     } else {
-      // ✅ FIXED: Create a placeholder car for trip summary display
+      // Placeholder car if none provided
       car = Car(
-        ownerId: 'owner_placeholder',
+        ownerId: 'placeholder',
         id: 'placeholder',
         image: 'assets/images/Car.png',
         images: ['assets/images/Car.png'],
@@ -168,22 +162,15 @@ class BookingData {
       );
     }
 
-    // Parse dates from datetime string
-    final datetime = map['datetime'] as String;
-    final dates = _parseDateTimeString(datetime);
-
     return BookingData(
       mode: map['mode'] as String,
       withDriver: map['withDriver'] as bool,
       location: map['location'] as String?,
       pickup: map['pickup'] as String?,
       destination: map['destination'] as String?,
-      datetime: datetime,
-      startDate: dates['start']!,
-      endDate: dates['end']!,
-      days: dates['days']!,
-      car: car, // ✅ Use car from map
-      carIndex: 0, // ✅ Keep for backwards compatibility but not used
+      datetime: map['datetime'] as String? ?? '9:00 PM, 1/1/2026 - 8:00 PM, 2/1/2026', // fallback
+      car: car,
+      carIndex: map['carIndex'] as int? ?? 0,
       travelScope: map['travelScope'] as TravelScope? ?? TravelScope.inner,
       insurance: map['insurance'] as InsuranceOption? ?? InsuranceOption.none,
       paymentMethod: map['paymentMethod'] as PaymentMethod? ?? PaymentMethod.none,
@@ -210,7 +197,6 @@ class BookingData {
     );
   }
 
-  // ✅ UPDATE: toMap to include car object
   Map<String, dynamic> toMap() {
     return {
       'mode': mode,
@@ -219,8 +205,8 @@ class BookingData {
       'pickup': pickup,
       'destination': destination,
       'datetime': datetime,
-      'car': car, // ✅ Include car object
-      'carIndex': carIndex, // Keep for compatibility
+      'car': car,
+      'carIndex': carIndex,
       'travelScope': travelScope,
       'insurance': insurance,
       'paymentMethod': paymentMethod,
@@ -247,7 +233,6 @@ class BookingData {
     };
   }
 
-  // Copy with for updating booking options
   BookingData copyWith({
     TravelScope? travelScope,
     InsuranceOption? insurance,
@@ -272,6 +257,7 @@ class BookingData {
     int? ownerCars,
     bool? startPhotosSubmitted,
     bool? endPhotosSubmitted,
+    String? datetime, // Only this triggers date/day update
   }) {
     return BookingData(
       mode: mode,
@@ -279,10 +265,7 @@ class BookingData {
       location: location,
       pickup: pickup,
       destination: destination,
-      datetime: datetime,
-      startDate: startDate,
-      endDate: endDate,
-      days: days,
+      datetime: datetime ?? this.datetime,
       car: car,
       carIndex: carIndex,
       travelScope: travelScope ?? this.travelScope,
@@ -311,7 +294,6 @@ class BookingData {
     );
   }
 
-  // Helper to get display location
   String get displayLocation {
     if (withDriver) {
       return '$pickup → $destination';
@@ -319,7 +301,6 @@ class BookingData {
     return location ?? 'No location';
   }
 
-  // Calculate pricing (use stored values if available, else compute)
   int get calculatedRentalPrice => rentalPrice ?? (car.price * days);
 
   int get calculatedInsuranceFee {
@@ -342,55 +323,55 @@ class BookingData {
   int get depositAmount => depositPayment ?? (totalPrice * 0.30).round();
   int get remainingAmount => remainingPayment ?? (totalPrice - depositAmount);
 
-  // Helper method to parse datetime string
+  // Helper: Parse datetime string into start, end, and days
   static Map<String, dynamic> _parseDateTimeString(String datetime) {
     try {
-      // Format: "9:00 PM, 26/11 - 8:00 PM, 3/12"
-      // or "8:50 AM, 12/Oct/2025 - 8:50 AM, 14/Oct/2025"
       final parts = datetime.split(' - ');
-      if (parts.length != 2) {
-        throw FormatException('Invalid datetime format');
-      }
+      if (parts.length != 2) throw FormatException('Invalid format');
 
-      final startDate = _parseDate(parts[0].trim());
-      final endDate = _parseDate(parts[1].trim());
-      final days = endDate.difference(startDate).inDays + 1;
+      final startStr = parts[0].trim();
+      final endStr = parts[1].trim();
 
-      print('Parsed dates - Start: $startDate, End: $endDate, Days: $days');
+      final startDate = _parseDate(startStr);
+      final endDate = _parseDate(endStr);
 
-      return {'start': startDate, 'end': endDate, 'days': days > 0 ? days : 1};
+      // Correct duration: 1/8 to 2/8 = 1 day
+      final difference = endDate.difference(startDate);
+      final days = difference.inDays;
+
+      return {
+        'start': startDate,
+        'end': endDate,
+        'days': days >= 1 ? days : 1, // Minimum 1 day
+      };
     } catch (e) {
-      print('Error parsing datetime: $e');
-      // Fallback to current date
+      print('Error parsing datetime "$datetime": $e');
       final now = DateTime.now();
-      return {'start': now, 'end': now.add(Duration(days: 1)), 'days': 1};
+      return {'start': now, 'end': now.add(const Duration(days: 1)), 'days': 1};
     }
   }
 
   static DateTime _parseDate(String dateStr) {
-    // Extract date part from "9:00 PM, 26/11" or "8:50 AM, 12/Oct/2025"
+    // Input: "9:00 PM, 1/8/2026" or "8:50 AM, 12/Oct/2025"
     final datePart = dateStr.split(', ').last.trim();
-    final parts = datePart.split('/');
+    final segments = datePart.split('/');
 
-    if (parts.isEmpty) {
-      throw FormatException('Invalid date format');
-    }
+    if (segments.isEmpty) throw FormatException('Invalid date');
 
-    final day = int.parse(parts[0]);
+    final day = int.parse(segments[0]);
     int month;
     int year = DateTime.now().year;
 
-    if (parts.length >= 2) {
-      // Check if month is numeric or text
-      if (int.tryParse(parts[1]) != null) {
-        // Numeric month: "26/11" or "26/11/2025"
-        month = int.parse(parts[1]);
-        if (parts.length >= 3) {
-          year = int.parse(parts[2]);
+    if (segments.length >= 2) {
+      if (int.tryParse(segments[1]) != null) {
+        // Numeric: 1/8 or 1/8/2026
+        month = int.parse(segments[1]);
+        if (segments.length >= 3) {
+          year = int.parse(segments[2]);
         }
       } else {
-        // Text month: "12/Oct/2025"
-        final monthMap = {
+        // Text month: 12/Oct/2025
+        const monthMap = {
           'Jan': 1,
           'Feb': 2,
           'Mar': 3,
@@ -404,17 +385,15 @@ class BookingData {
           'Nov': 11,
           'Dec': 12,
         };
-        month = monthMap[parts[1]] ?? 1;
-        if (parts.length >= 3) {
-          year = int.parse(parts[2]);
+        month = monthMap[segments[1]] ?? 1;
+        if (segments.length >= 3) {
+          year = int.parse(segments[2]);
         }
       }
     } else {
-      month = 1;
+      month = DateTime.now().month;
     }
 
     return DateTime(year, month, day);
   }
-
-  // Replace the getSampleBookings method in booking_data.dart
 }
