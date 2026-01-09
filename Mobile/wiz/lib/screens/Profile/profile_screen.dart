@@ -314,6 +314,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     subtitle: 'View your past rentals',
                     onTap: () => AppRoutes.navigateTo(context, AppRoutes.rentalHistory),
                   ),
+                  // ✅ ADD: Favorite Cars menu item
+                  _buildMenuItem(
+                    icon: Icons.favorite,
+                    title: 'Favorite Vehicles',
+                    subtitle: 'View your saved vehicles',
+                    onTap: () => AppRoutes.navigateTo(context, AppRoutes.favoriteCars),
+                  ),
 
                   const SizedBox(height: 24),
                   const Divider(),

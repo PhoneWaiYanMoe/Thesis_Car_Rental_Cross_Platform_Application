@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/constants/booking_constants.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
+import 'package:wiz/screens/Cars/services/favorites_api_service.dart';
 import 'package:wiz/screens/Cars/services/vehicle_api_service.dart';
 import 'package:wiz/screens/Cars/services/review_api_service.dart';
 import 'package:wiz/screens/Cars/views/owner_cars_screen.dart';
@@ -41,6 +42,11 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   String? _error;
   VehicleAvailability? _availability;
   VehicleReviewsResponse? _reviewsResponse;
+
+  final FavoritesApiService _favoritesApi = FavoritesApiService();
+  bool _isFavorited = false;
+  bool _isCheckingFavorite = true;
+  bool _isTogglingFavorite = false;
   Car? _car;
 
   @override
@@ -48,6 +54,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     super.initState();
     _bookingData = BookingData.fromMap(widget.arguments);
     _loadVehicleDetails();
+    _checkFavoriteStatus();
   }
 
   // Mobile/wiz/lib/screens/Cars/views/car_details_screen.dart
@@ -99,6 +106,70 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    try {
+      final car = widget.arguments['car'] as Car?;
+      if (car != null) {
+        final isFavorited = await _favoritesApi.checkFavorite(car.id);
+        if (mounted) {
+          setState(() {
+            _isFavorited = isFavorited;
+            _isCheckingFavorite = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Check favorite error: $e');
+      if (mounted) {
+        setState(() => _isCheckingFavorite = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isTogglingFavorite) return;
+
+    final car = _car ?? _bookingData.car;
+
+    setState(() => _isTogglingFavorite = true);
+
+    try {
+      if (_isFavorited) {
+        await _favoritesApi.removeFavorite(car.id);
+        if (mounted) {
+          setState(() => _isFavorited = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Removed from favorites'), backgroundColor: Colors.green));
+        }
+      } else {
+        await _favoritesApi.addFavorite(car.id);
+        if (mounted) {
+          setState(() => _isFavorited = true);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Added to favorites'), backgroundColor: Colors.green));
+        }
+      }
+    } catch (e) {
+      print('❌ Toggle favorite error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('authenticated') ? 'Please login to save favorites' : 'Failed to update favorite',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isTogglingFavorite = false);
+      }
     }
   }
 
@@ -318,7 +389,25 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
         leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
         actions: [
           IconButton(icon: const Icon(Icons.share), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
+          _isCheckingFavorite
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppStyles.primary),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    _isFavorited ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorited ? Colors.red : null,
+                  ),
+                  onPressed: _isTogglingFavorite ? null : _toggleFavorite,
+                ),
         ],
       ),
       body: SingleChildScrollView(

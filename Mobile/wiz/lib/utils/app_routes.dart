@@ -17,6 +17,7 @@ import 'package:wiz/screens/Booking/views/rental_history_screen.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
+import 'package:wiz/screens/Cars/views/fav_cars_screen.dart';
 import 'package:wiz/screens/Chat/models/chat_data.dart';
 import 'package:wiz/screens/Chat/views/chat_detail_screen.dart';
 import 'package:wiz/screens/Chat/views/chat_list_screen.dart';
@@ -57,6 +58,7 @@ class AppRoutes {
   static const String chatList = '/chat-list';
   static const String chatDetail = '/chat-detail';
   static const String stripePayment = '/stripe-payment';
+  static const String favoriteCars = '/favorite-cars';
 
   // Owner routes
   static const String ownerVehicles = '/owner/vehicles';
@@ -98,6 +100,8 @@ class AppRoutes {
       case cars:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
+      case favoriteCars:
+        return MaterialPageRoute(builder: (_) => const FavoriteCarsScreen());
 
       case carDetails:
         final args = settings.arguments as Map<String, dynamic>?;
@@ -222,6 +226,10 @@ class AppRoutes {
 
   static Future<dynamic> navigateTo(BuildContext context, String routeName, {Object? arguments}) {
     return Navigator.pushNamed(context, routeName, arguments: arguments);
+  }
+
+  static Future<dynamic> navigateToFavoriteCars(BuildContext context) {
+    return Navigator.pushNamed(context, favoriteCars);
   }
 
   static void navigateAndReplace(BuildContext context, String routeName, {Object? arguments}) {

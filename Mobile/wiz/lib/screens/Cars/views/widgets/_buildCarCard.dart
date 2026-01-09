@@ -2,24 +2,100 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
+import 'package:wiz/screens/Cars/services/favorites_api_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 
-class BuildCarCard extends StatelessWidget {
+class BuildCarCard extends StatefulWidget {
   final Car car;
   final Map<String, dynamic> tripData;
 
   const BuildCarCard({super.key, required this.car, required this.tripData});
 
   @override
+  State<BuildCarCard> createState() => _BuildCarCardState();
+}
+
+class _BuildCarCardState extends State<BuildCarCard> {
+  final FavoritesApiService _favoritesApi = FavoritesApiService();
+  bool _isFavorited = false;
+  bool _isCheckingFavorite = true;
+  bool _isTogglingFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    try {
+      final isFavorited = await _favoritesApi.checkFavorite(widget.car.id);
+      if (mounted) {
+        setState(() {
+          _isFavorited = isFavorited;
+          _isCheckingFavorite = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCheckingFavorite = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isTogglingFavorite) return;
+
+    setState(() => _isTogglingFavorite = true);
+
+    try {
+      if (_isFavorited) {
+        await _favoritesApi.removeFavorite(widget.car.id);
+        if (mounted) {
+          setState(() => _isFavorited = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Removed from favorites'), duration: Duration(seconds: 1)));
+        }
+      } else {
+        await _favoritesApi.addFavorite(widget.car.id);
+        if (mounted) {
+          setState(() => _isFavorited = true);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Added to favorites'), duration: Duration(seconds: 1)));
+        }
+      }
+    } catch (e) {
+      print('❌ Toggle favorite error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('authenticated') ? 'Please login to save favorites' : 'Failed to update favorite',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isTogglingFavorite = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          final arguments = Map<String, dynamic>.from(tripData);
-          arguments['car'] = car;
+          final arguments = Map<String, dynamic>.from(widget.tripData);
+          arguments['car'] = widget.car;
           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
         },
         child: Column(
@@ -29,13 +105,38 @@ class BuildCarCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
-                  Image.asset(car.image, height: 180, width: double.infinity, fit: BoxFit.cover),
+                  Image.asset(widget.car.image, height: 180, width: double.infinity, fit: BoxFit.cover),
+                  // Favorite Button
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.white),
-                      onPressed: () {},
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2)),
+                        ],
+                      ),
+                      child: _isCheckingFavorite
+                          ? Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppStyles.primary),
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              icon: Icon(
+                                _isFavorited ? Icons.favorite : Icons.favorite_border,
+                                color: _isFavorited ? Colors.red : Colors.grey[700],
+                              ),
+                              onPressed: _isTogglingFavorite ? null : _toggleFavorite,
+                            ),
                     ),
                   ),
                 ],
@@ -48,12 +149,11 @@ class BuildCarCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // ✅ FIX: Handle owner avatar properly with fallback
-                      _buildOwnerAvatar(car.ownerAvatar),
+                      _buildOwnerAvatar(widget.car.ownerAvatar),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          car.owner,
+                          widget.car.owner,
                           style: AppStyles.caption(context),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -64,20 +164,20 @@ class BuildCarCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 16),
                           const SizedBox(width: 4),
-                          Text('${car.rating} (${car.reviews})', style: AppStyles.caption(context)),
+                          Text('${widget.car.rating} (${widget.car.reviews})', style: AppStyles.caption(context)),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(car.name, style: AppStyles.h3(context)),
+                  Text(widget.car.name, style: AppStyles.h3(context)),
                   Row(
                     children: [
                       Icon(Icons.location_on, size: 16, color: AppStyles.textSecondary(context)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          car.location,
+                          widget.car.location,
                           style: AppStyles.caption(context),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -90,16 +190,16 @@ class BuildCarCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${_formatPrice(car.price)}₫/day',
+                        '${_formatPrice(widget.car.price)}₫/day',
                         style: AppStyles.h3(context).copyWith(color: AppStyles.primary),
                       ),
                       ElevatedButton(
-                        style: AppStyles.primaryButtonStyle(
-                          context,
-                        ).copyWith(padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24))),
+                        style: AppStyles.primaryButtonStyle(context).copyWith(
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                        ),
                         onPressed: () {
-                          final arguments = Map<String, dynamic>.from(tripData);
-                          arguments['car'] = car;
+                          final arguments = Map<String, dynamic>.from(widget.tripData);
+                          arguments['car'] = widget.car;
                           AppRoutes.navigateTo(context, AppRoutes.carDetails, arguments: arguments);
                         },
                         child: Text('See details', style: AppStyles.button),
@@ -115,9 +215,7 @@ class BuildCarCard extends StatelessWidget {
     );
   }
 
-  // ✅ NEW: Helper to build owner avatar with proper fallback
   Widget _buildOwnerAvatar(String avatarPath) {
-    // Check if it's a network URL or asset path
     if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
       return CircleAvatar(
         radius: 16,
@@ -129,7 +227,6 @@ class BuildCarCard extends StatelessWidget {
             height: 32,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              // Fallback to default icon if network image fails
               return Icon(Icons.person, size: 20, color: Colors.grey[600]);
             },
             loadingBuilder: (context, child, loadingProgress) {
@@ -151,7 +248,6 @@ class BuildCarCard extends StatelessWidget {
         ),
       );
     } else {
-      // Asset image with fallback to default icon
       return CircleAvatar(
         radius: 16,
         backgroundColor: Colors.grey[300],
@@ -162,7 +258,6 @@ class BuildCarCard extends StatelessWidget {
             height: 32,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              // Fallback to default icon if asset fails
               return Icon(Icons.person, size: 20, color: Colors.grey[600]);
             },
           ),
