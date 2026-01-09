@@ -99,17 +99,16 @@ class _RentalHistoryScreenState extends State<RentalHistoryScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: AppStyles.inputDecoration(hint: 'Search bookings', icon: Icons.search, context: context),
-              onChanged: (value) {
-                // TODO: Implement search filter
-              },
-            ),
-          ),
-
+          // Padding(
+          //   padding: const EdgeInsets.all(16),
+          //   child: TextField(
+          //     controller: _searchController,
+          //     decoration: AppStyles.inputDecoration(hint: 'Search bookings', icon: Icons.search, context: context),
+          //     onChanged: (value) {
+          //       // TODO: Implement search filter
+          //     },
+          //   ),
+          // ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
