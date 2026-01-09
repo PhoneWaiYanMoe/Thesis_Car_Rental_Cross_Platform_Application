@@ -1,6 +1,4 @@
 
-// (Copy to both locations)
-
 syntax = "proto3";
 
 package vehicle;
@@ -18,14 +16,17 @@ service VehicleService {
   // Update vehicle rating after review
   rpc UpdateVehicleRating(UpdateVehicleRatingRequest) returns (UpdateVehicleRatingResponse);
 
-  // ✅ NEW: Check availability for dates
+  // Check availability for dates
   rpc CheckAvailability(CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
 
-  // ✅ NEW: Sync booking to unavailability
+  // Sync booking to unavailability
   rpc SyncUnavailability(SyncUnavailabilityRequest) returns (SyncUnavailabilityResponse);
 
-  // ✅ NEW: Increment total rentals
+  // Increment total rentals
   rpc IncrementTotalRentals(IncrementTotalRentalsRequest) returns (IncrementTotalRentalsResponse);
+
+  // ✅ NEW: Get favorite count for vehicle
+  rpc GetFavoriteCount(GetFavoriteCountRequest) returns (GetFavoriteCountResponse);
 }
 
 message GetVehicleInfoRequest {
@@ -84,8 +85,6 @@ message UpdateVehicleRatingResponse {
   double updated_rating = 3;
 }
 
-// ✅ NEW MESSAGES
-
 message CheckAvailabilityRequest {
   string vehicle_id = 1;
   string start_date = 2;
@@ -126,4 +125,15 @@ message IncrementTotalRentalsResponse {
   bool success = 1;
   string message = 2;
   int32 new_total = 3;
+}
+
+// ✅ NEW MESSAGES FOR FAVORITES
+message GetFavoriteCountRequest {
+  string vehicle_id = 1;
+}
+
+message GetFavoriteCountResponse {
+  string vehicle_id = 1;
+  int32 favorite_count = 2;
+  string message = 3;
 }

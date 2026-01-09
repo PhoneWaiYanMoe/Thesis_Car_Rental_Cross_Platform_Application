@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Wiz API
-  description: Mock APIs for Wiz app.
+  description: Mock APIs for Wiz app including authentication and favorites.
   version: 1.0.0
 servers:
   - url: http://localhost:3001
@@ -171,28 +171,6 @@ paths:
                 type: object
                 properties:
                   message: { type: string, example: "Session ended" }
-  # /auth/social-login:
-  #   post:
-  #     summary: Social login (Google/FB)
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             type: object
-  #             properties:
-  #               provider: { type: string, enum: [google, facebook], example: "google" }
-  #               idToken: { type: string, example: "google-id-token" }
-  #     responses:
-  #       '200':
-  #         description: Social login success
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: object
-  #               properties:
-  #                 token: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
-  #                 user: { $ref: '#/components/schemas/User' }
 
   # ==================== DEPRECATED ENDPOINT ====================
   /auth/social-login:
@@ -219,8 +197,7 @@ paths:
                 properties:
                   error: { type: string, example: "This endpoint is deprecated" }
 
-
-    # ==================== NEW: GOOGLE OAUTH ENDPOINTS ====================
+  # ==================== GOOGLE OAUTH ENDPOINTS ====================
   /auth/google:
     get:
       summary: Initiate Google OAuth login
@@ -249,7 +226,7 @@ paths:
                 type: string
                 example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
   
-  # ==================== NEW: FACEBOOK OAUTH ENDPOINTS ====================
+  # ==================== FACEBOOK OAUTH ENDPOINTS ====================
   /auth/facebook:
     get:
       summary: Initiate Facebook OAuth login
@@ -278,7 +255,7 @@ paths:
                 type: string
                 example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
   
-  # ==================== NEW: LINK OAUTH ACCOUNTS (PROTECTED) ====================
+  # ==================== LINK OAUTH ACCOUNTS (PROTECTED) ====================
   /auth/link/google:
     get:
       summary: Link Google account to logged-in user
@@ -378,6 +355,131 @@ paths:
                         provider: { type: string }
                         linkedAt: { type: string, format: date-time }
 
+  # ==================== FAVORITES ENDPOINTS (NEW) ====================
+  /favorites:
+    get:
+      summary: Get user's favorite vehicles
+      description: Returns paginated list of user's favorite vehicles with full details
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of favorite vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favorites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FavoriteVehicle'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    post:
+      summary: Add vehicle to favorites
+      description: Add a vehicle to user's favorites list
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vehicleId
+              properties:
+                vehicleId:
+                  type: string
+                  format: uuid
+                  example: "550e8400-e29b-41d4-a716-446655440001"
+      responses:
+        '201':
+          description: Vehicle added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Vehicle added to favorites" }
+                  vehicleId: { type: string, format: uuid }
+        '400':
+          description: Cannot favorite inactive vehicle
+        '404':
+          description: Vehicle not found
+
+  /favorites/{vehicleId}:
+    delete:
+      summary: Remove vehicle from favorites
+      description: Remove a vehicle from user's favorites list
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vehicle removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Vehicle removed from favorites" }
+                  vehicleId: { type: string, format: uuid }
+        '404':
+          description: Vehicle not in favorites
+
+  /favorites/check/{vehicleId}:
+    get:
+      summary: Check if vehicle is favorited
+      description: Check if a specific vehicle is in user's favorites
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Favorite status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicleId: { type: string, format: uuid }
+                  isFavorited: { type: boolean, example: true }
+
+  /favorites/count:
+    get:
+      summary: Get favorite count
+      description: Get total number of favorited vehicles
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Favorite count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer, example: 5 }
 
 components:
   schemas:
@@ -387,6 +489,35 @@ components:
         id: { type: string, example: "uuid-123" }
         email: { type: string, format: email, example: "user@wiz.com" }
         fullName: { type: string, example: "John Doe" }
+    
+    FavoriteVehicle:
+      type: object
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        addedAt:
+          type: string
+          format: date-time
+        vehicleDetails:
+          type: object
+          properties:
+            vehicle_id: { type: string, format: uuid }
+            owner_id: { type: string, format: uuid }
+            name: { type: string, example: "BMW X1 2020" }
+            vehicle_type: { type: string, example: "suv" }
+            price_per_day: { type: integer, example: 390000 }
+            status: { type: string, example: "active" }
+            average_rating: { type: number, example: 4.8 }
+            total_rentals: { type: integer, example: 45 }
+    
+    Pagination:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+  
   securitySchemes:
     bearerAuth:
       type: http

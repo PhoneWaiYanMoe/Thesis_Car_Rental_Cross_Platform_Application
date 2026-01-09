@@ -101,6 +101,7 @@ services:
       - FACEBOOK_CALLBACK_URL=http://localhost:3001/auth/facebook/callback
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
     depends_on:
       postgres:
         condition: service_healthy
@@ -173,6 +174,7 @@ services:
         condition: service_healthy
     volumes:
       - ./vehicle-service/src:/app/src
+      - ./vehicle-service/proto:/app/proto
     networks:
       - wiz-network
 

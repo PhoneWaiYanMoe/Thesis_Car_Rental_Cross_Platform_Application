@@ -7,9 +7,10 @@ const YAML = require("yamljs");
 const path = require("path");
 const passport = require("./config/passport");
 
-// ✅ Import only routes that exist
+// Routes
 const authRoutes = require("./routes/auth_routes");
 const locationRoutes = require("./routes/location_routes");
+const favoritesRoutes = require("./routes/favorites_routes"); // ✅ NEW
 
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -43,9 +44,10 @@ try {
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
 
-// ✅ Routes - only mount routes that exist
+// Routes
 app.use("/auth", authRoutes);
 app.use("/location", locationRoutes);
+app.use("/favorites", favoritesRoutes); // ✅ NEW
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

@@ -20,8 +20,6 @@ class VehicleGrpcServer {
     this.server = new grpc.Server();
   }
 
-  // ... existing methods (getVehicleInfo, getVehiclesInfo, checkVehicleOwnership) ...
-
   async getVehicleInfo(call, callback) {
     try {
       const { vehicle_id } = call.request;
@@ -161,7 +159,6 @@ class VehicleGrpcServer {
     }
   }
 
-  // ✅ NEW: Check availability
   async checkAvailability(call, callback) {
     try {
       const { vehicle_id, start_date, end_date } = call.request;
@@ -216,7 +213,6 @@ class VehicleGrpcServer {
     }
   }
 
-  
   async syncUnavailability(call, callback) {
     try {
       const { vehicle_id, start_date, end_date, booking_id, action } =
@@ -246,7 +242,7 @@ class VehicleGrpcServer {
           message: "Unavailability period added",
         });
       } else if (action === "remove") {
-        // Remove unavailability period by booking_id (more reliable than dates)
+        // Remove unavailability period by booking_id
         const result = await pool.query(
           `DELETE FROM vehicle_unavailability 
          WHERE vehicle_id = $1 
@@ -277,7 +273,6 @@ class VehicleGrpcServer {
     }
   }
 
-  // ✅ NEW: Increment total rentals
   async incrementTotalRentals(call, callback) {
     try {
       const { vehicle_id } = call.request;
@@ -318,6 +313,30 @@ class VehicleGrpcServer {
     }
   }
 
+  // ✅ NEW: Get favorite count per vehicle
+  async getFavoriteCount(call, callback) {
+    try {
+      const { vehicle_id } = call.request;
+
+      // Since favorites are stored in user-service, we can't get the count here
+      // This is a placeholder that returns 0
+      // In a real implementation, you might want to cache this in vehicle-service
+      // or make a reverse gRPC call to user-service
+
+      callback(null, {
+        vehicle_id: vehicle_id,
+        favorite_count: 0,
+        message: "Favorite count not tracked in vehicle-service",
+      });
+    } catch (error) {
+      console.error("❌ gRPC getFavoriteCount error:", error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message,
+      });
+    }
+  }
+
   start(port = 50055) {
     this.server.addService(vehicleProto.VehicleService.service, {
       GetVehicleInfo: this.getVehicleInfo.bind(this),
@@ -327,6 +346,7 @@ class VehicleGrpcServer {
       CheckAvailability: this.checkAvailability.bind(this),
       SyncUnavailability: this.syncUnavailability.bind(this),
       IncrementTotalRentals: this.incrementTotalRentals.bind(this),
+      GetFavoriteCount: this.getFavoriteCount.bind(this),
     });
 
     this.server.bindAsync(
