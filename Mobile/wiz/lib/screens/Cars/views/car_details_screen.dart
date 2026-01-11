@@ -18,6 +18,8 @@ import 'package:wiz/screens/Cars/views/widgets/_buildReviews.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildRules.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTravelScope.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
+import 'package:wiz/screens/Home/views/dateTime_screen.dart';
+import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'widgets/_buildCarImage.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
@@ -35,7 +37,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   final VehicleApiService _apiService = VehicleApiService();
   final ReviewApiService _reviewApiService = ReviewApiService();
 
-  late BookingData _bookingData;
+  BookingData? _bookingData; // ✅ Now nullable
   bool _isLoading = true;
   bool _isCheckingAvailability = false;
   bool _isLoadingReviews = false;
@@ -49,16 +51,31 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   bool _isTogglingFavorite = false;
   Car? _car;
 
+  // ✅ NEW: Track if we have trip data
+  bool get _hasTripData => _bookingData != null;
+
+  // ✅ NEW: Temporary trip data before creating BookingData
+  String? _tempLocation;
+  String? _tempCity;
+  String? _tempDistrict;
+  String? _tempDatetime;
+  bool _tempWithDriver = false;
+
   @override
   void initState() {
     super.initState();
-    _bookingData = BookingData.fromMap(widget.arguments);
+
+    // ✅ Try to create BookingData - may fail if coming from favorites
+    try {
+      _bookingData = BookingData.fromMap(widget.arguments);
+    } catch (e) {
+      print('⚠️ No complete trip data available: $e');
+      _bookingData = null;
+    }
+
     _loadVehicleDetails();
     _checkFavoriteStatus();
   }
-
-  // Mobile/wiz/lib/screens/Cars/views/car_details_screen.dart
-  // ✅ UPDATE: _loadVehicleDetails method
 
   Future<void> _loadVehicleDetails() async {
     setState(() {
@@ -67,35 +84,32 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     });
 
     try {
-      // ✅ CHANGED: Get car directly from arguments
       Car car;
 
       if (widget.arguments.containsKey('car') && widget.arguments['car'] is Car) {
-        // Car object passed directly from car list
         car = widget.arguments['car'] as Car;
         print('✅ Loaded car from arguments: ${car.name} (ID: ${car.id})');
       } else {
         throw Exception('Car object not found in arguments');
       }
 
-      // ✅ Fetch fresh details from API using car.id to get latest data including owner info
+      // Fetch fresh details from API
       try {
         final vehicleDetails = await _apiService.getVehicleDetails(car.id);
         car = vehicleDetails.toCar();
         print('✅ Fetched fresh vehicle details from API');
       } catch (e) {
         print('⚠️ Failed to fetch fresh details, using cached car: $e');
-        // Continue with car from arguments if API fails
       }
 
-      // Store car in state
       _car = car;
 
-      // Update booking data with the car
-      _bookingData = _bookingData.copyWith();
-
-      // Check availability and load reviews in parallel
-      await Future.wait([_checkAvailability(), _loadReviews(car.id)]);
+      // Only check availability if we have trip data
+      if (_hasTripData) {
+        await Future.wait([_checkAvailability(), _loadReviews(car.id)]);
+      } else {
+        await _loadReviews(car.id);
+      }
 
       setState(() {
         _isLoading = false;
@@ -132,7 +146,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   Future<void> _toggleFavorite() async {
     if (_isTogglingFavorite) return;
 
-    final car = _car ?? _bookingData.car;
+    final car = _car ?? (_bookingData?.car ?? widget.arguments['car'] as Car);
 
     setState(() => _isTogglingFavorite = true);
 
@@ -197,25 +211,22 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       setState(() {
         _isLoadingReviews = false;
       });
-      // Don't set error, just show empty reviews
     }
   }
 
-  // Mobile/wiz/lib/screens/Cars/views/car_details_screen.dart
-  // Replace the _checkAvailability method
-
   Future<void> _checkAvailability() async {
+    if (!_hasTripData) return;
+
     setState(() {
       _isCheckingAvailability = true;
     });
 
     try {
-      // Parse dates from datetime string
-      final datetime = widget.arguments['datetime'] as String?;
+      final datetime = _bookingData!.datetime;
       String? startDate;
       String? endDate;
 
-      if (datetime != null && datetime.contains(' - ')) {
+      if (datetime.contains(' - ')) {
         final now = DateTime.now();
         final currentYear = now.year;
 
@@ -224,14 +235,12 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
           final startParts = parts[0].split(', ');
           final endParts = parts[1].split(', ');
 
-          // ✅ FIX: Parse start date with correct year logic
           if (startParts.length == 2) {
             final startDayMonth = startParts[1].split('/');
             if (startDayMonth.length == 2) {
               final startDay = int.parse(startDayMonth[0]);
               final startMonth = int.parse(startDayMonth[1]);
 
-              // ✅ If date is in the past (same month but earlier day, or earlier month), use next year
               int startYear = currentYear;
               if (startMonth < now.month || (startMonth == now.month && startDay < now.day)) {
                 startYear = currentYear + 1;
@@ -241,19 +250,16 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             }
           }
 
-          // ✅ FIX: Parse end date with correct year logic
           if (endParts.length == 2) {
             final endDayMonth = endParts[1].split('/');
             if (endDayMonth.length == 2) {
               final endDay = int.parse(endDayMonth[0]);
               final endMonth = int.parse(endDayMonth[1]);
 
-              // ✅ End date year should be based on start date
               int endYear = currentYear;
               if (startDate != null) {
                 final parsedStartDate = DateTime.parse(startDate);
 
-                // If end month/day is before start month/day, it must be next year
                 if (endMonth < parsedStartDate.month ||
                     (endMonth == parsedStartDate.month && endDay < parsedStartDate.day)) {
                   endYear = parsedStartDate.year + 1;
@@ -261,7 +267,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                   endYear = parsedStartDate.year;
                 }
               } else {
-                // Fallback: use same logic as start date
                 if (endMonth < now.month || (endMonth == now.month && endDay < now.day)) {
                   endYear = currentYear + 1;
                 }
@@ -274,7 +279,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       }
 
       if (startDate != null && endDate != null) {
-        final car = _bookingData.car;
+        final car = _bookingData!.car;
         print('📅 Checking availability for vehicle ${car.id} from $startDate to $endDate');
 
         final availability = await _apiService.checkAvailability(
@@ -299,9 +304,76 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  void _updateBookingData({TravelScope? travelScope, InsuranceOption? insurance, PaymentMethod? paymentMethod}) {
+  // ✅ NEW: Navigate to select location
+  Future<void> _selectLocation() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MapScreen(title: 'Select Location')),
+    );
+
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        _tempLocation = result['address'] as String?;
+        _tempCity = result['city'] as String?;
+        _tempDistrict = result['district'] as String?;
+      });
+
+      print('✅ Selected location: $_tempLocation');
+    }
+  }
+
+  // ✅ NEW: Navigate to select date/time
+  Future<void> _selectDateTime() async {
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const DateTimeScreen()));
+
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        _tempDatetime = result['datetime'] as String?;
+      });
+
+      print('✅ Selected datetime: $_tempDatetime');
+
+      // ✅ If we now have both location and datetime, create BookingData
+      if (_tempLocation != null && _tempDatetime != null) {
+        _createBookingData();
+      }
+    }
+  }
+
+  // ✅ NEW: Create BookingData from temp values
+  void _createBookingData() {
+    if (_tempLocation == null || _tempDatetime == null || _car == null) return;
+
+    final tripData = {
+      'mode': _tempWithDriver ? 'With Driver' : 'Self Drive',
+      'withDriver': _tempWithDriver,
+      'location': _tempLocation,
+      'city': _tempCity,
+      'district': _tempDistrict,
+      'datetime': _tempDatetime!,
+      'car': _car!,
+      'carIndex': 0,
+    };
+
     setState(() {
-      _bookingData = _bookingData.copyWith(
+      _bookingData = BookingData.fromMap(tripData);
+    });
+
+    print('✅ Created booking data');
+
+    // Check availability
+    _checkAvailability();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Trip details set! You can now proceed to booking.'), backgroundColor: Colors.green),
+    );
+  }
+
+  void _updateBookingData({TravelScope? travelScope, InsuranceOption? insurance, PaymentMethod? paymentMethod}) {
+    if (!_hasTripData) return;
+
+    setState(() {
+      _bookingData = _bookingData!.copyWith(
         travelScope: travelScope,
         insurance: insurance,
         paymentMethod: paymentMethod,
@@ -343,10 +415,10 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       );
     }
 
-    final car = _car ?? _bookingData.car;
+    final car = _car ?? (_bookingData?.car ?? widget.arguments['car'] as Car);
 
     // Show availability warning if not available
-    if (_availability != null && !_availability!.isAvailable) {
+    if (_availability != null && !_availability!.isAvailable && _hasTripData) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -418,43 +490,46 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             buildCarImage(images: car.images, height: 240),
             const SizedBox(height: 16),
 
-            // Availability indicator
-            if (_isCheckingAvailability)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                    const SizedBox(width: 12),
-                    Text('Checking availability...', style: AppStyles.caption(context)),
-                  ],
-                ),
-              )
-            else if (_availability != null && !_availability!.isAvailable)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: Colors.orange),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Not available for selected dates',
-                        style: AppStyles.caption(context).copyWith(color: Colors.orange.shade900),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // ✅ NEW: Show trip setup section if no trip data
+            if (!_hasTripData) ...[_buildTripSetupCard(), const SizedBox(height: 16)],
 
-            if (_isCheckingAvailability || (_availability != null && !_availability!.isAvailable))
+            // ✅ Availability indicator (only if has trip data)
+            if (_hasTripData) ...[
+              if (_isCheckingAvailability)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 12),
+                      Text('Checking availability...', style: AppStyles.caption(context)),
+                    ],
+                  ),
+                )
+              else if (_availability != null && !_availability!.isAvailable)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Not available for selected dates',
+                          style: AppStyles.caption(context).copyWith(color: Colors.orange.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
+            ],
 
             CarHeader(
               name: car.name,
@@ -467,35 +542,35 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               reviewCount: car.reviews,
             ),
             const SizedBox(height: 16),
-            BuildTripSummary(bookingData: _bookingData),
-            const SizedBox(height: 24),
 
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  Icon(_bookingData.withDriver ? Icons.person : Icons.directions_car, color: AppStyles.primary),
-                  const SizedBox(width: 12),
-                  Text(_bookingData.mode, style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
-                ],
+            // ✅ Only show trip summary if we have booking data
+            if (_hasTripData) ...[
+              BuildTripSummary(bookingData: _bookingData!),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    Icon(_bookingData!.withDriver ? Icons.person : Icons.directions_car, color: AppStyles.primary),
+                    const SizedBox(width: 12),
+                    Text(_bookingData!.mode, style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              TravelScopeSelector(
+                selectedScope: _bookingData!.travelScope,
+                onChanged: (scope) => _updateBookingData(travelScope: scope),
+              ),
+              const SizedBox(height: 24),
+            ],
 
-            const SizedBox(height: 16),
-            TravelScopeSelector(
-              selectedScope: _bookingData.travelScope,
-              onChanged: (scope) => _updateBookingData(travelScope: scope),
-            ),
-            const SizedBox(height: 24),
             OwnerInfoCard(
               ownerName: car.owner,
               ownerAvatarAsset: car.ownerAvatar,
               joinedDate: car.ownerJoinedDate,
               onViewCarsPressed: () {
-                // Get owner ID from vehicle details loaded from API
-                final ownerId = _car?.id ?? car.id; // Use vehicle's owner_id if available
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -510,11 +585,13 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               },
             ),
             const SizedBox(height: 24),
+
             if (car.rules.isNotEmpty) ...[RulesByOwner(rules: car.rules), const SizedBox(height: 24)],
             if (car.limitsAndFees.isNotEmpty) ...[
               LimitsAndFees(limitsAndFees: car.limitsAndFees),
               const SizedBox(height: 24),
             ],
+
             CarFeaturesCard(
               transmission: car.transmission,
               seats: '${car.seats}-seater',
@@ -522,16 +599,21 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               features: car.features,
             ),
             const SizedBox(height: 24),
-            InsuranceSelector(
-              initialOption: _bookingData.insurance,
-              onChanged: (option) => _updateBookingData(insurance: option),
-            ),
-            const SizedBox(height: 24),
-            PaymentMethodCard(
-              initialMethod: _bookingData.paymentMethod,
-              onChanged: (method) => _updateBookingData(paymentMethod: method),
-            ),
-            const SizedBox(height: 24),
+
+            // ✅ Only show booking options if we have trip data
+            if (_hasTripData) ...[
+              InsuranceSelector(
+                initialOption: _bookingData!.insurance,
+                onChanged: (option) => _updateBookingData(insurance: option),
+              ),
+              const SizedBox(height: 24),
+              PaymentMethodCard(
+                initialMethod: _bookingData!.paymentMethod,
+                onChanged: (method) => _updateBookingData(paymentMethod: method),
+              ),
+              const SizedBox(height: 24),
+            ],
+
             if (_isLoadingReviews)
               const Center(
                 child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()),
@@ -539,7 +621,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             else if (_reviewsResponse != null)
               ReviewsSection(
                 reviews: _reviewsResponse!.reviews.map((r) {
-                  // Parse date from ISO string
                   String formattedDate = r.createdAt;
                   try {
                     final date = DateTime.parse(r.createdAt);
@@ -565,15 +646,130 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BookingBottomBar(
-        pricePerDay: car.price,
-        buttonText: 'Book Now',
-        isLoading: false,
-        onPressed: (_availability != null && !_availability!.isAvailable)
-            ? null
-            : () {
-                AppRoutes.navigateTo(context, AppRoutes.booking, arguments: _bookingData.toMap());
-              },
+      bottomNavigationBar: _hasTripData
+          ? BookingBottomBar(
+              pricePerDay: car.price,
+              buttonText: 'Book Now',
+              isLoading: false,
+              onPressed: (_availability != null && !_availability!.isAvailable)
+                  ? null
+                  : () {
+                      AppRoutes.navigateTo(context, AppRoutes.booking, arguments: _bookingData!.toMap());
+                    },
+            )
+          : null,
+    );
+  }
+
+  // ✅ NEW: Trip setup card
+  Widget _buildTripSetupCard() {
+    final hasLocation = _tempLocation != null;
+    final hasDatetime = _tempDatetime != null;
+    final isComplete = hasLocation && hasDatetime;
+
+    return Card(
+      color: AppStyles.primary.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppStyles.primary, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: AppStyles.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Set your trip details to check availability',
+                    style: AppStyles.h3(context).copyWith(color: AppStyles.primary),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Location button
+            _buildSetupButton(
+              icon: Icons.location_on,
+              label: hasLocation ? _tempLocation! : 'Select Location',
+              isSet: hasLocation,
+              onTap: _selectLocation,
+            ),
+            const SizedBox(height: 12),
+
+            // Date/Time button
+            _buildSetupButton(
+              icon: Icons.calendar_today,
+              label: hasDatetime ? _tempDatetime! : 'Select Date & Time',
+              isSet: hasDatetime,
+              onTap: _selectDateTime,
+            ),
+
+            if (isComplete) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Trip details set! Scroll down to configure your booking.',
+                        style: AppStyles.caption(context).copyWith(color: Colors.green.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSetupButton({
+    required IconData icon,
+    required String label,
+    required bool isSet,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppStyles.surface(context),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isSet ? Colors.green : Colors.grey.shade300, width: isSet ? 2 : 1),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSet ? Colors.green : AppStyles.textSecondary(context)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: AppStyles.body(context).copyWith(
+                  color: isSet ? AppStyles.textPrimary(context) : AppStyles.textSecondary(context),
+                  fontWeight: isSet ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            Icon(
+              isSet ? Icons.check_circle : Icons.arrow_forward_ios,
+              color: isSet ? Colors.green : AppStyles.textSecondary(context),
+              size: isSet ? 24 : 16,
+            ),
+          ],
+        ),
       ),
     );
   }

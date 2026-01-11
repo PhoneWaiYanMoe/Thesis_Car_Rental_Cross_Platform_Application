@@ -1,3 +1,4 @@
+// lib/screens/Cars/views/fav_cars_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/services/favorites_api_service.dart';
@@ -62,7 +63,6 @@ class _FavoriteCarsScreenState extends State<FavoriteCarsScreen> {
   }
 
   Future<void> _removeFavorite(String vehicleId, int index) async {
-    // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -82,7 +82,6 @@ class _FavoriteCarsScreenState extends State<FavoriteCarsScreen> {
     if (confirm != true) return;
 
     try {
-      // Optimistically remove from UI
       setState(() {
         _favorites.removeAt(index);
       });
@@ -96,8 +95,6 @@ class _FavoriteCarsScreenState extends State<FavoriteCarsScreen> {
       }
     } catch (e) {
       print('❌ Error removing favorite: $e');
-
-      // Reload favorites on error
       _loadFavorites();
 
       if (mounted) {
@@ -115,10 +112,14 @@ class _FavoriteCarsScreenState extends State<FavoriteCarsScreen> {
       final car = vehicleDetails.toCar();
 
       if (mounted) {
+        // ✅ UPDATED: Only pass the car object, no trip data
         AppRoutes.navigateTo(
           context,
           AppRoutes.carDetails,
-          arguments: {'car': car, 'location': 'Flexible', 'datetime': 'Flexible Dates', 'days': 1, 'withDriver': false},
+          arguments: {
+            'car': car,
+            // ✅ Don't pass location, datetime, withDriver - let user set these in car details
+          },
         );
       }
     } catch (e) {
