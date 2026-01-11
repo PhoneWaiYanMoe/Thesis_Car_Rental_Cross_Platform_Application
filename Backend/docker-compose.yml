@@ -198,6 +198,7 @@ services:
       - BASE_URL=http://localhost:3006
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
       - MOCK_PAYMENT=${MOCK_PAYMENT:-false} 
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}

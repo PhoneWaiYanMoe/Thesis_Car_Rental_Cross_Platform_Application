@@ -1,10 +1,7 @@
-// Mobile/wiz/lib/screens/Booking/views/rental_details_screen.dart
-// ✅ FIXED: Timeline map access errors
-
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
-import 'package:wiz/screens/Payment/utils/payment_helper.dart';
+import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
 
 class RentalDetailsScreen extends StatefulWidget {
@@ -17,11 +14,10 @@ class RentalDetailsScreen extends StatefulWidget {
 }
 
 class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
-  final BookingApiService _bookingApi = BookingApiService();
-
-  BookingDetailsResponse? _booking;
+  final _bookingApiService = BookingApiService();
   bool _isLoading = true;
-  String? _error;
+  BookingDetailsResponse? _bookingDetails;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -32,645 +28,365 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   Future<void> _loadBookingDetails() async {
     setState(() {
       _isLoading = true;
-      _error = null;
+      _errorMessage = null;
     });
 
     try {
-      final details = await _bookingApi.getBookingDetails(widget.bookingId);
-
+      final details = await _bookingApiService.getBookingDetails(widget.bookingId);
       setState(() {
-        _booking = details;
+        _bookingDetails = details;
         _isLoading = false;
       });
-
-      print('✅ Loaded booking details for: ${widget.bookingId}');
     } catch (e) {
-      print('❌ Error loading booking details: $e');
       setState(() {
-        _error = e.toString();
+        _errorMessage = e.toString();
         _isLoading = false;
       });
     }
-  }
-
-  Map<String, dynamic> _getButtonAction() {
-    if (_booking == null) return {'show': false};
-
-    final actions = _booking!.actions;
-    final billing = _booking!.billing;
-    // Priority 1: Deposit Payment (if not paid)
-    if (!billing.depositPaid) {
-      return {
-        'show': true,
-        'text': 'Pay Deposit (${PaymentHelper.formatPrice(billing.deposit)} ₫)',
-        'action': 'pay_deposit',
-        'color': AppStyles.primary,
-        'subtitle': '30% of total amount',
-      };
-    }
-
-    // Priority 2: Sign Contract (after deposit paid)
-    if (actions.canSignContract) {
-      return {'show': true, 'text': 'Sign Contract', 'action': 'sign_contract', 'color': AppStyles.primary};
-    }
-
-    // Priority 3: Final Payment (after contract signed)
-    if (!billing.finalPaymentPaid && billing.depositPaid) {
-      return {
-        'show': true,
-        'text': 'Pay Final Amount (${PaymentHelper.formatPrice(billing.remainingPayment)} ₫)',
-        'action': 'pay_final',
-        'color': AppStyles.primary,
-        'subtitle': '70% of total amount',
-      };
-    }
-
-    // Priority 4: Submit Pickup Photos
-    if (actions.canSubmitPickupPhotos) {
-      return {'show': true, 'text': 'Submit Pickup Photos', 'action': 'submit_pickup', 'color': AppStyles.primary};
-    }
-
-    // Priority 5: Submit Return Photos
-    if (actions.canSubmitReturnPhotos) {
-      return {'show': true, 'text': 'Submit Return Photos', 'action': 'submit_return', 'color': AppStyles.primary};
-    }
-
-    // Priority 6: Rate & Review
-    if (actions.canReview) {
-      return {'show': true, 'text': 'Rate & Review', 'action': 'rate_review', 'color': Colors.amber};
-    }
-
-    // Priority 7: Cancel
-    if (actions.canCancel) {
-      return {'show': true, 'text': 'Cancel Booking', 'action': 'cancel', 'color': Colors.red};
-    }
-
-    return {'show': false};
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppStyles.background(context),
-        appBar: AppBar(title: const Text('Loading...')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: AppStyles.background(context),
-        appBar: AppBar(title: const Text('Error')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Failed to load booking', style: AppStyles.h3(context)),
-              const SizedBox(height: 8),
-              Text(_error ?? 'Unknown error', style: AppStyles.caption(context)),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                style: AppStyles.primaryButtonStyle(context),
-                onPressed: _loadBookingDetails,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_booking == null) {
-      return Scaffold(
-        backgroundColor: AppStyles.background(context),
-        appBar: AppBar(title: const Text('Not Found')),
-        body: const Center(child: Text('Booking not found')),
-      );
-    }
-
-    final buttonAction = _getButtonAction();
-    final showButton = buttonAction['show'] as bool;
-
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context, true)),
-        title: Text('Booking Details', style: AppStyles.h2(context)),
+        title: Text('Rental Details', style: AppStyles.h2(context)),
         centerTitle: true,
         backgroundColor: AppStyles.background(context),
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? _buildErrorView()
+          : _bookingDetails != null
+          ? _buildDetailsView()
+          : const Center(child: Text('No booking details found')),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text('Error loading booking details', style: AppStyles.h3(context)),
+            const SizedBox(height: 8),
+            Text(_errorMessage ?? 'Unknown error', style: AppStyles.caption(context), textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: _loadBookingDetails,
+              child: Text('Retry', style: AppStyles.button),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsView() {
+    final booking = _bookingDetails!;
+    final isCancelled = booking.status == 'cancelled' || booking.status == 'rejected';
+
+    return RefreshIndicator(
+      onRefresh: _loadBookingDetails,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatusCard(booking),
+            const SizedBox(height: 16),
+
+            // Show cancellation/rejection reason if cancelled
+            if (isCancelled) ...[_buildCancellationReasonCard(booking), const SizedBox(height: 16)],
+
+            _buildVehicleCard(booking),
+            const SizedBox(height: 16),
+            _buildTimelineCard(booking),
+            const SizedBox(height: 16),
+            _buildLocationCard(booking),
+            const SizedBox(height: 16),
+            _buildBillingCard(booking),
+            const SizedBox(height: 16),
+
+            // Only show payment steps if NOT cancelled
+            if (!isCancelled) ...[
+              _buildPaymentStepsCard(booking),
+              const SizedBox(height: 16),
+              _buildActionButtons(booking),
+            ],
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(BookingDetailsResponse booking) {
+    Color statusColor = _getStatusColor(booking.status);
+    String statusText = _getStatusText(booking.status);
+
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: Icon(Icons.receipt_long, color: statusColor, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatusBadge(_booking!.status),
-                  const SizedBox(height: 8),
-
-                  // ✅ Show testing mode indicator
-                  if (_booking!.timeline['isTestingMode'] == true)
-                    Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.science, size: 16, color: Colors.orange),
-                          const SizedBox(width: 8),
-                          Text(
-                            'TESTING MODE: Date checks bypassed',
-                            style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 16),
-
-                  Text(_booking!.vehicle.name, style: AppStyles.h1(context)),
+                  Text('Booking ID', style: AppStyles.caption(context)),
                   const SizedBox(height: 4),
-                  Text('Booking ID: ${_booking!.id.substring(0, 8)}...', style: AppStyles.caption(context)),
-                  const SizedBox(height: 24),
-
-                  _buildTimelineCard(),
-                  const SizedBox(height: 16),
-
-                  _buildLocationCard(),
-                  const SizedBox(height: 16),
-
-                  _buildBillingCard(),
-                  const SizedBox(height: 16),
-
-                  if (_booking!.insurance.coverage > 0) ...[_buildInsuranceCard(), const SizedBox(height: 16)],
-
-                  if (_booking!.contract != null) ...[_buildContractCard(), const SizedBox(height: 16)],
-
-                  if (_booking!.pickupPhotos != null && _booking!.pickupPhotos!.isNotEmpty) ...[
-                    _buildPhotosSection('Pickup Photos', _booking!.pickupPhotos!),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (_booking!.returnPhotos != null && _booking!.returnPhotos!.isNotEmpty) ...[
-                    _buildPhotosSection('Return Photos', _booking!.returnPhotos!),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (_booking!.additionalNotes != null && _booking!.additionalNotes!.isNotEmpty) ...[
-                    Card(
-                      color: AppStyles.surface(context),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Additional Notes', style: AppStyles.h3(context)),
-                            const SizedBox(height: 8),
-                            Text(_booking!.additionalNotes!, style: AppStyles.body(context)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  Text(booking.id.substring(0, 8).toUpperCase(), style: AppStyles.h3(context)),
                 ],
               ),
             ),
-          ),
-
-          if (showButton)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppStyles.background(context),
-                border: Border(top: BorderSide(color: AppStyles.textSecondary(context).withOpacity(0.2))),
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: statusColor),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonAction['color'] as Color,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () => _handleButtonPress(buttonAction['action'] as String),
-                  child: Text(buttonAction['text'] as String, style: AppStyles.button),
-                ),
+              child: Text(
+                statusText,
+                style: AppStyles.caption(context).copyWith(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  // ✅ NEW: Cancellation/Rejection Reason Card
+  Widget _buildCancellationReasonCard(BookingDetailsResponse booking) {
+    String? reason;
+    String title;
     Color color;
-    String label;
+    IconData icon;
+    String? refundInfo;
 
-    switch (status) {
-      case 'pending_payment':
-        color = Colors.red;
-        label = 'PENDING PAYMENT';
-        break;
-      case 'pending':
+    // ✅ SMART LOGIC: Show whichever reason is available
+    if (booking.status == 'cancelled' || booking.status == 'rejected') {
+      // Try to get cancellation reason first, then rejection reason
+      reason = booking.cancellationReason ?? booking.rejectionReason;
+
+      // Determine if it was cancelled by customer or rejected by owner
+      if (booking.cancellationReason != null) {
+        // Customer cancelled
+        title = 'Cancellation Reason (Customer)';
         color = Colors.orange;
-        label = 'PENDING APPROVAL';
-        break;
-      case 'booking':
-        color = Colors.blue;
-        label = 'CONFIRMED';
-        break;
-      case 'picked_up':
-        color = Colors.purple;
-        label = 'ON JOURNEY';
-        break;
-      case 'return_submitted':
-        color = Colors.indigo;
-        label = 'RETURN SUBMITTED';
-        break;
-      case 'completed':
-        color = Colors.green;
-        label = 'COMPLETED';
-        break;
-      case 'cancelled':
+        icon = Icons.cancel;
+      } else if (booking.rejectionReason != null) {
+        // Owner rejected
+        title = 'Rejection Reason (Owner)';
         color = Colors.red;
-        label = 'CANCELLED';
-        break;
-      default:
-        color = Colors.grey;
-        label = status.toUpperCase();
+        icon = Icons.block;
+      } else {
+        // No reason provided, but still cancelled/rejected
+        title = booking.status == 'cancelled' ? 'Cancellation Reason' : 'Rejection Reason';
+        color = booking.status == 'cancelled' ? Colors.orange : Colors.red;
+        icon = booking.status == 'cancelled' ? Icons.cancel : Icons.block;
+        reason = 'No reason provided';
+      }
+
+      // Add refund information if available
+      if (booking.refundAmount != null && booking.refundAmount! > 0) {
+        refundInfo = 'Refund: ${_formatPrice(booking.refundAmount!)} ₫ (${booking.refundStatus ?? 'processing'})';
+      }
+    } else {
+      return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+    return Card(
+      color: color.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+        side: BorderSide(color: color.withOpacity(0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.circle, size: 8, color: color),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleButtonPress(String action) async {
-    switch (action) {
-      case 'pay_deposit':
-        await _handlePayDeposit();
-        break;
-      case 'pay_final':
-        await _handlePayFinal();
-        break;
-      case 'sign_contract':
-        await _handleSignContract();
-        break;
-      case 'submit_pickup':
-        await _handleSubmitPickupPhotos();
-        break;
-      case 'submit_return':
-        await _handleSubmitReturnPhotos();
-        break;
-      case 'rate_review':
-        _handleRateReview();
-        break;
-      case 'cancel':
-        _showCancelDialog();
-        break;
-    }
-  }
-
-  Future<void> _handlePayDeposit() async {
-    if (_booking == null) return;
-
-    try {
-      // Show payment method selection (for now, only Stripe)
-      final provider = await PaymentHelper.selectPaymentMethod(context);
-
-      if (provider == null) return;
-
-      // Navigate to Stripe payment screen
-      final result = await PaymentHelper.processStripePayment(
-        context: context,
-        bookingId: widget.bookingId,
-        paymentType: 'deposit',
-        amount: _booking!.billing.deposit,
-        returnUrl: 'http://10.0.2.2:3006/payment/success',
-      );
-
-      if (result != null && result['success'] == true) {
-        // Reload booking details after successful payment
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          _loadBookingDetails();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Payment error: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handlePayFinal() async {
-    if (_booking == null) return;
-
-    // Check if contract is signed
-    if (_booking!.contract == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign the contract before making final payment'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    try {
-      // Show payment method selection (for now, only Stripe)
-      final provider = await PaymentHelper.selectPaymentMethod(context);
-
-      if (provider == null) return;
-
-      // Navigate to Stripe payment screen
-      final result = await PaymentHelper.processStripePayment(
-        context: context,
-        bookingId: widget.bookingId,
-        paymentType: 'final_payment',
-        amount: _booking!.billing.remainingPayment,
-        returnUrl: 'http://10.0.2.2:3006/payment/success',
-      );
-
-      if (result != null && result['success'] == true) {
-        // Reload booking details after successful payment
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          _loadBookingDetails();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Payment error: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handleSignContract() async {
-    try {
-      await _bookingApi.signContract(
-        bookingId: widget.bookingId,
-        signature: 'data:image/png;base64,mock_signature_${DateTime.now().millisecondsSinceEpoch}',
-        agreedToTerms: true,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contract signed successfully!'), backgroundColor: Colors.green));
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to sign contract: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handleSubmitPickupPhotos() async {
-    final mockPhotos = List.generate(3, (i) => 'mock_pickup_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
-
-    try {
-      await _bookingApi.confirmPickup(
-        bookingId: widget.bookingId,
-        pickupPhotos: mockPhotos,
-        odometerReading: 10000 + (widget.bookingId.hashCode % 50000),
-        notes: 'Car in good condition',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pickup confirmed! Have a safe journey!'), backgroundColor: Colors.green),
-        );
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to confirm pickup: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _handleSubmitReturnPhotos() async {
-    final mockPhotos = List.generate(3, (i) => 'mock_return_photo_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
-
-    try {
-      await _bookingApi.confirmReturn(
-        bookingId: widget.bookingId,
-        returnPhotos: mockPhotos,
-        odometerReading: 10500 + (widget.bookingId.hashCode % 50000),
-        notes: 'Returned in good condition',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Return submitted! You can now rate your experience.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-        _loadBookingDetails();
-
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          _handleRateReview();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit return: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  void _handleRateReview() {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.rateReview,
-      arguments: {
-        'bookingId': widget.bookingId,
-        'vehicleId': _booking!.vehicle.id,
-        'vehicleName': _booking!.vehicle.name,
-        'ownerId': _booking!.vehicle.ownerId,
-      },
-    );
-  }
-
-  void _showCancelDialog() {
-    final reasonController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppStyles.surface(context),
-        title: Text('Cancel Booking', style: AppStyles.h2(context)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to cancel this booking?', style: AppStyles.body(context)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: 'Reason for cancellation (optional)',
-                border: OutlineInputBorder(),
+            Row(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(width: 12),
+                Text(title, style: AppStyles.h3(context).copyWith(color: color)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(8)),
+              child: Text(reason ?? 'No reason provided', style: AppStyles.body(context)),
+            ),
+            // Show refund information if available
+            if (refundInfo != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.attach_money, color: Colors.green, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(refundInfo, style: AppStyles.body(context).copyWith(color: Colors.green.shade700)),
+                    ),
+                  ],
+                ),
               ),
-              maxLines: 3,
+            ],
+            // Show cancellation date if available
+            if (booking.cancellationDate != null) ...[
+              const SizedBox(height: 8),
+              Text('Cancelled on: ${_formatDateTime(booking.cancellationDate!)}', style: AppStyles.caption(context)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVehicleCard(BookingDetailsResponse booking) {
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppStyles.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.directions_car, color: AppStyles.primary, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Vehicle', style: AppStyles.caption(context)),
+                  const SizedBox(height: 4),
+                  Text(booking.vehicle.name, style: AppStyles.h3(context)),
+                ],
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
+      ),
+    );
+  }
 
-              try {
-                await _bookingApi.cancelBooking(
-                  bookingId: widget.bookingId,
-                  reason: reasonController.text.isEmpty ? 'Customer cancelled' : reasonController.text,
-                );
+  Widget _buildTimelineCard(BookingDetailsResponse booking) {
+    final timeline = booking.timeline;
+    final startDate = DateTime.parse(timeline['startDate']);
+    final endDate = DateTime.parse(timeline['endDate']);
+    final duration = timeline['duration'] ?? '';
 
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Booking cancelled'), backgroundColor: Colors.orange));
-                  Navigator.pop(context, true);
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: Colors.red));
-                }
-              }
-            },
-            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Rental Period', style: AppStyles.h3(context)),
+            const SizedBox(height: 16),
+            _buildTimelineRow(Icons.event, 'Start Date', _formatDateTime(startDate)),
+            const SizedBox(height: 12),
+            _buildTimelineRow(Icons.event, 'End Date', _formatDateTime(endDate)),
+            const SizedBox(height: 12),
+            _buildTimelineRow(Icons.access_time, 'Duration', duration),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: AppStyles.primary, size: 20),
+        const SizedBox(width: 12),
+        Text('$label:', style: AppStyles.caption(context)),
+        const Spacer(),
+        Text(value, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildLocationCard(BookingDetailsResponse booking) {
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location Details', style: AppStyles.h3(context)),
+            const SizedBox(height: 16),
+            _buildLocationRow(Icons.location_on, 'Pickup', booking.pickup['address'] ?? 'Not specified'),
+            const SizedBox(height: 12),
+            _buildLocationRow(Icons.flag, 'Drop-off', booking.dropoff['address'] ?? 'Not specified'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppStyles.primary, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('$label:', style: AppStyles.caption(context)),
+              const SizedBox(height: 4),
+              Text(value, style: AppStyles.body(context)),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ FIXED: Access timeline map properties correctly
-  Widget _buildTimelineCard() {
-    // Parse DateTime from timeline map
-    final startDate = DateTime.parse(_booking!.timeline['startDate'] as String);
-    final endDate = DateTime.parse(_booking!.timeline['endDate'] as String);
-    final duration = _booking!.timeline['duration'] as String;
-
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Timeline', style: AppStyles.h3(context)),
-            const SizedBox(height: 12),
-            _buildRow('Start Date', _formatDateTime(startDate)),
-            const SizedBox(height: 8),
-            _buildRow('End Date', _formatDateTime(endDate)),
-            const SizedBox(height: 8),
-            _buildRow('Duration', duration),
-          ],
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildLocationCard() {
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Locations', style: AppStyles.h3(context)),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.location_on, size: 20, color: Colors.green),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Pickup', style: AppStyles.caption(context)),
-                      Text(_booking!.pickup['address'] ?? 'N/A', style: AppStyles.body(context)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.location_on, size: 20, color: Colors.red),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Dropoff', style: AppStyles.caption(context)),
-                      Text(_booking!.dropoff['address'] ?? 'N/A', style: AppStyles.body(context)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBillingCard() {
-    final billing = _booking!.billing;
+  Widget _buildBillingCard(BookingDetailsResponse booking) {
+    final billing = booking.billing;
 
     return Card(
       color: AppStyles.surface(context),
@@ -682,224 +398,41 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Text('Billing Details', style: AppStyles.h3(context)),
             const SizedBox(height: 16),
-
-            _buildBillingRow(
-              'Rental (${billing.numberOfDays} days)',
-              '${PaymentHelper.formatPrice(billing.rentalPrice)} ₫',
-            ),
+            _buildBillingRow('Rental Price', billing.rentalPrice),
             const SizedBox(height: 8),
-
-            _buildBillingRow('Insurance', '${PaymentHelper.formatPrice(billing.insuranceFee)} ₫'),
+            _buildBillingRow('Insurance Fee', billing.insuranceFee),
             const Divider(height: 24),
-
-            _buildBillingRow('Total', '${PaymentHelper.formatPrice(billing.total)} ₫', isTotal: true),
+            _buildBillingRow('Total', billing.total, isTotal: true),
             const SizedBox(height: 16),
-
-            // Deposit section with payment status
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: billing.depositPaid ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: billing.depositPaid ? Colors.green : Colors.orange),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            PaymentHelper.getPaymentStatusIcon(billing.depositPaid),
-                            size: 20,
-                            color: PaymentHelper.getPaymentStatusColor(billing.depositPaid),
-                          ),
-                          const SizedBox(width: 8),
-                          Text('Deposit (30%)', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                      Text(
-                        '${PaymentHelper.formatPrice(billing.deposit)} ₫',
-                        style: AppStyles.body(context).copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: billing.depositPaid ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const SizedBox(width: 28),
-                      Text(
-                        billing.depositPaid ? 'Paid ✓' : 'Pending Payment',
-                        style: AppStyles.caption(context).copyWith(
-                          color: billing.depositPaid ? Colors.green : Colors.orange,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Final payment section with payment status
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: billing.finalPaymentPaid ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: billing.finalPaymentPaid ? Colors.green : Colors.grey),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            PaymentHelper.getPaymentStatusIcon(billing.finalPaymentPaid),
-                            size: 20,
-                            color: PaymentHelper.getPaymentStatusColor(billing.finalPaymentPaid),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Final Payment (70%)',
-                            style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '${PaymentHelper.formatPrice(billing.remainingPayment)} ₫',
-                        style: AppStyles.body(context).copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: billing.finalPaymentPaid ? Colors.green : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const SizedBox(width: 28),
-                      Text(
-                        billing.finalPaymentPaid ? 'Paid ✓' : 'Pay on booking day',
-                        style: AppStyles.caption(context).copyWith(
-                          color: billing.finalPaymentPaid ? Colors.green : Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInsuranceCard() {
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Insurance Coverage', style: AppStyles.h3(context)),
+            _buildBillingRow('Deposit (30%)', billing.deposit, isPaid: billing.depositPaid),
             const SizedBox(height: 8),
-            Text('${_booking!.insurance.coverage}% Coverage', style: AppStyles.body(context)),
+            _buildBillingRow('Remaining Payment', billing.remainingPayment, isPaid: billing.finalPaymentPaid),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContractCard() {
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.description, color: Colors.green),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Contract Signed', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
-                  Text(_formatDateTime(_booking!.contract!.signedAt), style: AppStyles.caption(context)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhotosSection(String title, List<String> photos) {
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: AppStyles.h3(context)),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: photos.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 100,
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Icon(Icons.image, size: 40)),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRow(String label, String value) {
+  Widget _buildBillingRow(String label, int amount, {bool isTotal = false, bool? isPaid}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppStyles.caption(context)),
-        Text(value, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _buildBillingRow(String label, String value, {bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: isTotal ? AppStyles.body(context).copyWith(fontWeight: FontWeight.bold) : AppStyles.caption(context),
+        Row(
+          children: [
+            Text(
+              label,
+              style: isTotal
+                  ? AppStyles.body(context).copyWith(fontWeight: FontWeight.bold)
+                  : AppStyles.caption(context),
+            ),
+            if (isPaid != null) ...[
+              const SizedBox(width: 8),
+              Icon(isPaid ? Icons.check_circle : Icons.pending, size: 16, color: isPaid ? Colors.green : Colors.orange),
+            ],
+          ],
         ),
         Text(
-          value,
+          '${_formatPrice(amount)} ₫',
           style: isTotal
               ? AppStyles.h3(context).copyWith(color: AppStyles.primary)
               : AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
@@ -908,11 +441,402 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  String _formatDateTime(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  // ✅ UPDATED: Payment Steps Card with Correct Order
+  Widget _buildPaymentStepsCard(BookingDetailsResponse booking) {
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Payment Progress', style: AppStyles.h3(context)),
+            const SizedBox(height: 16),
+
+            // Step 1: Deposit Payment
+            _buildPaymentStep(
+              step: 1,
+              title: 'Deposit Payment',
+              description: '30% of total amount',
+              isCompleted: booking.billing.depositPaid,
+              isCurrent: booking.actions.needsDepositPayment,
+            ),
+
+            // Step 2: Owner Approval
+            _buildPaymentStep(
+              step: 2,
+              title: 'Owner Approval',
+              description: 'Waiting for owner confirmation',
+              isCompleted: booking.status != 'pending' && booking.status != 'pending_payment',
+              isCurrent: booking.actions.needsOwnerApproval,
+            ),
+
+            // Step 3: Sign Contract
+            _buildPaymentStep(
+              step: 3,
+              title: 'Sign Contract',
+              description: 'Sign rental agreement',
+              isCompleted: booking.contract != null,
+              isCurrent: booking.actions.canSignContract,
+            ),
+
+            // Step 4: Final Payment
+            _buildPaymentStep(
+              step: 4,
+              title: 'Final Payment',
+              description: 'Remaining 70% payment',
+              isCompleted: booking.billing.finalPaymentPaid,
+              isCurrent: booking.actions.needsFinalPayment,
+            ),
+
+            // Step 5: Submit Pickup Photos
+            _buildPaymentStep(
+              step: 5,
+              title: 'Pickup Photos',
+              description: 'Submit vehicle condition',
+              isCompleted: booking.pickupPhotos != null,
+              isCurrent: booking.actions.canSubmitPickupPhotos,
+            ),
+
+            // Step 6: Return Journey
+            _buildPaymentStep(
+              step: 6,
+              title: 'Return Photos',
+              description: 'Submit return condition',
+              isCompleted: booking.returnPhotos != null,
+              isCurrent: booking.actions.canSubmitReturnPhotos,
+              isLast: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStep({
+    required int step,
+    required String title,
+    required String description,
+    required bool isCompleted,
+    required bool isCurrent,
+    bool isLast = false,
+  }) {
+    Color stepColor = isCompleted
+        ? Colors.green
+        : isCurrent
+        ? AppStyles.primary
+        : Colors.grey.shade400;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: stepColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: stepColor, width: 2),
+              ),
+              child: Center(
+                child: isCompleted
+                    ? Icon(Icons.check, color: stepColor, size: 20)
+                    : Text(
+                        '$step',
+                        style: TextStyle(color: stepColor, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppStyles.body(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600, color: isCurrent ? AppStyles.primary : null),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(description, style: AppStyles.caption(context)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (!isLast)
+          Padding(
+            padding: const EdgeInsets.only(left: 19, top: 4, bottom: 4),
+            child: Container(width: 2, height: 24, color: isCompleted ? Colors.green : Colors.grey.shade300),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BookingDetailsResponse booking) {
+    return Column(
+      children: [
+        // Deposit Payment Button
+        if (booking.actions.needsDepositPayment) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => _handleDepositPayment(booking),
+              icon: const Icon(Icons.payment, color: Colors.white),
+              label: Text('Pay Deposit (${_formatPrice(booking.billing.deposit)} ₫)', style: AppStyles.button),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Sign Contract Button
+        if (booking.actions.canSignContract) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => _handleSignContract(booking),
+              icon: const Icon(Icons.edit_document, color: Colors.white),
+              label: Text('Sign Contract', style: AppStyles.button),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Final Payment Button
+        if (booking.actions.needsFinalPayment) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => _handleFinalPayment(booking),
+              icon: const Icon(Icons.payment, color: Colors.white),
+              label: Text(
+                'Pay Remaining (${_formatPrice(booking.billing.remainingPayment)} ₫)',
+                style: AppStyles.button,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Submit Pickup Photos Button
+        if (booking.actions.canSubmitPickupPhotos) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => _handleSubmitPickupPhotos(booking),
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: Text('Submit Pickup Photos', style: AppStyles.button),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Submit Return Photos Button
+        if (booking.actions.canSubmitReturnPhotos) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => _handleSubmitReturnPhotos(booking),
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: Text('Submit Return Photos', style: AppStyles.button),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Cancel Booking Button
+        if (booking.actions.canCancel) ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: Colors.red),
+              ),
+              onPressed: () => _handleCancelBooking(booking),
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              label: const Text('Cancel Booking', style: TextStyle(color: Colors.red)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Action Handlers
+  Future<void> _handleDepositPayment(BookingDetailsResponse booking) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            StripePaymentScreen(bookingId: booking.id, paymentType: 'deposit', amount: booking.billing.deposit),
+      ),
+    );
+
+    if (result != null && result['success'] == true) {
+      _loadBookingDetails();
+    }
+  }
+
+  Future<void> _handleSignContract(BookingDetailsResponse booking) async {
+    // Navigate to contract signing screen
+    // TODO: Implement contract signing
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contract signing feature coming soon')));
+  }
+
+  Future<void> _handleFinalPayment(BookingDetailsResponse booking) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            StripePaymentScreen(bookingId: booking.id, paymentType: 'final', amount: booking.billing.remainingPayment),
+      ),
+    );
+
+    if (result != null && result['success'] == true) {
+      _loadBookingDetails();
+    }
+  }
+
+  Future<void> _handleSubmitPickupPhotos(BookingDetailsResponse booking) async {
+    // Navigate to photo submission screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.photoSubmission,
+      arguments: {'bookingId': booking.id, 'isStartJourney': true},
+    ).then((_) => _loadBookingDetails());
+  }
+
+  Future<void> _handleSubmitReturnPhotos(BookingDetailsResponse booking) async {
+    // Navigate to photo submission screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.photoSubmission,
+      arguments: {'bookingId': booking.id, 'isStartJourney': false},
+    ).then((_) => _loadBookingDetails());
+  }
+
+  Future<void> _handleCancelBooking(BookingDetailsResponse booking) async {
+    // Show cancellation dialog
+    final TextEditingController reasonController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppStyles.surface(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Cancel Booking?', style: AppStyles.h2(context)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to cancel this booking?', style: AppStyles.body(context)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Reason for cancellation',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('No', style: TextStyle(color: AppStyles.primary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _bookingApiService.cancelBooking(
+          bookingId: booking.id,
+          reason: reasonController.text.isEmpty ? 'No reason provided' : reasonController.text,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Booking cancelled successfully'), backgroundColor: Colors.green),
+          );
+          _loadBookingDetails();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: Colors.red));
+        }
+      }
+    }
+  }
+
+  // Helper methods
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending_payment':
+        return Colors.orange;
+      case 'pending':
+        return Colors.blue;
+      case 'booking':
+        return Colors.purple;
+      case 'picked_up':
+        return Colors.indigo;
+      case 'return_submitted':
+        return Colors.teal;
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending_payment':
+        return 'Payment Pending';
+      case 'pending':
+        return 'Awaiting Approval';
+      case 'booking':
+        return 'Confirmed';
+      case 'picked_up':
+        return 'On Journey';
+      case 'return_submitted':
+        return 'Return Pending';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatPrice(int price) {
-    return price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 }

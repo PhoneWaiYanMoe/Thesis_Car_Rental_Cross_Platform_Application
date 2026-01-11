@@ -138,11 +138,11 @@ class BookingApiService {
         final responseBody = response.body;
         print('❌ Create booking failed: ${response.statusCode}');
         print('❌ Response body: $responseBody');
-        
+
         try {
           final errorData = jsonDecode(responseBody);
           final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Failed to create booking';
-          
+
           // Check for validation errors
           if (errorData['errors'] != null) {
             final validationErrors = (errorData['errors'] as List)
@@ -150,7 +150,7 @@ class BookingApiService {
                 .join(', ');
             throw Exception('Validation error: $validationErrors');
           }
-          
+
           throw Exception(errorMessage);
         } catch (e) {
           if (e is Exception) rethrow;
@@ -732,12 +732,17 @@ class Pagination {
 }
 
 // ==================== DETAILED BOOKING RESPONSE ====================
+
+// ✅ UPDATED: BookingActions with all required fields
 class BookingActions {
   final bool canSignContract;
   final bool canSubmitPickupPhotos;
   final bool canSubmitReturnPhotos;
   final bool canReview;
   final bool canCancel;
+  final bool needsDepositPayment;
+  final bool needsOwnerApproval;
+  final bool needsFinalPayment;
 
   BookingActions({
     required this.canSignContract,
@@ -745,6 +750,9 @@ class BookingActions {
     required this.canSubmitReturnPhotos,
     required this.canReview,
     required this.canCancel,
+    required this.needsDepositPayment,
+    required this.needsOwnerApproval,
+    required this.needsFinalPayment,
   });
 
   factory BookingActions.fromJson(Map<String, dynamic> json) {
@@ -754,6 +762,9 @@ class BookingActions {
       canSubmitReturnPhotos: json['canSubmitReturnPhotos'] == true,
       canReview: json['canReview'] == true,
       canCancel: json['canCancel'] == true,
+      needsDepositPayment: json['needsDepositPayment'] == true,
+      needsOwnerApproval: json['needsOwnerApproval'] == true,
+      needsFinalPayment: json['needsFinalPayment'] == true,
     );
   }
 
@@ -764,6 +775,9 @@ class BookingActions {
       'canSubmitReturnPhotos': canSubmitReturnPhotos,
       'canReview': canReview,
       'canCancel': canCancel,
+      'needsDepositPayment': needsDepositPayment,
+      'needsOwnerApproval': needsOwnerApproval,
+      'needsFinalPayment': needsFinalPayment,
     };
   }
 }
@@ -777,7 +791,7 @@ int? _parseInt(dynamic value) {
   return null;
 }
 
-// ✅ UPDATED: BookingDetailsResponse with actions
+// ✅ UPDATED: BookingDetailsResponse with cancellation/rejection fields
 class BookingDetailsResponse {
   final String id;
   final String status;
@@ -794,6 +808,13 @@ class BookingDetailsResponse {
   final ContractInfo? contract;
   final BookingActions actions;
 
+  // ✅ NEW: Cancellation and rejection fields
+  final String? cancellationReason;
+  final String? rejectionReason;
+  final DateTime? cancellationDate;
+  final int? refundAmount;
+  final String? refundStatus;
+
   BookingDetailsResponse({
     required this.id,
     required this.status,
@@ -809,10 +830,23 @@ class BookingDetailsResponse {
     this.additionalNotes,
     this.contract,
     required this.actions,
+    this.cancellationReason,
+    this.rejectionReason,
+    this.cancellationDate,
+    this.refundAmount,
+    this.refundStatus,
   });
 
   factory BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
     print('📦 Parsing booking details JSON: ${json.keys}');
+
+    // ✅ DEBUG: Print cancellation/rejection fields
+    print('🔍 Cancellation/Rejection Debug:');
+    print('   cancellationReason: ${json['cancellationReason']}');
+    print('   rejectionReason: ${json['rejectionReason']}');
+    print('   cancellationDate: ${json['cancellationDate']}');
+    print('   refundAmount: ${json['refundAmount']}');
+    print('   refundStatus: ${json['refundStatus']}');
 
     try {
       // Parse timeline with null safety
@@ -858,6 +892,14 @@ class BookingDetailsResponse {
         additionalNotes: json['additionalNotes']?.toString(),
         contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
         actions: BookingActions.fromJson(json['actions'] ?? {}),
+        // ✅ FIXED: Parse cancellation/rejection fields
+        cancellationReason: json['cancellationReason']?.toString(),
+        rejectionReason: json['rejectionReason']?.toString(),
+        cancellationDate: json['cancellationDate'] != null
+            ? DateTime.tryParse(json['cancellationDate'].toString())
+            : null,
+        refundAmount: _parseInt(json['refundAmount']),
+        refundStatus: json['refundStatus']?.toString(),
       );
     } catch (e) {
       print('❌ Error parsing BookingDetailsResponse: $e');

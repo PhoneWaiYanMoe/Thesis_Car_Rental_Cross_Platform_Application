@@ -737,6 +737,14 @@ class BookingController {
         startDate > now;
       const isFullyPaid = booking.deposit_paid && booking.final_payment_paid;
 
+      // ✅ LOG the actual database values for debugging
+      console.log("📋 Booking cancellation info from DB:");
+      console.log("   cancellation_reason:", booking.cancellation_reason);
+      console.log("   rejection_reason:", booking.rejection_reason);
+      console.log("   cancellation_date:", booking.cancellation_date);
+      console.log("   refund_amount:", booking.refund_amount);
+      console.log("   refund_status:", booking.refund_status);
+
       res.json({
         booking: {
           id: booking.booking_id,
@@ -785,6 +793,12 @@ class BookingController {
                 url: `https://cdn.com/contracts/${booking.booking_id}.pdf`,
               }
             : null,
+          // ✅ CRITICAL FIX: Map snake_case DB fields to camelCase JSON fields
+          cancellationReason: booking.cancellation_reason || null,
+          rejectionReason: booking.rejection_reason || null,
+          cancellationDate: booking.cancellation_date || null,
+          refundAmount: booking.refund_amount || null,
+          refundStatus: booking.refund_status || null,
           actions: {
             needsDepositPayment,
             needsOwnerApproval,
