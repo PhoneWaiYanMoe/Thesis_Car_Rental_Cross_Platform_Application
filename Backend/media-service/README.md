@@ -24,9 +24,9 @@ The Media Service handles file uploads, image processing, and storage for the Wi
 - **Authentication**: JWT
 
 ## Prerequisites
-- Node.js v18+ 
-- PostgreSQL 14+
-- Cloudinary account (free tier works)
+- Node.js 
+- PostgreSQL
+- Cloudinary account
 
 ## Installation
 
@@ -46,36 +46,10 @@ createdb wiz_media_db
 ```
 
 4. **Configure environment**
-Create `.env` file with your credentials:
-```env
-# Server
-PORT=3008
-NODE_ENV=development
-
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=wiz_media_db
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# JWT
-JWT_SECRET=your_jwt_secret
-
-# File Upload
-MAX_FILE_SIZE=5242880
-ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/jpg,image/webp
-ALLOWED_DOCUMENT_TYPES=application/pdf
-```
+Create `.env` file from .env.sample
 
 5. **Start the service**
 ```bash
-# Development with auto-reload
 npm run dev
 
 # Production
@@ -86,7 +60,7 @@ npm start
 
 ### 1. Upload Single File (Protected)
 ```
-POST /api/v1/upload
+POST /upload
 Headers: Authorization: Bearer <token>
 Body: multipart/form-data
   - file: (file)
@@ -118,7 +92,7 @@ Response:
 
 ### 2. Upload Multiple Files (Protected)
 ```
-POST /api/v1/upload/batch
+POST /upload/batch
 Headers: Authorization: Bearer <token>
 Body: multipart/form-data
   - files: (multiple files, max 10)
@@ -139,7 +113,7 @@ Response:
 
 ### 3. Get Single Media by ID (Public)
 ```
-GET /api/v1/media/:id
+GET /:id
 No authentication required
 
 Response:
@@ -160,7 +134,7 @@ Response:
 
 ### 4. Batch Get Media by IDs (Public)
 ```
-POST /api/v1/media/batch
+POST /batch
 No authentication required
 Body: {
   "ids": ["uuid1", "uuid2", "uuid3"]
@@ -185,7 +159,7 @@ Response:
 
 ### 5. Get Media by Owner (Public)
 ```
-GET /api/v1/media/batch?ownerType=VEHICLE&ownerId=uuid&type=vehicle_photo
+GET /batch?ownerType=VEHICLE&ownerId=uuid&type=vehicle_photo
 No authentication required
 Query Parameters:
   - ownerType: (required) "VEHICLE" | "REVIEW" | "USER" | "REQUEST"
@@ -208,7 +182,7 @@ Response:
 
 ### 6. Delete Media (Protected)
 ```
-DELETE /api/v1/:id
+DELETE /:id
 Headers: Authorization: Bearer <token>
 
 Response:
@@ -254,26 +228,6 @@ Response:
 ## File Size Limits
 - Maximum file size: 5MB (configurable in .env)
 - Maximum files per batch: 10
-
-## Database Schema
-
-### media_files table
-```sql
-- id (UUID, Primary Key)
-- owner_id (UUID, Not Null) - Entity that owns the media
-- owner_type (ENUM: VEHICLE, REVIEW, USER, REQUEST, Not Null)
-- uploader_id (UUID, Not Null) - User who uploaded the file
-- type (ENUM: vehicle_photo, document, review_photo, license, selfie, passport, contract, profile, Not Null)
-- url (Text, Not Null) - Cloudinary URL
-- thumbnail_url (Text, Nullable) - Thumbnail URL for images
-- cloudinary_public_id (String, Not Null) - Internal only, not returned in API
-- file_name (String, Not Null)
-- mime_type (String, Not Null)
-- size (Integer, Not Null) - File size in bytes
-- width (Integer, Nullable) - Image width in pixels
-- height (Integer, Nullable) - Image height in pixels
-- uploaded_at (Timestamp, Default: NOW)
-```
 
 ## Image Processing
 - Images automatically resized to max 1200px width
@@ -332,10 +286,6 @@ The service uses Cloudinary for reliable cloud storage:
 - Automatic image optimization
 - Secure file deletion
 
-## Privacy Note
-- **cloudinaryPublicId** is stored in the database but **never returned** in API responses
-- This prevents external services from directly manipulating Cloudinary resources
-- Only URLs are exposed publicly
 
 ## Health Check
 ```
@@ -359,18 +309,3 @@ Test all endpoints using Postman or curl:
 3. **Batch retrieval** (public)
 4. **Get by owner** (public)
 5. **Delete** (requires auth + ownership)
-
-See TESTING_GUIDE.md for detailed testing scenarios.
-
-## Future Dockerization
-This service is designed to work locally first, then be containerized. When dockerizing:
-- Update `DB_HOST` from `localhost` to Docker service name
-- Configure Docker Compose for multi-service orchestration
-- Use volume mounts for development
-- Configure service-to-service networking
-
-## Development Notes
-- Uses memory storage (Multer) - files never touch disk
-- Database auto-syncs schema in development mode
-- All file processing happens in-memory before Cloudinary upload
-- Permanent URLs eliminate need for signed/temporary URLs
