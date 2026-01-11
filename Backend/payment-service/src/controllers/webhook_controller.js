@@ -1,8 +1,9 @@
 // Backend/payment-service/src/controllers/webhook_controller.js
-// ✅ COMPLETE FIX: Better error handling and logging
+// ✅ UPDATED: Add vehicle to unavailability AFTER successful deposit payment
 
 const pool = require("../config/database");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
+const vehicleGrpcClient = require("../grpc/vehicle_grpc_client"); // ✅ ADD
 
 const MOCK_MODE = process.env.MOCK_PAYMENT === "true";
 
@@ -11,17 +12,15 @@ class WebhookController {
 
   async handleStripeWebhook(req, res, next) {
     try {
-      const event = req.webhookEvent; // Set by verification middleware
+      const event = req.webhookEvent;
 
       console.log(`\n========================================`);
       console.log(`📨 STRIPE WEBHOOK RECEIVED`);
       console.log(`========================================`);
       console.log(`   Event Type: ${event.type}`);
       console.log(`   Event ID: ${event.id}`);
-      console.log(`   Livemode: ${event.livemode}`);
       console.log(`========================================\n`);
 
-      // Check for duplicate events
       const existingEvent = await pool.query(
         "SELECT event_id FROM webhook_events WHERE event_id = $1",
         [event.id]
@@ -34,7 +33,6 @@ class WebhookController {
         return res.json({ received: true, duplicate: true });
       }
 
-      // Store event
       await pool.query(
         `INSERT INTO webhook_events (event_id, provider, type, payload, processed)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -43,41 +41,31 @@ class WebhookController {
 
       console.log(`✅ Webhook event stored in database`);
 
-      // Handle different event types
       switch (event.type) {
         case "payment_intent.succeeded":
           console.log(`\n💳 PAYMENT SUCCESS DETECTED`);
-          console.log(`   Payment Intent ID: ${event.data.object.id}`);
           await this.handlePaymentSuccess(event.data.object, "stripe");
           break;
 
         case "payment_intent.payment_failed":
           console.log(`\n❌ PAYMENT FAILED DETECTED`);
-          console.log(`   Payment Intent ID: ${event.data.object.id}`);
           await this.handlePaymentFailed(event.data.object);
           break;
 
         case "payment_intent.canceled":
           console.log(`\n🚫 PAYMENT CANCELED DETECTED`);
-          console.log(`   Payment Intent ID: ${event.data.object.id}`);
           await this.handlePaymentCanceled(event.data.object);
           break;
 
         case "charge.refunded":
           console.log(`\n💰 REFUND DETECTED`);
-          console.log(`   Charge ID: ${event.data.object.id}`);
           await this.handleRefundCompleted(event.data.object);
-          break;
-
-        case "payment_intent.created":
-          console.log(`\nℹ️  PAYMENT INTENT CREATED (no action needed)`);
           break;
 
         default:
           console.log(`\nℹ️  Unhandled Stripe event type: ${event.type}`);
       }
 
-      // Mark as processed
       await pool.query(
         "UPDATE webhook_events SET processed = true, processed_at = NOW() WHERE event_id = $1",
         [event.id]
@@ -87,13 +75,7 @@ class WebhookController {
 
       res.json({ received: true, event_type: event.type });
     } catch (error) {
-      console.error("\n❌ ========================================");
-      console.error("❌ STRIPE WEBHOOK ERROR");
-      console.error("❌ ========================================");
-      console.error(error);
-      console.error("❌ ========================================\n");
-
-      // Still return 200 to Stripe to prevent retries
+      console.error("\n❌ STRIPE WEBHOOK ERROR:", error);
       res.status(200).json({
         received: true,
         error: "Processing failed but acknowledged",
@@ -110,9 +92,7 @@ class WebhookController {
       console.log(`\n🔍 PROCESSING PAYMENT SUCCESS`);
       console.log(`   Payment Intent ID: ${id}`);
       console.log(`   Status: ${status}`);
-      console.log(`   Metadata:`, JSON.stringify(metadata, null, 2));
 
-      // ✅ Find transaction by provider intent_id
       const txResult = await pool.query(
         `SELECT transaction_id, booking_id, type, status 
          FROM transactions 
@@ -124,7 +104,6 @@ class WebhookController {
 
       if (txResult.rows.length === 0) {
         console.error(`❌ No transaction found for intent: ${id}`);
-        console.error(`   This webhook will be ignored`);
         return;
       }
 
@@ -140,9 +119,7 @@ class WebhookController {
       console.log(`   Transaction ID: ${transaction_id}`);
       console.log(`   Booking ID: ${booking_id}`);
       console.log(`   Payment Type: ${type}`);
-      console.log(`   Current Status: ${txStatus}`);
 
-      // Check if already processed
       if (txStatus === "succeeded") {
         console.log(`⚠️  Transaction already marked as succeeded - skipping`);
         return;
@@ -162,27 +139,73 @@ class WebhookController {
       console.log(`\n✅ Transaction updated to 'succeeded'`);
 
       // ✅ Update booking status via gRPC
-      console.log(`\n🔄 Updating booking status via gRPC...`);
       await this.updateBookingAfterPayment(booking_id, transaction_id, type);
 
-      console.log(`\n✅ ========================================`);
-      console.log(`✅ PAYMENT SUCCESS FULLY PROCESSED`);
-      console.log(`✅ ========================================`);
-      console.log(`   Booking: ${booking_id}`);
-      console.log(`   Transaction: ${transaction_id}`);
-      console.log(`   Type: ${type}`);
-      console.log(`✅ ========================================\n`);
+      // ✅ NEW: If deposit payment, add vehicle to unavailability
+      if (type === "deposit") {
+        await this.addVehicleUnavailability(booking_id);
+      }
+
+      console.log(`\n✅ PAYMENT SUCCESS FULLY PROCESSED`);
     } catch (error) {
-      console.error("\n❌ ========================================");
-      console.error("❌ ERROR IN handlePaymentSuccess");
-      console.error("❌ ========================================");
-      console.error(error);
-      console.error("❌ ========================================\n");
+      console.error("\n❌ ERROR IN handlePaymentSuccess:", error);
       throw error;
     }
   }
 
-  // ✅ Update booking after payment
+  // ✅ FIXED: Get booking details via gRPC, not database
+  async addVehicleUnavailability(bookingId) {
+    try {
+      console.log(`\n🔄 Adding vehicle to unavailability...`);
+      console.log(`   Booking ID: ${bookingId}`);
+
+      // ✅ Get booking details via gRPC (not direct DB query)
+      let bookingDetails;
+      try {
+        bookingDetails = await bookingGrpcClient.getBookingDetails(bookingId);
+      } catch (error) {
+        console.error(
+          `❌ Could not get booking details via gRPC:`,
+          error.message
+        );
+        return;
+      }
+
+      const vehicleId = bookingDetails.vehicle_id;
+      const startDate = bookingDetails.start_date.split("T")[0]; // Extract date only
+      const endDate = bookingDetails.end_date.split("T")[0];
+
+      console.log(`   Vehicle ID: ${vehicleId}`);
+      console.log(`   Dates: ${startDate} to ${endDate}`);
+
+      // ✅ Call vehicle service to add unavailability (already loaded at top)
+      try {
+        await vehicleGrpcClient.syncUnavailability(
+          vehicleId,
+          startDate,
+          endDate,
+          bookingId,
+          "add"
+        );
+
+        console.log(`✅ Vehicle ${vehicleId} added to unavailability`);
+        console.log(`   Period: ${startDate} to ${endDate}`);
+      } catch (error) {
+        console.error(
+          `⚠️  Could not add vehicle to unavailability:`,
+          error.message
+        );
+        // Don't fail payment if this errors - just log it
+      }
+    } catch (error) {
+      console.error(
+        `\n❌ CRITICAL ERROR: Failed to add vehicle unavailability`
+      );
+      console.error(`   Booking ID: ${bookingId}`);
+      console.error(`   Error:`, error.message);
+    }
+  }
+
   async updateBookingAfterPayment(bookingId, transactionId, paymentType) {
     try {
       console.log(`\n🔄 UPDATING BOOKING`);
@@ -195,24 +218,19 @@ class WebhookController {
           transactionId
         );
         console.log(`✅ Booking status updated: pending_payment → pending`);
-        console.log(`   (Waiting for owner approval)`);
       } else if (paymentType === "final_payment") {
         await bookingGrpcClient.updateBookingAfterFinalPayment(
           bookingId,
           transactionId
         );
         console.log(`✅ Booking marked as fully paid`);
-        console.log(`   (Status remains 'booking')`);
       }
 
       console.log(`✅ Booking update complete\n`);
     } catch (error) {
       console.error(`\n❌ CRITICAL ERROR: Failed to update booking`);
       console.error(`   Booking ID: ${bookingId}`);
-      console.error(`   Payment Type: ${paymentType}`);
       console.error(`   Error:`, error.message);
-      console.error(`\n⚠️  PAYMENT SUCCEEDED BUT BOOKING NOT UPDATED!`);
-      console.error(`   This needs manual intervention\n`);
     }
   }
 
@@ -223,9 +241,6 @@ class WebhookController {
       const { id, last_payment_error } = paymentIntent;
 
       console.log(`❌ Payment failed for intent: ${id}`);
-      console.log(
-        `   Error: ${last_payment_error?.message || "Unknown error"}`
-      );
 
       await pool.query(
         `UPDATE transactions
@@ -236,7 +251,7 @@ class WebhookController {
         [last_payment_error?.message || "Payment failed", id]
       );
 
-      console.log(`✅ Payment failure recorded in database\n`);
+      console.log(`✅ Payment failure recorded\n`);
     } catch (error) {
       console.error("❌ handlePaymentFailed error:", error);
     }
@@ -339,6 +354,11 @@ class WebhookController {
           transaction.transaction_id,
           transaction.type
         );
+
+        // ✅ NEW: Add to unavailability if deposit
+        if (transaction.type === "deposit") {
+          await this.addVehicleUnavailability(transaction.booking_id);
+        }
 
         res.redirect(
           `${process.env.FRONTEND_URL}/payment/success?bookingId=${transaction.booking_id}`

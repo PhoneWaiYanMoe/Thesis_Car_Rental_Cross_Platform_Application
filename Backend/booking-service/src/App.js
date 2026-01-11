@@ -1,4 +1,6 @@
 // Backend/booking-service/src/App.js
+// ✅ UPDATED: Start payment timeout checker
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -12,6 +14,9 @@ const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
 const BookingGrpcServer = require("./grpc/booking_grpc_server");
 const { startNoShowChecker } = require("./utils/no_show_checker");
+const {
+  startPaymentTimeoutChecker,
+} = require("./utils/payment_timeout_checker"); // ✅ NEW
 
 const app = express();
 
@@ -75,6 +80,14 @@ async function startServer() {
 
     // Start no-show checker (runs every hour)
     startNoShowChecker();
+
+    // ✅ NEW: Start payment timeout checker (runs every 5 minutes)
+    startPaymentTimeoutChecker();
+
+    console.log("\n✅ All background services started:");
+    console.log("   - No-show checker (hourly)");
+    console.log("   - Payment timeout checker (every 5 min)");
+    console.log("");
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);

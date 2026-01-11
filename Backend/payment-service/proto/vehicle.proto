@@ -1,0 +1,139 @@
+
+syntax = "proto3";
+
+package vehicle;
+
+service VehicleService {
+  // Get vehicle basic info
+  rpc GetVehicleInfo(GetVehicleInfoRequest) returns (GetVehicleInfoResponse);
+  
+  // Get multiple vehicles info
+  rpc GetVehiclesInfo(GetVehiclesInfoRequest) returns (GetVehiclesInfoResponse);
+  
+  // Check if user owns vehicle
+  rpc CheckVehicleOwnership(CheckVehicleOwnershipRequest) returns (CheckVehicleOwnershipResponse);
+  
+  // Update vehicle rating after review
+  rpc UpdateVehicleRating(UpdateVehicleRatingRequest) returns (UpdateVehicleRatingResponse);
+
+  // Check availability for dates
+  rpc CheckAvailability(CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
+
+  // Sync booking to unavailability
+  rpc SyncUnavailability(SyncUnavailabilityRequest) returns (SyncUnavailabilityResponse);
+
+  // Increment total rentals
+  rpc IncrementTotalRentals(IncrementTotalRentalsRequest) returns (IncrementTotalRentalsResponse);
+
+  // ✅ NEW: Get favorite count for vehicle
+  rpc GetFavoriteCount(GetFavoriteCountRequest) returns (GetFavoriteCountResponse);
+}
+
+message GetVehicleInfoRequest {
+  string vehicle_id = 1;
+}
+
+message GetVehicleInfoResponse {
+  string vehicle_id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string vehicle_type = 4;
+  int32 price_per_day = 5;
+  string status = 6;
+  double average_rating = 7;
+  int32 total_rentals = 8;
+}
+
+message GetVehiclesInfoRequest {
+  repeated string vehicle_ids = 1;
+}
+
+message GetVehiclesInfoResponse {
+  repeated VehicleInfo vehicles = 1;
+}
+
+message VehicleInfo {
+  string vehicle_id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string vehicle_type = 4;
+  int32 price_per_day = 5;
+  string status = 6;
+  double average_rating = 7;
+  int32 total_rentals = 8;
+}
+
+message CheckVehicleOwnershipRequest {
+  string vehicle_id = 1;
+  string user_id = 2;
+}
+
+message CheckVehicleOwnershipResponse {
+  bool is_owner = 1;
+  string message = 2;
+}
+
+message UpdateVehicleRatingRequest {
+  string vehicle_id = 1;
+  double new_rating = 2;
+  int32 new_review_count = 3;
+}
+
+message UpdateVehicleRatingResponse {
+  bool success = 1;
+  string message = 2;
+  double updated_rating = 3;
+}
+
+message CheckAvailabilityRequest {
+  string vehicle_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+message CheckAvailabilityResponse {
+  bool is_available = 1;
+  string message = 2;
+  repeated UnavailablePeriod unavailable_periods = 3;
+}
+
+message UnavailablePeriod {
+  string start_date = 1;
+  string end_date = 2;
+  string reason = 3;
+  string booking_id = 4;
+}
+
+message SyncUnavailabilityRequest {
+  string vehicle_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+  string booking_id = 4;
+  string action = 5; // "add" or "remove"
+}
+
+message SyncUnavailabilityResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message IncrementTotalRentalsRequest {
+  string vehicle_id = 1;
+}
+
+message IncrementTotalRentalsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 new_total = 3;
+}
+
+// ✅ NEW MESSAGES FOR FAVORITES
+message GetFavoriteCountRequest {
+  string vehicle_id = 1;
+}
+
+message GetFavoriteCountResponse {
+  string vehicle_id = 1;
+  int32 favorite_count = 2;
+  string message = 3;
+}
