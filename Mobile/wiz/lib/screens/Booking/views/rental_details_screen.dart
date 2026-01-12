@@ -191,7 +191,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       // Determine if it was cancelled by customer or rejected by owner
       if (booking.cancellationReason != null) {
         // Customer cancelled
-        title = 'Cancellation Reason (Customer)';
+        title = 'Cancellation Reason ';
         color = Colors.orange;
         icon = Icons.cancel;
       } else if (booking.rejectionReason != null) {

@@ -58,8 +58,15 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   String? _tempLocation;
   String? _tempCity;
   String? _tempDistrict;
+  String? _tempPickup;
+  String? _tempPickupCity;
+  String? _tempPickupDistrict;
+  String? _tempDestination;
+  String? _tempDestinationCity;
+  String? _tempDestinationDistrict;
   String? _tempDatetime;
-  bool _tempWithDriver = false;
+  bool _tempWithDriver = false; // ✅ Driver toggle state
+  int _selectedDriveMode = 0; // ✅ 0 = Self Drive, 1 = With Driver
 
   @override
   void initState() {
@@ -68,9 +75,16 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     // ✅ Try to create BookingData - may fail if coming from favorites
     try {
       _bookingData = BookingData.fromMap(widget.arguments);
+      _tempWithDriver = _bookingData!.withDriver;
+      _selectedDriveMode = _tempWithDriver ? 1 : 0;
     } catch (e) {
       print('⚠️ No complete trip data available: $e');
       _bookingData = null;
+      // ✅ Check if withDriver was passed in arguments
+      if (widget.arguments.containsKey('withDriver')) {
+        _tempWithDriver = widget.arguments['withDriver'] as bool;
+        _selectedDriveMode = _tempWithDriver ? 1 : 0;
+      }
     }
 
     _loadVehicleDetails();
@@ -304,7 +318,33 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ NEW: Navigate to select location
+  // ✅ NEW: Handle drive mode toggle
+  void _handleDriveModeChange(int index) {
+    setState(() {
+      _selectedDriveMode = index;
+      _tempWithDriver = index == 1;
+
+      // Clear location data when switching modes
+      if (_tempWithDriver) {
+        // Switching to With Driver - clear self-drive location
+        _tempLocation = null;
+        _tempCity = null;
+        _tempDistrict = null;
+      } else {
+        // Switching to Self Drive - clear with-driver locations
+        _tempPickup = null;
+        _tempPickupCity = null;
+        _tempPickupDistrict = null;
+        _tempDestination = null;
+        _tempDestinationCity = null;
+        _tempDestinationDistrict = null;
+      }
+    });
+
+    print('🔄 Drive mode changed to: ${_tempWithDriver ? "With Driver" : "Self Drive"}');
+  }
+
+  // ✅ UPDATED: Navigate to select location (for self-drive)
   Future<void> _selectLocation() async {
     final result = await Navigator.push(
       context,
@@ -319,10 +359,46 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       });
 
       print('✅ Selected location: $_tempLocation');
+      _tryCreateBookingData();
     }
   }
 
-  // ✅ NEW: Navigate to select date/time
+  // ✅ NEW: Navigate to select pickup location (for with-driver)
+  Future<void> _selectPickup() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MapScreen(title: 'Pickup Location')),
+    );
+
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        _tempPickup = result['address'] as String?;
+        _tempPickupCity = result['city'] as String?;
+        _tempPickupDistrict = result['district'] as String?;
+      });
+
+      print('✅ Selected pickup: $_tempPickup');
+      _tryCreateBookingData();
+    }
+  }
+
+  // ✅ NEW: Navigate to select destination (for with-driver)
+  Future<void> _selectDestination() async {
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(title: 'Destination')));
+
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        _tempDestination = result['address'] as String?;
+        _tempDestinationCity = result['city'] as String?;
+        _tempDestinationDistrict = result['district'] as String?;
+      });
+
+      print('✅ Selected destination: $_tempDestination');
+      _tryCreateBookingData();
+    }
+  }
+
+  // ✅ UPDATED: Navigate to select date/time
   Future<void> _selectDateTime() async {
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const DateTimeScreen()));
 
@@ -332,41 +408,57 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       });
 
       print('✅ Selected datetime: $_tempDatetime');
-
-      // ✅ If we now have both location and datetime, create BookingData
-      if (_tempLocation != null && _tempDatetime != null) {
-        _createBookingData();
-      }
+      _tryCreateBookingData();
     }
   }
 
-  // ✅ NEW: Create BookingData from temp values
-  void _createBookingData() {
-    if (_tempLocation == null || _tempDatetime == null || _car == null) return;
+  // ✅ UPDATED: Try to create BookingData from temp values
+  void _tryCreateBookingData() {
+    if (_car == null || _tempDatetime == null) return;
 
-    final tripData = {
+    // Check if we have all required data based on mode
+    bool hasRequiredData = false;
+
+    if (_tempWithDriver) {
+      // With Driver mode: need pickup and destination
+      hasRequiredData = _tempPickup != null && _tempDestination != null;
+    } else {
+      // Self Drive mode: need location
+      hasRequiredData = _tempLocation != null;
+    }
+
+    if (!hasRequiredData) return;
+
+    final tripData = <String, dynamic>{
       'mode': _tempWithDriver ? 'With Driver' : 'Self Drive',
       'withDriver': _tempWithDriver,
-      'location': _tempLocation,
-      'city': _tempCity,
-      'district': _tempDistrict,
       'datetime': _tempDatetime!,
       'car': _car!,
       'carIndex': 0,
     };
 
+    // Add location data based on mode (only add non-null values)
+    if (_tempWithDriver) {
+      if (_tempPickup != null) tripData['pickup'] = _tempPickup!;
+      if (_tempPickupCity != null) tripData['pickupCity'] = _tempPickupCity!;
+      if (_tempPickupDistrict != null) tripData['pickupDistrict'] = _tempPickupDistrict!;
+      if (_tempDestination != null) tripData['destination'] = _tempDestination!;
+      if (_tempDestinationCity != null) tripData['destinationCity'] = _tempDestinationCity!;
+      if (_tempDestinationDistrict != null) tripData['destinationDistrict'] = _tempDestinationDistrict!;
+    } else {
+      if (_tempLocation != null) tripData['location'] = _tempLocation!;
+      if (_tempCity != null) tripData['city'] = _tempCity!;
+      if (_tempDistrict != null) tripData['district'] = _tempDistrict!;
+    }
+
     setState(() {
       _bookingData = BookingData.fromMap(tripData);
     });
 
-    print('✅ Created booking data');
+    print('✅ Created booking data in ${_tempWithDriver ? "With Driver" : "Self Drive"} mode');
 
-    // Check availability
+    // Check availability immediately after creating booking data
     _checkAvailability();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Trip details set! You can now proceed to booking.'), backgroundColor: Colors.green),
-    );
   }
 
   void _updateBookingData({TravelScope? travelScope, InsuranceOption? insurance, PaymentMethod? paymentMethod}) {
@@ -417,44 +509,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
 
     final car = _car ?? (_bookingData?.car ?? widget.arguments['car'] as Car);
 
-    // Show availability warning if not available
-    if (_availability != null && !_availability!.isAvailable && _hasTripData) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_availability!.message),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(
-                label: 'Details',
-                textColor: Colors.white,
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Unavailable Periods'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: _availability!.unavailablePeriods.map((period) {
-                          return ListTile(
-                            leading: const Icon(Icons.event_busy),
-                            title: Text('${period.startDate} - ${period.endDate}'),
-                            subtitle: Text(period.reason),
-                          );
-                        }).toList(),
-                      ),
-                      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        }
-      });
-    }
-
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
@@ -498,31 +552,76 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               if (_isCheckingAvailability)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade300),
+                  ),
                   child: Row(
                     children: [
                       const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                       const SizedBox(width: 12),
-                      Text('Checking availability...', style: AppStyles.caption(context)),
+                      Expanded(child: Text('Checking availability...', style: AppStyles.caption(context))),
                     ],
                   ),
                 )
-              else if (_availability != null && !_availability!.isAvailable)
+              else if (_availability != null)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: _availability!.isAvailable ? Colors.green.shade50 : Colors.red.shade50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange),
+                    border: Border.all(
+                      color: _availability!.isAvailable ? Colors.green.shade300 : Colors.red.shade300,
+                      width: 2,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning, color: Colors.orange),
+                      Icon(
+                        _availability!.isAvailable ? Icons.check_circle : Icons.cancel,
+                        color: _availability!.isAvailable ? Colors.green : Colors.red,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          'Not available for selected dates',
-                          style: AppStyles.caption(context).copyWith(color: Colors.orange.shade900),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _availability!.isAvailable ? 'Available' : 'Not Available',
+                              style: AppStyles.h3(context).copyWith(
+                                color: _availability!.isAvailable ? Colors.green.shade900 : Colors.red.shade900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _availability!.message,
+                              style: AppStyles.caption(context).copyWith(
+                                color: _availability!.isAvailable ? Colors.green.shade800 : Colors.red.shade800,
+                              ),
+                            ),
+                            if (!_availability!.isAvailable && _availability!.unavailablePeriods.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Unavailable dates:',
+                                style: AppStyles.caption(
+                                  context,
+                                ).copyWith(fontWeight: FontWeight.bold, color: Colors.red.shade900),
+                              ),
+                              const SizedBox(height: 4),
+                              ..._availability!.unavailablePeriods.map(
+                                (period) => Padding(
+                                  padding: const EdgeInsets.only(left: 8, top: 2),
+                                  child: Text(
+                                    '• ${period.startDate} to ${period.endDate}',
+                                    style: AppStyles.caption(
+                                      context,
+                                    ).copyWith(fontSize: 12, color: Colors.red.shade800),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ],
@@ -661,11 +760,14 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     );
   }
 
-  // ✅ NEW: Trip setup card
+  // ✅ UPDATED: Trip setup card with drive mode toggle
   Widget _buildTripSetupCard() {
-    final hasLocation = _tempLocation != null;
+    // Check what's required based on current mode
+    final hasRequiredLocation = _tempWithDriver
+        ? (_tempPickup != null && _tempDestination != null)
+        : _tempLocation != null;
     final hasDatetime = _tempDatetime != null;
-    final isComplete = hasLocation && hasDatetime;
+    final isComplete = hasRequiredLocation && hasDatetime;
 
     return Card(
       color: AppStyles.primary.withOpacity(0.1),
@@ -692,20 +794,42 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Location button
-            _buildSetupButton(
-              icon: Icons.location_on,
-              label: hasLocation ? _tempLocation! : 'Select Location',
-              isSet: hasLocation,
-              onTap: _selectLocation,
-            ),
+            // ✅ Drive Mode Toggle
+            _buildDriveModeToggle(),
+            const SizedBox(height: 16),
+
+            // ✅ Show different fields based on drive mode
+            if (!_tempWithDriver) ...[
+              // Self Drive: Single location field
+              _buildSetupButton(
+                icon: Icons.location_on,
+                label: _tempLocation ?? 'Select Location',
+                isSet: _tempLocation != null,
+                onTap: _selectLocation,
+              ),
+            ] else ...[
+              // With Driver: Pickup and destination fields
+              _buildSetupButton(
+                icon: Icons.pin_drop,
+                label: _tempPickup ?? 'Pickup Location',
+                isSet: _tempPickup != null,
+                onTap: _selectPickup,
+              ),
+              const SizedBox(height: 12),
+              _buildSetupButton(
+                icon: Icons.flag,
+                label: _tempDestination ?? 'Destination',
+                isSet: _tempDestination != null,
+                onTap: _selectDestination,
+              ),
+            ],
             const SizedBox(height: 12),
 
             // Date/Time button
             _buildSetupButton(
               icon: Icons.calendar_today,
-              label: hasDatetime ? _tempDatetime! : 'Select Date & Time',
-              isSet: hasDatetime,
+              label: _tempDatetime ?? 'Select Date & Time',
+              isSet: _tempDatetime != null,
               onTap: _selectDateTime,
             ),
 
@@ -729,6 +853,51 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ NEW: Drive mode toggle widget
+  Widget _buildDriveModeToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          _buildDriveModeButton('Self Drive', 0, Icons.directions_car),
+          _buildDriveModeButton('With Driver', 1, Icons.person),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDriveModeButton(String text, int index, IconData icon) {
+    final isSelected = _selectedDriveMode == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _handleDriveModeChange(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppStyles.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: isSelected ? Colors.white : AppStyles.textSecondary(context)),
+              const SizedBox(width: 6),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : AppStyles.textSecondary(context),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
