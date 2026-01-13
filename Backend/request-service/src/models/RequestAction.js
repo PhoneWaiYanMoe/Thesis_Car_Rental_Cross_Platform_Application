@@ -5,12 +5,14 @@ class RequestAction {
     const query = `
       CREATE TABLE IF NOT EXISTS request_actions (
         id SERIAL PRIMARY KEY,
-        request_id INTEGER REFERENCES requests(id),
+        request_id INTEGER REFERENCES requests(id) ON DELETE CASCADE,
         performed_by VARCHAR(255) NOT NULL,
         action VARCHAR(100) NOT NULL,
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE INDEX IF NOT EXISTS idx_request_actions_request_id ON request_actions(request_id);
     `;
 
     await pool.query(query);
@@ -39,4 +41,4 @@ class RequestAction {
   }
 }
 
-module.exports = { Request, RequestAction };
+module.exports = RequestAction;

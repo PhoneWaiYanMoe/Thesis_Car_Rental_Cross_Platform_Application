@@ -1,16 +1,50 @@
 const requestService = require("../services/request.service");
+const {
+  successResponse,
+  errorResponse,
+} = require("../utils/responseFormatter");
 
 class RequestController {
-  async createRequest(req, res) {
+  async createRequest(req, res, next) {
     try {
       const { title, category, description, priority, attachmentUrls } =
         req.body;
 
+      // validation
       if (!title || !category || !description) {
-        return res.status(400).json({
-          success: false,
-          message: "Title, category, and description are required",
-        });
+        return res
+          .status(400)
+          .json(errorResponse("Title, category, and description are required"));
+      }
+
+      const validCategories = [
+        "booking_issue",
+        "verification",
+        "account_issue",
+        "vehicle_listing",
+        "payment_issue",
+        "booking_change",
+        "report",
+      ];
+      if (!validCategories.includes(category)) {
+        return res
+          .status(400)
+          .json(
+            errorResponse(
+              `Invalid category. Must be one of: ${validCategories.join(", ")}`
+            )
+          );
+      }
+
+      const validPriorities = ["low", "medium", "high"];
+      if (priority && !validPriorities.includes(priority)) {
+        return res
+          .status(400)
+          .json(
+            errorResponse(
+              `Invalid priority. Must be one of: ${validPriorities.join(", ")}`
+            )
+          );
       }
 
       const request = await requestService.createRequest(req.user.id, {
@@ -21,28 +55,26 @@ class RequestController {
         attachmentUrls,
       });
 
-      res.status(201).json({
-        success: true,
-        message: "Request submitted successfully",
-        request: {
-          id: request.id,
-          title: request.title,
-          category: request.category,
-          status: request.status,
-          createdAt: request.created_at,
-        },
-      });
+      res.status(201).json(
+        successResponse(
+          {
+            request: {
+              id: request.id,
+              title: request.title,
+              category: request.category,
+              status: request.status,
+              createdAt: request.created_at,
+            },
+          },
+          "Request submitted successfully"
+        )
+      );
     } catch (error) {
-      console.error("Error creating request:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create request",
-        error: error.message,
-      });
+      next(error);
     }
   }
 
-  async getRequests(req, res) {
+  async getRequests(req, res, next) {
     try {
       const filters = {
         status: req.query.status,
@@ -57,42 +89,34 @@ class RequestController {
 
       const result = await requestService.getRequests(filters);
 
-      res.json({
-        success: true,
-        ...result,
-      });
+      res.json(successResponse(result));
     } catch (error) {
-      console.error("Error fetching requests:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch requests",
-        error: error.message,
-      });
+      next(error);
     }
   }
 
-  async getRequestById(req, res) {
+  async getRequestById(req, res, next) {
     try {
       const { id } = req.params;
       const { request, actions } = await requestService.getRequestById(id);
 
-      res.json({
-        success: true,
-        request: {
-          ...request,
-          notes: actions,
-        },
-      });
+      res.json(
+        successResponse({
+          request: {
+            ...request,
+            notes: actions,
+          },
+        })
+      );
     } catch (error) {
-      console.error("Error fetching request:", error);
-      res.status(error.message === "Request not found" ? 404 : 500).json({
-        success: false,
-        message: error.message,
-      });
+      if (error.message === "Request not found") {
+        return res.status(404).json(errorResponse(error.message));
+      }
+      next(error);
     }
   }
 
-  async getMyRequests(req, res) {
+  async getMyRequests(req, res, next) {
     try {
       const filters = {
         status: req.query.status,
@@ -102,30 +126,19 @@ class RequestController {
 
       const result = await requestService.getUserRequests(req.user.id, filters);
 
-      res.json({
-        success: true,
-        ...result,
-      });
+      res.json(successResponse(result));
     } catch (error) {
-      console.error("Error fetching user requests:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch requests",
-        error: error.message,
-      });
+      next(error);
     }
   }
 
-  async updateStatus(req, res) {
+  async updateStatus(req, res, next) {
     try {
       const { id } = req.params;
       const { status, notes } = req.body;
 
       if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: "Status is required",
-        });
+        return res.status(400).json(errorResponse("Status is required"));
       }
 
       const request = await requestService.updateStatus(
@@ -135,21 +148,23 @@ class RequestController {
         notes
       );
 
-      res.json({
-        success: true,
-        message: "Request status updated",
-        newStatus: request.status,
-      });
+      res.json(
+        successResponse(
+          {
+            newStatus: request.status,
+          },
+          "Request status updated"
+        )
+      );
     } catch (error) {
-      console.error("Error updating status:", error);
-      res.status(error.message === "Request not found" ? 404 : 500).json({
-        success: false,
-        message: error.message,
-      });
+      if (error.message === "Request not found") {
+        return res.status(404).json(errorResponse(error.message));
+      }
+      next(error);
     }
   }
 
-  async approveRequest(req, res) {
+  async approveRequest(req, res, next) {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -160,73 +175,63 @@ class RequestController {
         notes || "Request approved"
       );
 
-      res.json({
-        success: true,
-        message: "Request approved successfully",
-        request,
-      });
+      res.json(
+        successResponse(
+          {
+            request,
+          },
+          "Request approved successfully"
+        )
+      );
     } catch (error) {
-      console.error("Error approving request:", error);
-      res.status(error.message === "Request not found" ? 404 : 500).json({
-        success: false,
-        message: error.message,
-      });
+      if (error.message === "Request not found") {
+        return res.status(404).json(errorResponse(error.message));
+      }
+      next(error);
     }
   }
 
-  async denyRequest(req, res) {
+  async denyRequest(req, res, next) {
     try {
       const { id } = req.params;
       const { reason } = req.body;
 
       if (!reason) {
-        return res.status(400).json({
-          success: false,
-          message: "Reason is required",
-        });
+        return res.status(400).json(errorResponse("Reason is required"));
       }
 
       const request = await requestService.denyRequest(id, req.user.id, reason);
 
-      res.json({
-        success: true,
-        message: "Request denied",
-        request,
-      });
+      res.json(
+        successResponse(
+          {
+            request,
+          },
+          "Request denied"
+        )
+      );
     } catch (error) {
-      console.error("Error denying request:", error);
-      res.status(error.message === "Request not found" ? 404 : 500).json({
-        success: false,
-        message: error.message,
-      });
+      if (error.message === "Request not found") {
+        return res.status(404).json(errorResponse(error.message));
+      }
+      next(error);
     }
   }
 
-  async addNote(req, res) {
+  async addNote(req, res, next) {
     try {
       const { id } = req.params;
       const { note } = req.body;
 
       if (!note) {
-        return res.status(400).json({
-          success: false,
-          message: "Note is required",
-        });
+        return res.status(400).json(errorResponse("Note is required"));
       }
 
       await requestService.addNote(id, req.user.id, note);
 
-      res.json({
-        success: true,
-        message: "Note added successfully",
-      });
+      res.json(successResponse({}, "Note added successfully"));
     } catch (error) {
-      console.error("Error adding note:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to add note",
-        error: error.message,
-      });
+      next(error);
     }
   }
 }

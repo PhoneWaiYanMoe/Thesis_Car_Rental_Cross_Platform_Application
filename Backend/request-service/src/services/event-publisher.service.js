@@ -4,7 +4,7 @@ const rabbitmqConnection = require("../config/rabbitmq");
 class EventPublisher {
   async publish(routingKey, eventType, data) {
     try {
-      const channel = rabbitmqConnection.channel;
+      const channel = rabbitmqConnection.getChannel();
 
       if (!channel) {
         console.error("RabbitMQ channel not available");
@@ -29,7 +29,7 @@ class EventPublisher {
         { persistent: true }
       );
 
-      console.log(`📤 Event published: ${routingKey}`, {
+      console.log(`Event published: ${routingKey}`, {
         eventId: event.eventId,
         eventType: event.eventType,
       });

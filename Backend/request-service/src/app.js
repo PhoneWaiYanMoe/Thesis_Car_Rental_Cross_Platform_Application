@@ -4,40 +4,51 @@ require("dotenv").config();
 
 const pool = require("./config/database");
 const rabbitmqConnection = require("./config/rabbitmq");
-const { Request, RequestAction } = require("./models/Request");
+const Request = require("./models/Request");
+const RequestAction = require("./models/RequestAction");
 const requestRoutes = require("./routes/request.routes");
+const { errorHandler, notFoundHandler } = require("./middleware/error-handler.middleware");
 
 const app = express();
 
-// Middleware
+// middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/", requestRoutes);
+// routes
+app.use("/requests/", requestRoutes);
 
-// Health check
+// health check
 app.get("/health", (req, res) => {
   res.json({
-    status: "OK",
-    service: "request-service",
+    success: true,
+    service: "Request Service",
+    status: "healthy",
     timestamp: new Date().toISOString(),
   });
 });
 
-// Initialize database and start server
+// error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// initialize database and start server
 const startServer = async () => {
   try {
-    // Create tables
+    // create tables
     await Request.createTable();
     await RequestAction.createTable();
 
-    // Connect to RabbitMQ
+    // connect to RabbitMQ
     await rabbitmqConnection.connect();
 
     const PORT = process.env.PORT || 3010;
     app.listen(PORT, () => {
       console.log(`Request Service running on port ${PORT}`);
-      console.log(`Base URL: http://localhost:${PORT}/`);
+      console.log(`API Base URL: http://localhost:${PORT}/api/v1/requests`);
+      console.log(`Health Check: http://localhost:${PORT}/health`);
+      console.log(`Authentication: JWT Bearer token required`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);
@@ -45,13 +56,23 @@ const startServer = async () => {
   }
 };
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM received, closing connections...");
-  await pool.end();
-  await rabbitmqConnection.close();
-  process.exit(0);
-});
+// graceful shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received, closing connections...`);
+
+  try {
+    await pool.end();
+    await rabbitmqConnection.close();
+    console.log("All connections closed");
+    process.exit(0);
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();
 

@@ -11,7 +11,6 @@ class RabbitMQConnection {
       this.connection = await amqp.connect(process.env.RABBITMQ_URL);
       this.channel = await this.connection.createChannel();
 
-      // assert exchange
       await this.channel.assertExchange("wiz.events", "topic", {
         durable: true,
       });
@@ -25,9 +24,18 @@ class RabbitMQConnection {
     }
   }
 
+  getChannel() {
+    return this.channel;
+  }
+
   async close() {
-    if (this.channel) await this.channel.close();
-    if (this.connection) await this.connection.close();
+    try {
+      if (this.channel) await this.channel.close();
+      if (this.connection) await this.connection.close();
+      console.log("RabbitMQ connection closed");
+    } catch (error) {
+      console.error("Error closing RabbitMQ connection:", error);
+    }
   }
 }
 

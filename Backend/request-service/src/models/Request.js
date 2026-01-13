@@ -20,6 +20,11 @@ class Request {
         CONSTRAINT priority_check CHECK (priority IN ('low', 'medium', 'high')),
         CONSTRAINT category_check CHECK (category IN ('booking_issue', 'verification', 'account_issue', 'vehicle_listing', 'payment_issue', 'booking_change', 'report'))
       );
+
+      CREATE INDEX IF NOT EXISTS idx_requests_user_id ON requests(user_id);
+      CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+      CREATE INDEX IF NOT EXISTS idx_requests_category ON requests(category);
+      CREATE INDEX IF NOT EXISTS idx_requests_handled_by ON requests(handled_by);
     `;
 
     await pool.query(query);
@@ -83,7 +88,7 @@ class Request {
       paramCount++;
     }
 
-    // Sorting
+    // sorting
     const sortBy = filters.sortBy || "newest";
     if (sortBy === "newest") {
       query += " ORDER BY created_at DESC";
@@ -94,7 +99,7 @@ class Request {
         " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END";
     }
 
-    // Pagination
+    // pagination
     const limit = filters.limit || 20;
     const page = filters.page || 1;
     const offset = (page - 1) * limit;
@@ -104,16 +109,20 @@ class Request {
 
     const result = await pool.query(query, values);
 
-    // Get total count
-    const countQuery =
-      "SELECT COUNT(*) FROM requests WHERE 1=1" +
-      query.substring(
-        query.indexOf("WHERE") + 5,
-        query.indexOf("ORDER BY") > -1
-          ? query.indexOf("ORDER BY")
-          : query.indexOf("LIMIT")
-      );
-    const countResult = await pool.query(countQuery, values.slice(0, -2));
+    // get total count
+    let countQuery = "SELECT COUNT(*) FROM requests WHERE 1=1";
+    // remove limit and offset
+    const countValues = values.slice(0, -2);
+
+    if (filters.status && filters.status !== "all") {
+      countQuery += " AND status = $1";
+    }
+    if (filters.category && filters.category !== "all") {
+      const idx = filters.status && filters.status !== "all" ? 2 : 1;
+      countQuery += ` AND category = $${idx}`;
+    }
+
+    const countResult = await pool.query(countQuery, countValues);
 
     return {
       requests: result.rows,
@@ -152,8 +161,14 @@ class Request {
 
     const result = await pool.query(query, values);
 
-    const countQuery = "SELECT COUNT(*) FROM requests WHERE user_id = $1";
-    const countResult = await pool.query(countQuery, [userId]);
+    const countQuery =
+      "SELECT COUNT(*) FROM requests WHERE user_id = $1" +
+      (filters.status && filters.status !== "all" ? " AND status = $2" : "");
+    const countValues =
+      filters.status && filters.status !== "all"
+        ? [userId, filters.status]
+        : [userId];
+    const countResult = await pool.query(countQuery, countValues);
 
     return {
       requests: result.rows,
@@ -176,17 +191,6 @@ class Request {
     `;
 
     const result = await pool.query(query, [status, handledBy, id]);
-
-    // Log action
-    if (result.rows[0]) {
-      await RequestAction.create({
-        requestId: id,
-        performedBy: handledBy,
-        action: `status_changed_to_${status}`,
-        notes: notes || `Status changed to ${status}`,
-      });
-    }
-
     return result.rows[0];
   }
 
@@ -199,4 +203,4 @@ class Request {
   }
 }
 
-module.exports = { Request };
+module.exports = Request;

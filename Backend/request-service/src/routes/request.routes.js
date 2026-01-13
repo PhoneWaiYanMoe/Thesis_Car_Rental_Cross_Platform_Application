@@ -1,14 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const requestController = require("../controllers/request.controller");
-const authenticate = require("../middleware/auth.middleware");
-const requireRole = require("../middleware/roleC-heck.middleware");
+const { authenticate, requireRole } = require("../middleware/auth.middleware");
 
-// Public routes (with authentication)
+// public routes with authentication
 router.post("/", authenticate, requestController.createRequest);
 router.get("/my-requests", authenticate, requestController.getMyRequests);
 
-// Support/Admin routes
+// support/Admin routes
 router.get(
   "/",
   authenticate,

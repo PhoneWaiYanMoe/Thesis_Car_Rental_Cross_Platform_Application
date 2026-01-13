@@ -1,4 +1,5 @@
-const { Request, RequestAction } = require("../models/Request");
+const Request = require("../models/Request");
+const RequestAction = require("../models/RequestAction");
 const eventPublisher = require("./event-publisher.service");
 
 class RequestService {
@@ -8,7 +9,15 @@ class RequestService {
       ...requestData,
     });
 
-    // Publish event
+    // log action
+    await RequestAction.create({
+      requestId: request.id,
+      performedBy: userId,
+      action: "request_created",
+      notes: "Request submitted",
+    });
+
+    // publish event
     await eventPublisher.publish("request.created", "request.created", {
       requestId: request.id,
       userId: request.user_id,
@@ -45,7 +54,15 @@ class RequestService {
       throw new Error("Request not found");
     }
 
-    // Publish event
+    // log action
+    await RequestAction.create({
+      requestId: id,
+      performedBy: handledBy,
+      action: `status_changed_to_${status}`,
+      notes: notes || `Status changed to ${status}`,
+    });
+
+    // publish event
     await eventPublisher.publish(
       "request.status_changed",
       "request.status_changed",
@@ -68,7 +85,15 @@ class RequestService {
       throw new Error("Request not found");
     }
 
-    // Publish events
+    // log action
+    await RequestAction.create({
+      requestId: id,
+      performedBy: handledBy,
+      action: "request_approved",
+      notes: notes || "Request approved",
+    });
+
+    // publish events
     await eventPublisher.publish("request.approved", "request.approved", {
       requestId: request.id,
       userId: request.user_id,
@@ -92,7 +117,15 @@ class RequestService {
       throw new Error("Request not found");
     }
 
-    // Publish events
+    // log action
+    await RequestAction.create({
+      requestId: id,
+      performedBy: handledBy,
+      action: "request_denied",
+      notes: reason || "Request denied",
+    });
+
+    // publish events
     await eventPublisher.publish("request.denied", "request.denied", {
       requestId: request.id,
       userId: request.user_id,
