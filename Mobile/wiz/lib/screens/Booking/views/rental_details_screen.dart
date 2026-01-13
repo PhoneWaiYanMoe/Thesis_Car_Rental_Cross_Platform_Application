@@ -216,7 +216,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     }
 
     return Card(
-      color: color.withOpacity(0.05),
+      color: AppStyles.surface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: color.withOpacity(0.3)),
