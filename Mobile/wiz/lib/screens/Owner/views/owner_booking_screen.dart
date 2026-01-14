@@ -1,4 +1,3 @@
-// lib/screens/Owner/views/owner_bookings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';

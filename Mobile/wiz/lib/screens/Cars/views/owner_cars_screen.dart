@@ -1,4 +1,3 @@
-// lib/screens/Cars/views/owner_cars_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Cars/models/car.dart';
