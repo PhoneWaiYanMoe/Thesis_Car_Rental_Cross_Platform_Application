@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment
+      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db
     ports:
       - "5432:5432"
     volumes:
@@ -23,6 +23,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
 
   mongodb:
     image: mongo:8.0
@@ -42,7 +43,16 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "mongosh", "--port", "27020", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--port",
+          "27020",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,6 +73,27 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==================== RABBITMQ (Message Queue) ====================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: wiz-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-admin123}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -111,7 +142,13 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -194,12 +231,12 @@ services:
       - DB_NAME=wiz_payment
       - PORT=3006
       - GRPC_PORT=50056
-      - NODE_ENV=development  
+      - NODE_ENV=development
       - BASE_URL=http://localhost:3006
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
-      - MOCK_PAYMENT=${MOCK_PAYMENT:-false} 
+      - MOCK_PAYMENT=${MOCK_PAYMENT:-false}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
@@ -222,7 +259,13 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -302,11 +345,61 @@ services:
     networks:
       - wiz-network
 
+  # ==================== NOTIFICATION SERVICE ====================
+  notification-service:
+    build: ./notification-service
+    container_name: wiz-notification-service
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - NODE_ENV=development
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      - USER_SERVICE_URL=http://user-service:3001
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET}
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_SECURE=false
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM_NAME=Wiz Car Rental
+      - EMAIL_FROM_ADDRESS=noreply@wizcarrental.com
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY:-}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    volumes:
+      - ./notification-service/src:/app/src
+    networks:
+      - wiz-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3007/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  
 volumes:
   postgres_shared_data:
   mongodb_data:
   mongodb_config:
   redis_data:
+  rabbitmq_data:
 
 networks:
   wiz-network:
