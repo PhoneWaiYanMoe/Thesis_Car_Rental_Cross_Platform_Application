@@ -38,6 +38,7 @@ class EventConsumer {
       "review.response_posted",
       "vehicle.created",
       "vehicle.status_changed",
+      "request.created",
       "request.approved",
       "request.denied",
       "contract.signed",
@@ -337,6 +338,16 @@ class EventConsumer {
           break;
 
         // request events
+        case "request.created":
+          await notificationService.sendNotification(
+            "request",
+            "Request Created",
+            `Your request "${data.title}" has been created.`,
+            { email: data.userEmail },
+            ["email"]
+          );
+          break;
+
         case "request.approved":
           await notificationService.sendNotification(
             "request",
