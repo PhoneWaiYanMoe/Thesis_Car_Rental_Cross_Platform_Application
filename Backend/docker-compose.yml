@@ -393,7 +393,43 @@ services:
       retries: 5
       start_period: 30s
 
-  
+  # ==================== MEDIA SERVICE ====================
+  media-service:
+    build: ./media-service
+    container_name: wiz-media-service
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_media_db
+      - PORT=3008
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3008
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - MAX_FILE_SIZE=5242880
+      - ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/jpg,image/webp
+      - ALLOWED_DOCUMENT_TYPES=application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./media-service/src:/app/src
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_shared_data:
   mongodb_data:
