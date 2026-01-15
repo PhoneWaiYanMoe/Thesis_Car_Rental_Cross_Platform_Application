@@ -4,14 +4,14 @@ class Request {
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS requests (
-        id SERIAL PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id VARCHAR(255) NOT NULL,
+        user_email VARCHAR(255),
         category VARCHAR(50) NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         status VARCHAR(20) DEFAULT 'pending',
         priority VARCHAR(20) DEFAULT 'medium',
-        attachment_urls TEXT[],
         handled_by VARCHAR(255),
         handled_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -32,23 +32,15 @@ class Request {
   }
 
   static async create(requestData) {
-    const { userId, category, title, description, priority, attachmentUrls } =
-      requestData;
+    const { userId, category, title, description, priority } = requestData;
 
     const query = `
-      INSERT INTO requests (user_id, category, title, description, priority, attachment_urls)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `;
+    INSERT INTO requests (user_id, user_email, category, title, description, priority)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *
+  `;
 
-    const values = [
-      userId,
-      category,
-      title,
-      description,
-      priority || "medium",
-      attachmentUrls || [],
-    ];
+    const values = [userId, requestData.userEmail, category, title, description, priority || "medium"];
     const result = await pool.query(query, values);
     return result.rows[0];
   }

@@ -6,6 +6,7 @@ const pool = require("./config/database");
 const rabbitmqConnection = require("./config/rabbitmq");
 const Request = require("./models/Request");
 const RequestAction = require("./models/RequestAction");
+const RequestAttachment = require('./models/RequestAttachment');
 const requestRoutes = require("./routes/request.routes");
 const { errorHandler, notFoundHandler } = require("./middleware/error-handler.middleware");
 
@@ -39,6 +40,7 @@ const startServer = async () => {
     // create tables
     await Request.createTable();
     await RequestAction.createTable();
+    await RequestAttachment.createTable();
 
     // connect to RabbitMQ
     await rabbitmqConnection.connect();

@@ -4,8 +4,8 @@ class RequestAction {
   static async createTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS request_actions (
-        id SERIAL PRIMARY KEY,
-        request_id INTEGER REFERENCES requests(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_id UUID REFERENCES requests(id) ON DELETE CASCADE,
         performed_by VARCHAR(255) NOT NULL,
         action VARCHAR(100) NOT NULL,
         notes TEXT,

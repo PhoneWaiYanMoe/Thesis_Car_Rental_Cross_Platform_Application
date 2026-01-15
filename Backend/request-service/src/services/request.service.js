@@ -1,13 +1,24 @@
 const Request = require("../models/Request");
 const RequestAction = require("../models/RequestAction");
+const RequestAttachment = require("../models/RequestAttachment");
 const eventPublisher = require("./event-publisher.service");
 
 class RequestService {
   async createRequest(userId, requestData) {
+    // create request
     const request = await Request.create({
       userId,
-      ...requestData,
+      category: requestData.category,
+      title: requestData.title,
+      userEmail: requestData.userEmail,
+      description: requestData.description,
+      priority: requestData.priority,
     });
+
+    // save attachments if provided
+    if (requestData.attachmentIds && requestData.attachmentIds.length > 0) {
+      await RequestAttachment.createMany(request.id, requestData.attachmentIds);
+    }
 
     // log action
     await RequestAction.create({
@@ -17,10 +28,11 @@ class RequestService {
       notes: "Request submitted",
     });
 
-    // publish event
+    // publish event with email and title
     await eventPublisher.publish("request.created", "request.created", {
       requestId: request.id,
       userId: request.user_id,
+      userEmail: request.user_email,
       category: request.category,
       title: request.title,
       priority: request.priority,
@@ -30,7 +42,16 @@ class RequestService {
   }
 
   async getRequests(filters) {
-    return await Request.findAll(filters);
+    const result = await Request.findAll(filters);
+
+    // fetch attachments for each request
+    for (let request of result.requests) {
+      request.attachmentIds = await RequestAttachment.findByRequestId(
+        request.id
+      );
+    }
+
+    return result;
   }
 
   async getRequestById(id) {
@@ -40,11 +61,28 @@ class RequestService {
     }
 
     const actions = await RequestAction.findByRequestId(id);
-    return { request, actions };
+    const attachmentIds = await RequestAttachment.findByRequestId(id);
+
+    return {
+      request: {
+        ...request,
+        attachmentIds,
+      },
+      actions,
+    };
   }
 
   async getUserRequests(userId, filters) {
-    return await Request.findByUserId(userId, filters);
+    const result = await Request.findByUserId(userId, filters);
+
+    // fetch attachments for each request
+    for (let request of result.requests) {
+      request.attachmentIds = await RequestAttachment.findByRequestId(
+        request.id
+      );
+    }
+
+    return result;
   }
 
   async updateStatus(id, status, handledBy, notes) {
@@ -97,6 +135,8 @@ class RequestService {
     await eventPublisher.publish("request.approved", "request.approved", {
       requestId: request.id,
       userId: request.user_id,
+      userEmail: request.user_email,
+      title: request.title,
       category: request.category,
       handledBy,
       notes,
@@ -130,6 +170,8 @@ class RequestService {
       requestId: request.id,
       userId: request.user_id,
       category: request.category,
+      userEmail: request.user_email,
+      title: request.title,
       handledBy,
       reason,
     });

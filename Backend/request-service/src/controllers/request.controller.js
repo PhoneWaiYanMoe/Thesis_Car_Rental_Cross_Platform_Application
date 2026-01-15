@@ -7,7 +7,7 @@ const {
 class RequestController {
   async createRequest(req, res, next) {
     try {
-      const { title, category, description, priority, attachmentUrls } =
+      const { title, category, description, priority, attachmentIds } =
         req.body;
 
       // validation
@@ -52,7 +52,8 @@ class RequestController {
         title,
         description,
         priority,
-        attachmentUrls,
+        attachmentIds,
+        userEmail: req.user.email
       });
 
       res.status(201).json(
