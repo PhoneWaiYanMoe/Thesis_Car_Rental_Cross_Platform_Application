@@ -72,21 +72,7 @@ Response:
 {
   "success": true,
   "message": "File uploaded successfully",
-  "file": {
-    "id": "uuid",
-    "url": "https://res.cloudinary.com/...",
-    "thumbnailUrl": "https://res.cloudinary.com/.../thumbnails/...",
-    "ownerId": "uuid",
-    "ownerType": "VEHICLE",
-    "uploaderId": "uuid",
-    "type": "vehicle_photo",
-    "width": 1200,
-    "height": 800,
-    "fileName": "car.jpg",
-    "size": 245678,
-    "mimeType": "image/jpeg",
-    "uploadedAt": "2025-12-27T..."
-  }
+  "fileId": "ec2a9119-e0eb-4678-86ec-733b16202178"
 }
 ```
 
@@ -104,10 +90,11 @@ Response:
 {
   "success": true,
   "message": "Files uploaded successfully",
-  "files": [
-    { /* file object */ },
-    { /* file object */ }
-  ]
+  "fileIds": [
+        "ec2a9119-e0eb-4678-86ec-733b16202178",
+        "c9ebedbd-9a3a-4beb-8853-0105fec867a3",
+        "dbd44226-1fae-4c93-9406-a53ea982df52"
+    ]
 }
 ```
 
