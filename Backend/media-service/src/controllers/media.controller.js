@@ -30,7 +30,7 @@ class MediaController {
       res.status(200).json({
         success: true,
         message: "File uploaded successfully",
-        file: file,
+        fileId: file.id,
       });
     } catch (error) {
       console.error("Upload error:", error);
@@ -70,7 +70,7 @@ class MediaController {
       res.status(200).json({
         success: true,
         message: "Files uploaded successfully",
-        files: files,
+        fileIds: files.map(f => f.id),
       });
     } catch (error) {
       console.error("Batch upload error:", error);
