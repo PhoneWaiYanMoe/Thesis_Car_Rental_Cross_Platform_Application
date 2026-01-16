@@ -38,6 +38,7 @@ exports.validateVehicleReview = [
     .withMessage("Comment must be less than 1000 characters")
     .trim(),
 
+  // ✅ FIXED: Accept file IDs instead of URLs
   body("photos")
     .optional()
     .isArray()
@@ -52,9 +53,10 @@ exports.validateVehicleReview = [
   body("photos.*")
     .optional()
     .isString()
-    .withMessage("Each photo must be a valid URL string")
-    .isURL()
-    .withMessage("Each photo must be a valid URL"),
+    .withMessage("Each photo must be a valid string")
+    .trim()
+    .notEmpty()
+    .withMessage("Photo ID cannot be empty"),
 
   handleValidationErrors,
 ];

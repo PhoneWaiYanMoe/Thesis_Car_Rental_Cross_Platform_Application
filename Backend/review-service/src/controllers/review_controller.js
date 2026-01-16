@@ -3,7 +3,6 @@ const { VehicleReview, OwnerReview } = require("../models/Review");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
 const userGrpcClient = require("../grpc/user_grpc_client");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
-const axios = require("axios");
 
 class ReviewController {
   // ==================== SUBMIT REVIEWS ====================
@@ -86,41 +85,26 @@ class ReviewController {
         });
       }
 
-      // Process and validate photos if provided
+      // ✅ SIMPLE FIX: Just save file IDs directly
       let reviewPhotos = [];
       if (photos && Array.isArray(photos) && photos.length > 0) {
         console.log(`📸 Processing ${photos.length} review photos...`);
 
-        // Validate photo count (max 10 photos)
+        // Validate photo count
         if (photos.length > 10) {
           return res.status(400).json({
             error: "Maximum 10 photos allowed per review",
           });
         }
 
-        // Validate photo URLs (basic validation)
-        for (const photoUrl of photos) {
-          if (typeof photoUrl !== "string" || !photoUrl.trim()) {
-            return res.status(400).json({
-              error: "Invalid photo URL provided",
-            });
-          }
-
-          // Optional: Validate URL format
-          try {
-            new URL(photoUrl);
-          } catch (e) {
-            return res.status(400).json({
-              error: `Invalid photo URL format: ${photoUrl}`,
-            });
-          }
-        }
-
-        reviewPhotos = photos.filter((url) => url && url.trim());
-        console.log(`✅ ${reviewPhotos.length} valid photos to include`);
+        // Filter out empty strings and save file IDs directly
+        reviewPhotos = photos.filter(
+          (id) => id && typeof id === "string" && id.trim()
+        );
+        console.log(`✅ Saving ${reviewPhotos.length} photo file IDs`);
       }
 
-      // Create review with photos
+      // Create review with photo file IDs
       const review = new VehicleReview({
         bookingId,
         vehicleId,
@@ -348,7 +332,7 @@ class ReviewController {
         (r) => r.photos && r.photos.length > 0
       ).length;
 
-      // Format reviews with photo information
+      // Format reviews - photos are file IDs
       const formattedReviews = reviews.map((review) => {
         const userProfile = userProfiles[review.customerId] || {};
         return {
@@ -360,7 +344,7 @@ class ReviewController {
           },
           rating: review.rating,
           comment: review.comment,
-          photos: review.photos || [],
+          photos: review.photos || [], // These are file IDs
           hasPhotos: !!(review.photos && review.photos.length > 0),
           photoCount: review.photos?.length || 0,
           createdAt: review.createdAt,
