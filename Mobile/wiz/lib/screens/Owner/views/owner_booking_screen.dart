@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
@@ -987,11 +989,18 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     if (result == null) return;
 
     try {
-      final mockPhotos = ['photo1.jpg', 'photo2.jpg', 'photo3.jpg'];
+      // ✅ FIXED: Create temporary File objects from mock photo paths
+      // In production, these would be actual photos taken by the user
+      final mockPhotoPaths = ['photo1.jpg', 'photo2.jpg', 'photo3.jpg'];
+      final List<File> mockPhotoFiles = mockPhotoPaths.map((path) {
+        // Create temporary file objects
+        // Note: In production, these would be actual image files from camera/gallery
+        return File(path);
+      }).toList();
 
       await _bookingApi.ownerConfirmReturn(
         bookingId: booking.id,
-        conditionPhotos: mockPhotos,
+        conditionPhotos: mockPhotoFiles, // ✅ Now passing List<File> instead of List<String>
         conditionNotes: result['notes'] ?? '',
         damagesReported: result['action'] == 'dispute',
         odometerReading: result['odometer'] ?? 0,

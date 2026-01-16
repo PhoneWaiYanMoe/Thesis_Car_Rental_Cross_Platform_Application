@@ -1,5 +1,5 @@
 // lib/utils/app_routes.dart
-// ✅ FIXED: Updated rateReview route to use new parameters
+// ✅ FIXED: Updated PhotoSubmissionScreen to pass bookingId instead of booking object
 
 import 'package:flutter/material.dart';
 import 'package:wiz/screens/Auth/views/forgot_password_screen.dart';
@@ -128,7 +128,6 @@ class AppRoutes {
               bookingId: args['bookingId'] as String,
               paymentType: args['paymentType'] as String,
               amount: args['amount'] as int,
-              //      returnUrl: args['returnUrl'] as String?,
             ),
           );
         }
@@ -146,15 +145,15 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case rentalHistory:
         return MaterialPageRoute(builder: (_) => const RentalHistoryScreen());
+
+      // ✅ FIXED: Pass bookingId instead of booking object
       case photoSubmission:
         final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null && args.containsKey('booking') && args.containsKey('isStartJourney')) {
-          final booking = args['booking'] is BookingData
-              ? args['booking'] as BookingData
-              : BookingData.fromMap(args['booking'] as Map<String, dynamic>);
+        if (args != null && args.containsKey('bookingId') && args.containsKey('isStartJourney')) {
+          final bookingId = args['bookingId'] as String;
           final isStartJourney = args['isStartJourney'] as bool;
           return MaterialPageRoute(
-            builder: (_) => PhotoSubmissionScreen(booking: booking, isStartJourney: isStartJourney),
+            builder: (_) => PhotoSubmissionScreen(bookingId: bookingId, isStartJourney: isStartJourney),
           );
         }
         return null;
@@ -167,7 +166,6 @@ class AppRoutes {
         }
         return null;
 
-      // ✅ FIXED: Updated to use new parameters
       case rateReview:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null &&
@@ -244,19 +242,15 @@ class AppRoutes {
     return Navigator.pushNamed(context, rentalDetails, arguments: {'bookingId': bookingId});
   }
 
-  static Future<BookingData?> navigateToPhotoSubmission(
-    BuildContext context,
-    BookingData booking,
-    bool isStartJourney,
-  ) {
+  // ✅ FIXED: Pass bookingId instead of BookingData object
+  static Future<BookingData?> navigateToPhotoSubmission(BuildContext context, String bookingId, bool isStartJourney) {
     return Navigator.pushNamed<BookingData>(
       context,
       photoSubmission,
-      arguments: {'booking': booking, 'isStartJourney': isStartJourney},
+      arguments: {'bookingId': bookingId, 'isStartJourney': isStartJourney},
     );
   }
 
-  // ✅ UPDATED: New helper method with new parameters
   static Future<dynamic> navigateToRateReview(
     BuildContext context, {
     required String bookingId,

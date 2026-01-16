@@ -4,23 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 
-/// Photo Submission Screen for pickup/return photos
-/// Receives arguments:
-/// - bookingId: String
-/// - isStartJourney: bool (true = pickup, false = return)
 class PhotoSubmissionScreen extends StatefulWidget {
   final String bookingId;
   final bool isStartJourney;
 
   const PhotoSubmissionScreen({super.key, required this.bookingId, required this.isStartJourney});
-
-  // Factory constructor for route arguments
-  factory PhotoSubmissionScreen.fromArgs(Map<String, dynamic> args) {
-    return PhotoSubmissionScreen(
-      bookingId: args['bookingId'] as String,
-      isStartJourney: args['isStartJourney'] as bool,
-    );
-  }
 
   @override
   State<PhotoSubmissionScreen> createState() => _PhotoSubmissionScreenState();
@@ -29,13 +17,11 @@ class PhotoSubmissionScreen extends StatefulWidget {
 class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
   final BookingApiService _bookingApi = BookingApiService();
   final ImagePicker _picker = ImagePicker();
-
-  List<File?> photos = [null, null, null];
-  bool _isSubmitting = false;
-
-  // Odometer reading
   final TextEditingController _odometerController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+
+  List<File> _photos = [];
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -44,58 +30,82 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
     super.dispose();
   }
 
-  bool get allPhotosUploaded => photos.every((p) => p != null);
-  bool get canSubmit => allPhotosUploaded && _odometerController.text.isNotEmpty;
-
-  Future<void> _capturePhoto(int index) async {
+  Future<void> _pickImage(ImageSource source) async {
     try {
-      // Show options: Camera or Gallery
-      final source = await showModalBottomSheet<ImageSource>(
-        context: context,
-        builder: (context) => Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Take Photo'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      if (source == null) return;
-
       final XFile? image = await _picker.pickImage(source: source, maxWidth: 1920, maxHeight: 1080, imageQuality: 85);
 
       if (image != null) {
         setState(() {
-          photos[index] = File(image.path);
+          _photos.add(File(image.path));
         });
       }
     } catch (e) {
-      print('❌ Error capturing photo: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to capture photo: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e'), backgroundColor: Colors.red));
       }
     }
   }
 
-  Future<void> _submitPhotos() async {
-    if (!canSubmit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please capture all 3 photos and enter odometer reading'),
-          backgroundColor: Colors.red,
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.green),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close, color: Colors.grey),
+                title: const Text('Cancel'),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
+
+  Future<void> _submitPhotos() async {
+    // Validate photos
+    if (_photos.length < 3) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please take at least 3 photos'), backgroundColor: Colors.orange));
+      return;
+    }
+
+    // Validate odometer reading
+    final odometerReading = int.tryParse(_odometerController.text);
+    if (odometerReading == null || odometerReading <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid odometer reading'), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -105,45 +115,60 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
     });
 
     try {
-      final odometerReading = int.parse(_odometerController.text);
-      final photoFiles = photos.whereType<File>().toList();
-      final notes = _notesController.text.isNotEmpty ? _notesController.text : null;
+      print('📸 Submitting ${_photos.length} photos for booking: ${widget.bookingId}');
+      print('   Is Start Journey: ${widget.isStartJourney}');
+      print('   Odometer: $odometerReading');
 
       if (widget.isStartJourney) {
-        // Submit pickup photos
+        // ✅ PICKUP CONFIRMATION
         await _bookingApi.confirmPickup(
           bookingId: widget.bookingId,
-          pickupPhotos: photoFiles,
+          pickupPhotos: _photos,
           odometerReading: odometerReading,
-          notes: notes,
+          notes: _notesController.text,
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Pickup confirmed successfully!'), backgroundColor: Colors.green),
+          );
+
+          // Go back to rental details
+          Navigator.pop(context);
+        }
       } else {
-        // Submit return photos
+        // ✅ RETURN CONFIRMATION
         await _bookingApi.confirmReturn(
           bookingId: widget.bookingId,
-          returnPhotos: photoFiles,
+          returnPhotos: _photos,
           odometerReading: odometerReading,
-          notes: notes,
+          notes: _notesController.text,
         );
-      }
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Photos submitted successfully'), backgroundColor: Colors.green));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Return submitted successfully! Waiting for owner confirmation.'),
+              backgroundColor: Colors.green,
+            ),
+          );
 
-        // Go back and reload booking details
-        Navigator.pop(context, true);
+          // Go back to rental details
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
-      setState(() {
-        _isSubmitting = false;
-      });
-
+      print('❌ Photo submission error: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit photos: $e'), backgroundColor: Colors.red));
+        ).showSnackBar(SnackBar(content: Text('Failed to submit: $e'), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
       }
     }
   }
@@ -153,164 +178,172 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
     return Scaffold(
       backgroundColor: AppStyles.background(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
-        title: Text(
-          widget.isStartJourney ? 'Submit Pickup Photos' : 'Submit Return Photos',
-          style: AppStyles.h2(context),
-        ),
+        title: Text(widget.isStartJourney ? 'Confirm Pickup' : 'Confirm Return', style: AppStyles.h2(context)),
         centerTitle: true,
-        backgroundColor: AppStyles.background(context),
-        elevation: 0,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Please take 3 photos of the car from different angles', style: AppStyles.body(context)),
-                  const SizedBox(height: 24),
-
-                  // Photo cards
-                  ...List.generate(3, (index) {
-                    return Padding(padding: const EdgeInsets.only(bottom: 16), child: _buildPhotoCard(index));
-                  }),
-
-                  const SizedBox(height: 24),
-
-                  // Odometer reading
-                  Text('Odometer Reading (km)', style: AppStyles.h3(context)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _odometerController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter current odometer reading',
-                      filled: true,
-                      fillColor: AppStyles.surface(context),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    style: AppStyles.body(context),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Optional notes
-                  Text('Additional Notes (Optional)', style: AppStyles.h3(context)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _notesController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: 'Any damages, issues, or comments...',
-                      filled: true,
-                      fillColor: AppStyles.surface(context),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    style: AppStyles.body(context),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Submit button
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppStyles.background(context),
-              border: Border(top: BorderSide(color: AppStyles.textSecondary(context).withOpacity(0.2))),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: AppStyles.primaryButtonStyle(context).copyWith(
-                  backgroundColor: WidgetStateProperty.all(
-                    canSubmit && !_isSubmitting ? AppStyles.primary : AppStyles.primary.withOpacity(0.5),
-                  ),
-                ),
-                onPressed: canSubmit && !_isSubmitting ? _submitPhotos : null,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text('Submit Photos', style: AppStyles.button),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhotoCard(int index) {
-    final hasPhoto = photos[index] != null;
-
-    return Card(
-      color: AppStyles.surface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Photo ${index + 1}', style: AppStyles.h3(context)),
-                if (hasPhoto) const Icon(Icons.check_circle, color: Colors.green),
-              ],
+            // Instructions Card
+            Card(
+              color: AppStyles.primary.withOpacity(0.1),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: AppStyles.primary),
+                        const SizedBox(width: 8),
+                        Text('Instructions', style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '• Take at least 3 clear photos of the vehicle\n'
+                      '• Capture different angles (front, sides, back)\n'
+                      '• Include any existing damage or issues\n'
+                      '• Enter the current odometer reading',
+                      style: AppStyles.body(context),
+                    ),
+                  ],
+                ),
+              ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Photos Section
+            Text('Vehicle Photos (${_photos.length}/3+)', style: AppStyles.h3(context)),
             const SizedBox(height: 12),
 
-            if (hasPhoto)
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(photos[index]!, width: double.infinity, height: 180, fit: BoxFit.cover),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          photos[index] = null;
-                        });
-                      },
-                      style: IconButton.styleFrom(backgroundColor: Colors.red),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ),
-                ],
-              )
-            else
-              GestureDetector(
-                onTap: () => _capturePhoto(index),
-                child: Container(
-                  width: double.infinity,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppStyles.textSecondary(context).withOpacity(0.3),
-                      width: 2,
-                      style: BorderStyle.solid,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            // Photo Grid
+            if (_photos.isNotEmpty)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: _photos.length,
+                itemBuilder: (context, index) {
+                  return Stack(
                     children: [
-                      Icon(Icons.camera_alt, size: 48, color: AppStyles.textSecondary(context)),
-                      const SizedBox(height: 8),
-                      Text('Tap to capture', style: AppStyles.caption(context)),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          _photos[index],
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _removePhoto(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                            child: const Icon(Icons.close, color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
+                  );
+                },
+              ),
+
+            const SizedBox(height: 12),
+
+            // Add Photo Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showImageSourceDialog,
+                icon: const Icon(Icons.add_a_photo),
+                label: const Text('Add Photo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppStyles.primary,
+                  side: BorderSide(color: AppStyles.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Odometer Reading
+            Text('Odometer Reading *', style: AppStyles.h3(context)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _odometerController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: 'Enter current odometer reading (km)',
+                prefixIcon: const Icon(Icons.speed),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: AppStyles.surface(context),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Additional Notes
+            Text('Additional Notes (Optional)', style: AppStyles.h3(context)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Any damages, issues, or observations?',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: AppStyles.surface(context),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Submit Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _submitPhotos,
+                style: AppStyles.primaryButtonStyle(
+                  context,
+                ).copyWith(padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 16))),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        widget.isStartJourney ? 'Confirm Pickup' : 'Submit Return',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Warning Text
+            if (_photos.length < 3)
+              Center(
+                child: Text(
+                  '⚠️ Please add at least ${3 - _photos.length} more photo${3 - _photos.length > 1 ? 's' : ''}',
+                  style: AppStyles.caption(context).copyWith(color: Colors.orange),
                 ),
               ),
           ],
