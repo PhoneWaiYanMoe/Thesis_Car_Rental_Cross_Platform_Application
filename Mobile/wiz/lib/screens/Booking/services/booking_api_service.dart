@@ -337,11 +337,21 @@ class BookingApiService {
         if (notes != null) 'notes': notes,
       });
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/bookings/$bookingId/confirm-pickup'),
-        headers: headers,
-        body: body,
-      );
+      print('📤 Sending pickup confirmation to booking service...');
+
+      // ✅ FIX: Add 30 second timeout
+      final response = await http
+          .post(Uri.parse('$baseUrl/bookings/$bookingId/confirm-pickup'), headers: headers, body: body)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print('⏱️ Request timed out after 30 seconds');
+              throw Exception('Request timed out. Please check your connection and try again.');
+            },
+          );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ Pickup confirmed successfully');
@@ -355,7 +365,7 @@ class BookingApiService {
     }
   }
 
-  /// ✅ UPDATED: Confirm return with real photo uploads
+  /// ✅ FIXED: Confirm return with proper timeout
   Future<void> confirmReturn({
     required String bookingId,
     required List<File> returnPhotos,
@@ -389,11 +399,21 @@ class BookingApiService {
         if (notes != null) 'notes': notes,
       });
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/bookings/$bookingId/confirm-return'),
-        headers: headers,
-        body: body,
-      );
+      print('📤 Sending return confirmation to booking service...');
+
+      // ✅ FIX: Add 30 second timeout
+      final response = await http
+          .post(Uri.parse('$baseUrl/bookings/$bookingId/confirm-return'), headers: headers, body: body)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print('⏱️ Request timed out after 30 seconds');
+              throw Exception('Request timed out. Please check your connection and try again.');
+            },
+          );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ Return confirmed successfully');
