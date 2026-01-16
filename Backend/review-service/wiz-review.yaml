@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
   title: Review Service API
-  description: Review and rating service for Wiz Car Rental
-  version: 1.0.0
+  description: Review and rating service for Wiz Car Rental with photo support
+  version: 2.0.0
 servers:
   - url: http://localhost:3005
     description: Local development server
@@ -11,7 +11,7 @@ paths:
   /reviews/vehicle:
     post:
       summary: Submit vehicle review
-      description: Submit a review for a rented vehicle (requires authentication)
+      description: Submit a review for a rented vehicle with optional photos (requires authentication)
       tags:
         - Reviews
       security:
@@ -30,23 +30,32 @@ paths:
                 bookingId:
                   type: string
                   example: "booking-123"
+                  description: Unique booking identifier
                 vehicleId:
                   type: string
                   example: "car-456"
+                  description: Vehicle identifier
                 rating:
                   type: integer
                   minimum: 1
                   maximum: 5
                   example: 5
+                  description: Rating from 1 to 5 stars
                 comment:
                   type: string
                   maxLength: 1000
                   example: "Great car, very clean and comfortable!"
+                  description: Optional review text
                 photos:
                   type: array
+                  maxItems: 10
                   items:
                     type: string
-                  example: ["photo1.jpg", "photo2.jpg"]
+                    format: uri
+                  example: 
+                    - "https://res.cloudinary.com/xxx/image/upload/v123/photo1.jpg"
+                    - "https://res.cloudinary.com/xxx/image/upload/v123/photo2.jpg"
+                  description: Array of photo URLs (max 10)
       responses:
         '201':
           description: Review submitted successfully
@@ -59,16 +68,26 @@ paths:
                     type: string
                     example: "Review submitted successfully"
                   review:
-                    $ref: '#/components/schemas/ReviewResponse'
+                    $ref: '#/components/schemas/VehicleReviewResponse'
         '400':
           description: Invalid input or already reviewed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "You have already reviewed this vehicle"
         '401':
           description: Unauthorized
+        '503':
+          description: Service unavailable
 
   /reviews/owner:
     post:
       summary: Submit owner review
-      description: Submit a review for a vehicle owner (requires authentication)
+      description: Submit a review for a vehicle owner (requires authentication, no photos)
       tags:
         - Reviews
       security:
@@ -128,7 +147,7 @@ paths:
   /reviews/vehicle/{vehicleId}:
     get:
       summary: Get vehicle reviews
-      description: Get all reviews for a specific vehicle
+      description: Get all reviews for a specific vehicle with photo information
       tags:
         - Reviews
       parameters:
@@ -249,6 +268,8 @@ paths:
               properties:
                 response:
                   type: string
+                  minLength: 10
+                  maxLength: 500
                   example: "Thank you for your feedback!"
       responses:
         '200':
@@ -289,6 +310,7 @@ paths:
                   example: "spam"
                 details:
                   type: string
+                  maxLength: 500
                   example: "This review contains promotional content"
       responses:
         '200':
@@ -337,7 +359,7 @@ components:
       bearerFormat: JWT
 
   schemas:
-    ReviewResponse:
+    VehicleReviewResponse:
       type: object
       properties:
         id:
@@ -355,6 +377,16 @@ components:
         comment:
           type: string
           example: "Great car!"
+        photos:
+          type: array
+          items:
+            type: string
+          example: 
+            - "https://res.cloudinary.com/xxx/photo1.jpg"
+            - "https://res.cloudinary.com/xxx/photo2.jpg"
+        photoCount:
+          type: integer
+          example: 2
         createdAt:
           type: string
           format: date-time
@@ -389,7 +421,15 @@ components:
           type: array
           items:
             type: string
-          example: ["photo1.jpg"]
+          example: 
+            - "https://res.cloudinary.com/xxx/photo1.jpg"
+            - "https://res.cloudinary.com/xxx/photo2.jpg"
+        hasPhotos:
+          type: boolean
+          example: true
+        photoCount:
+          type: integer
+          example: 2
         createdAt:
           type: string
           format: date-time
@@ -451,6 +491,10 @@ components:
         totalReviews:
           type: integer
           example: 127
+        reviewsWithPhotos:
+          type: integer
+          example: 45
+          description: Number of reviews that include photos
         ratingDistribution:
           type: object
           properties:
@@ -496,4 +540,4 @@ components:
 
 tags:
   - name: Reviews
-    description: Review and rating management
+    description: Review and rating management with photo support
