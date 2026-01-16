@@ -40,11 +40,11 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e'), backgroundColor: Colors.red));
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(
+      //     context,
+      //   ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e'), backgroundColor: Colors.red));
+      // }
     }
   }
 
@@ -94,19 +94,19 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
 
   Future<void> _submitPhotos() async {
     // Validate photos
-    if (_photos.length < 3) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please take at least 3 photos'), backgroundColor: Colors.orange));
-      return;
-    }
+    // if (_photos.length < 3) {
+    //   ScaffoldMessenger.of(
+    //     context,
+    //   ).showSnackBar(const SnackBar(content: Text('Please take at least 3 photos'), backgroundColor: Colors.orange));
+    //   return;
+    // }
 
     // Validate odometer reading
     final odometerReading = int.tryParse(_odometerController.text);
     if (odometerReading == null || odometerReading <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid odometer reading'), backgroundColor: Colors.orange),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Please enter a valid odometer reading'), backgroundColor: Colors.orange),
+      // );
       return;
     }
 
@@ -129,9 +129,9 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Pickup confirmed successfully!'), backgroundColor: Colors.green),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   const SnackBar(content: Text('✅ Pickup confirmed successfully!'), backgroundColor: Colors.green),
+          // );
 
           // Go back to rental details
           Navigator.pop(context);
@@ -146,12 +146,12 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Return submitted successfully! Waiting for owner confirmation.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   const SnackBar(
+          //     content: Text('✅ Return submitted successfully! Waiting for owner confirmation.'),
+          //     backgroundColor: Colors.green,
+          //   ),
+          // );
 
           // Go back to rental details
           Navigator.pop(context);
@@ -159,11 +159,11 @@ class _PhotoSubmissionScreenState extends State<PhotoSubmissionScreen> {
       }
     } catch (e) {
       print('❌ Photo submission error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit: $e'), backgroundColor: Colors.red));
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(
+      //     context,
+      //   ).showSnackBar(SnackBar(content: Text('Failed to submit: $e'), backgroundColor: Colors.red));
+      // }
     } finally {
       if (mounted) {
         setState(() {

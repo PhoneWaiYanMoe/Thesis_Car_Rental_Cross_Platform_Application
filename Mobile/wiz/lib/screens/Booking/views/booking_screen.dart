@@ -456,13 +456,13 @@ class _BookingScreenState extends State<BookingScreen> {
         if (paymentResult != null && paymentResult['success'] == true) {
           // Payment successful, show success message
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Deposit paid successfully! Waiting for owner approval.'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text('Deposit paid successfully! Waiting for owner approval.'),
+            //     backgroundColor: Colors.green,
+            //     duration: Duration(seconds: 3),
+            //   ),
+            // );
             // Navigate back to home or bookings list
             Navigator.pop(context);
             Navigator.pop(context);
@@ -470,13 +470,13 @@ class _BookingScreenState extends State<BookingScreen> {
         } else {
           // Payment failed or cancelled, show message
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Booking created. You can pay the deposit later from your bookings page.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text('Booking created. You can pay the deposit later from your bookings page.'),
+            //     backgroundColor: Colors.orange,
+            //     duration: Duration(seconds: 4),
+            //   ),
+            // );
             Navigator.pop(context);
           }
         }

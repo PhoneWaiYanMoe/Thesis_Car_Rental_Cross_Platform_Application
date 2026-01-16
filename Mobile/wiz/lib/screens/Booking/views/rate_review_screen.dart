@@ -106,9 +106,9 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
 
   Future<void> _submitVehicleReview() async {
     if (_vehicleRating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a rating for the vehicle'), backgroundColor: Colors.red),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Please select a rating for the vehicle'), backgroundColor: Colors.red),
+      // );
       return;
     }
 
