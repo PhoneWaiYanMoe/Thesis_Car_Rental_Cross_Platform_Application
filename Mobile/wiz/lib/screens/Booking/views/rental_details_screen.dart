@@ -92,6 +92,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   Widget _buildDetailsView() {
     final booking = _bookingDetails!;
     final isCancelled = booking.status == 'cancelled' || booking.status == 'rejected';
+    final isCompleted = booking.status == 'completed';
+    final isReturnSubmitted = booking.status == 'return_submitted';
 
     return RefreshIndicator(
       onRefresh: _loadBookingDetails,
@@ -121,6 +123,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               _buildPaymentStepsCard(booking),
               const SizedBox(height: 16),
               _buildActionButtons(booking),
+            ],
+
+            // ✅ NEW: Rate & Review button after return submitted or completed
+            if ((isReturnSubmitted || isCompleted) && !isCancelled) ...[
+              const SizedBox(height: 16),
+              _buildRateReviewSection(booking),
             ],
 
             const SizedBox(height: 32),
@@ -175,7 +183,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ NEW: Cancellation/Rejection Reason Card
   Widget _buildCancellationReasonCard(BookingDetailsResponse booking) {
     String? reason;
     String title;
@@ -183,31 +190,24 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     IconData icon;
     String? refundInfo;
 
-    // ✅ SMART LOGIC: Show whichever reason is available
     if (booking.status == 'cancelled' || booking.status == 'rejected') {
-      // Try to get cancellation reason first, then rejection reason
       reason = booking.cancellationReason ?? booking.rejectionReason;
 
-      // Determine if it was cancelled by customer or rejected by owner
       if (booking.cancellationReason != null) {
-        // Customer cancelled
-        title = 'Cancellation Reason ';
+        title = 'Cancellation Reason';
         color = Colors.orange;
         icon = Icons.cancel;
       } else if (booking.rejectionReason != null) {
-        // Owner rejected
         title = 'Rejection Reason (Owner)';
         color = Colors.red;
         icon = Icons.block;
       } else {
-        // No reason provided, but still cancelled/rejected
         title = booking.status == 'cancelled' ? 'Cancellation Reason' : 'Rejection Reason';
         color = booking.status == 'cancelled' ? Colors.orange : Colors.red;
         icon = booking.status == 'cancelled' ? Icons.cancel : Icons.block;
         reason = 'No reason provided';
       }
 
-      // Add refund information if available
       if (booking.refundAmount != null && booking.refundAmount! > 0) {
         refundInfo = 'Refund: ${_formatPrice(booking.refundAmount!)} ₫ (${booking.refundStatus ?? 'processing'})';
       }
@@ -240,7 +240,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(8)),
               child: Text(reason ?? 'No reason provided', style: AppStyles.body(context)),
             ),
-            // Show refund information if available
             if (refundInfo != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -262,7 +261,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 ),
               ),
             ],
-            // Show cancellation date if available
             if (booking.cancellationDate != null) ...[
               const SizedBox(height: 8),
               Text('Cancelled on: ${_formatDateTime(booking.cancellationDate!)}', style: AppStyles.caption(context)),
@@ -441,7 +439,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ UPDATED: Payment Steps Card with Correct Order
   Widget _buildPaymentStepsCard(BookingDetailsResponse booking) {
     return Card(
       color: AppStyles.surface(context),
@@ -454,7 +451,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             Text('Payment Progress', style: AppStyles.h3(context)),
             const SizedBox(height: 16),
 
-            // Step 1: Deposit Payment
             _buildPaymentStep(
               step: 1,
               title: 'Deposit Payment',
@@ -463,7 +459,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsDepositPayment,
             ),
 
-            // Step 2: Owner Approval
             _buildPaymentStep(
               step: 2,
               title: 'Owner Approval',
@@ -472,7 +467,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsOwnerApproval,
             ),
 
-            // Step 3: Sign Contract
             _buildPaymentStep(
               step: 3,
               title: 'Sign Contract',
@@ -481,7 +475,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.canSignContract,
             ),
 
-            // Step 4: Final Payment
             _buildPaymentStep(
               step: 4,
               title: 'Final Payment',
@@ -490,7 +483,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsFinalPayment,
             ),
 
-            // Step 5: Submit Pickup Photos
             _buildPaymentStep(
               step: 5,
               title: 'Pickup Photos',
@@ -499,7 +491,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.canSubmitPickupPhotos,
             ),
 
-            // Step 6: Return Journey
             _buildPaymentStep(
               step: 6,
               title: 'Return Photos',
@@ -576,10 +567,50 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
+  // ✅ NEW: Rate & Review Section
+  Widget _buildRateReviewSection(BookingDetailsResponse booking) {
+    return Card(
+      color: AppStyles.surface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppStyles.primary.withOpacity(0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.star, color: Colors.amber, size: 24),
+                const SizedBox(width: 12),
+                Text('Share Your Experience', style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Help others by sharing your rental experience. You can rate the vehicle and owner, and add photos!',
+              style: AppStyles.caption(context),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: AppStyles.primaryButtonStyle(context),
+                onPressed: () => _handleRateReview(booking),
+                icon: const Icon(Icons.rate_review, color: Colors.white),
+                label: Text('Rate & Review', style: AppStyles.button),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(BookingDetailsResponse booking) {
     return Column(
       children: [
-        // Deposit Payment Button
         if (booking.actions.needsDepositPayment) ...[
           SizedBox(
             width: double.infinity,
@@ -593,7 +624,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           const SizedBox(height: 12),
         ],
 
-        // Sign Contract Button
         if (booking.actions.canSignContract) ...[
           SizedBox(
             width: double.infinity,
@@ -607,7 +637,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           const SizedBox(height: 12),
         ],
 
-        // Final Payment Button
         if (booking.actions.needsFinalPayment) ...[
           SizedBox(
             width: double.infinity,
@@ -624,7 +653,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           const SizedBox(height: 12),
         ],
 
-        // Submit Pickup Photos Button
         if (booking.actions.canSubmitPickupPhotos) ...[
           SizedBox(
             width: double.infinity,
@@ -638,7 +666,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           const SizedBox(height: 12),
         ],
 
-        // Submit Return Photos Button
         if (booking.actions.canSubmitReturnPhotos) ...[
           SizedBox(
             width: double.infinity,
@@ -652,7 +679,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           const SizedBox(height: 12),
         ],
 
-        // Cancel Booking Button
         if (booking.actions.canCancel) ...[
           SizedBox(
             width: double.infinity,
@@ -687,8 +713,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSignContract(BookingDetailsResponse booking) async {
-    // Navigate to contract signing screen
-    // TODO: Implement contract signing
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contract signing feature coming soon')));
   }
 
@@ -707,7 +731,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSubmitPickupPhotos(BookingDetailsResponse booking) async {
-    // Navigate to photo submission screen
     Navigator.pushNamed(
       context,
       AppRoutes.photoSubmission,
@@ -716,7 +739,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSubmitReturnPhotos(BookingDetailsResponse booking) async {
-    // Navigate to photo submission screen
     Navigator.pushNamed(
       context,
       AppRoutes.photoSubmission,
@@ -724,8 +746,26 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     ).then((_) => _loadBookingDetails());
   }
 
+  // ✅ NEW: Handle Rate & Review Navigation
+  Future<void> _handleRateReview(BookingDetailsResponse booking) async {
+    final result = await Navigator.pushNamed(
+      context,
+      AppRoutes.rateReview,
+      arguments: {
+        'bookingId': booking.id,
+        'vehicleId': booking.vehicle.id,
+        'vehicleName': booking.vehicle.name,
+        'ownerId': booking.vehicle.ownerId,
+      },
+    );
+
+    // Reload if review was submitted
+    if (result == true) {
+      _loadBookingDetails();
+    }
+  }
+
   Future<void> _handleCancelBooking(BookingDetailsResponse booking) async {
-    // Show cancellation dialog
     final TextEditingController reasonController = TextEditingController();
 
     final confirmed = await showDialog<bool>(
@@ -786,7 +826,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     }
   }
 
-  // Helper methods
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending_payment':
