@@ -75,15 +75,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  # ==================== RABBITMQ (Message Queue) ====================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: wiz-rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672" # AMQP port
-      - "15672:15672" # Management UI
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Management UI
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-admin123}
@@ -96,7 +94,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
   # ==================== USER SERVICE ====================
   user-service:
     build: ./user-service
