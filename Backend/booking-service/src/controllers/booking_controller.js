@@ -909,6 +909,8 @@ class BookingController {
       const { id } = req.params;
       const { pickupPhotos, odometerReading, notes } = req.body;
 
+      console.log(`📸 Received pickup photos:`, pickupPhotos);
+
       if (
         !pickupPhotos ||
         !Array.isArray(pickupPhotos) ||
@@ -962,15 +964,11 @@ class BookingController {
         return res.status(400).json({ error: dateCheck.reason });
       }
 
-      // Mock photo URLs for demonstration
-      const photoUrls = pickupPhotos.map((photo, index) => {
-        if (typeof photo === "string" && photo.startsWith("http")) {
-          return photo;
-        }
-        return `https://mock-cdn.wiz.com/pickup/${id}_${Date.now()}_${
-          index + 1
-        }.jpg`;
-      });
+      // ✅ FIX: Use the real photo IDs from media service (they are already uploaded)
+      // These are media file IDs that can be used to retrieve the actual photos
+      console.log(
+        `✅ Storing ${pickupPhotos.length} photo IDs from media service`
+      );
 
       // Update booking to "picked_up" status
       await client.query(
@@ -982,17 +980,18 @@ class BookingController {
            status = 'picked_up',
            updated_at = NOW()
        WHERE booking_id = $4`,
-        [JSON.stringify(photoUrls), odometerReading, notes, id]
+        [JSON.stringify(pickupPhotos), odometerReading, notes, id]
       );
 
       await client.query("COMMIT");
 
       console.log(`✅ Pickup confirmed for booking: ${id} (status: picked_up)`);
+      console.log(`✅ Stored photo IDs: ${pickupPhotos.join(", ")}`);
 
       res.json({
         message: "Pickup confirmed successfully. Enjoy your ride!",
         bookingStatus: "picked_up",
-        photos: photoUrls,
+        photoIds: pickupPhotos, // Return the media service file IDs
         nextStep: "Return the vehicle on the end date and submit return photos",
       });
     } catch (error) {
@@ -1014,6 +1013,8 @@ class BookingController {
       const userId = req.user.userId;
       const { id } = req.params;
       const { returnPhotos, odometerReading, notes } = req.body;
+
+      console.log(`📸 Received return photos:`, returnPhotos);
 
       // Validate return photos
       if (
@@ -1044,30 +1045,24 @@ class BookingController {
 
       const booking = bookingResult.rows[0];
 
-      // ✅ FIX: Check for correct status - should be "picked_up"
+      // ✅ Must be picked_up before return
       if (booking.status !== "picked_up") {
         return res.status(400).json({
           error: `Cannot confirm return. Current status: ${booking.status}. Expected status: picked_up`,
         });
       }
 
-      // Check if it's on or after the return day
+      // Date check
       const dateCheck = this.isActionAllowedByDate(booking, "return");
       if (!dateCheck.allowed) {
         return res.status(400).json({ error: dateCheck.reason });
       }
 
-      // Mock photo URLs
-      const photoUrls = returnPhotos.map((photo, index) => {
-        if (typeof photo === "string" && photo.startsWith("http")) {
-          return photo;
-        }
-        return `https://mock-cdn.wiz.com/return/${id}_${Date.now()}_${
-          index + 1
-        }.jpg`;
-      });
+      console.log(
+        `✅ Storing ${returnPhotos.length} return photo IDs from media service`
+      );
 
-      // Update booking to "return_submitted" status
+      // ✅ Store real media file IDs (same as pickup)
       await client.query(
         `UPDATE bookings 
        SET return_photos = $1,
@@ -1077,7 +1072,7 @@ class BookingController {
            status = 'return_submitted',
            updated_at = NOW()
        WHERE booking_id = $4`,
-        [JSON.stringify(photoUrls), odometerReading, notes, id]
+        [JSON.stringify(returnPhotos), odometerReading, notes, id]
       );
 
       await client.query("COMMIT");
@@ -1085,12 +1080,13 @@ class BookingController {
       console.log(
         `✅ Return submitted for booking: ${id} (status: return_submitted)`
       );
+      console.log(`✅ Stored return photo IDs: ${returnPhotos.join(", ")}`);
 
       res.json({
         message:
           "Return submitted successfully. Waiting for owner confirmation.",
         bookingStatus: "return_submitted",
-        photos: photoUrls,
+        photoIds: returnPhotos, // ✅ return media service IDs
         nextStep: "Owner will review and confirm the return",
       });
     } catch (error) {
