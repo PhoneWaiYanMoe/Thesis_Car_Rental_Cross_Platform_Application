@@ -1,13 +1,13 @@
-// Mobile/wiz/lib/services/review_api_service.dart
-// ✅ NEW FILE: Review API Service
-
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
+import 'package:wiz/services/media_api_service.dart';
 
 class ReviewApiService {
   static const String baseUrl = 'http://10.0.2.2:3005'; // review-service
   final _localStorageService = LocalStorageService();
+  final _mediaApiService = MediaApiService();
 
   Future<String?> _getAuthToken() async {
     try {
@@ -19,18 +19,35 @@ class ReviewApiService {
     }
   }
 
-  /// Submit vehicle review
+  /// ✅ UPDATED: Submit vehicle review with real photo uploads
   Future<void> submitVehicleReview({
     required String bookingId,
     required String vehicleId,
     required int rating,
     String? comment,
-    List<String>? photos,
+    List<File>? photoFiles, // ✅ Changed from List<String> to List<File>
   }) async {
     try {
       final token = await _getAuthToken();
       if (token == null) {
         throw Exception('Authentication required');
+      }
+
+      List<String>? photoIds;
+
+      // Upload photos if provided
+      if (photoFiles != null && photoFiles.isNotEmpty) {
+        print('📸 Uploading ${photoFiles.length} review photos...');
+
+        // Use bookingId as ownerId since photos are for this specific booking's review
+        photoIds = await _mediaApiService.uploadBatch(
+          files: photoFiles,
+          ownerId: bookingId,
+          ownerType: 'REVIEW',
+          type: 'review_photo',
+        );
+
+        print('✅ Review photos uploaded: $photoIds');
       }
 
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
@@ -40,7 +57,7 @@ class ReviewApiService {
         'vehicleId': vehicleId,
         'rating': rating,
         if (comment != null && comment.isNotEmpty) 'comment': comment,
-        if (photos != null && photos.isNotEmpty) 'photos': photos,
+        if (photoIds != null && photoIds.isNotEmpty) 'photos': photoIds,
       });
 
       print('📤 Submitting vehicle review for booking: $bookingId');
@@ -59,7 +76,7 @@ class ReviewApiService {
     }
   }
 
-  /// Submit owner review
+  /// Submit owner review (no photos needed for owner reviews)
   Future<void> submitOwnerReview({
     required String bookingId,
     required String ownerId,
@@ -77,7 +94,6 @@ class ReviewApiService {
 
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      // Build aspects object
       final Map<String, dynamic> aspects = {};
       if (communicationRating != null && communicationRating > 0) {
         aspects['communication'] = communicationRating;

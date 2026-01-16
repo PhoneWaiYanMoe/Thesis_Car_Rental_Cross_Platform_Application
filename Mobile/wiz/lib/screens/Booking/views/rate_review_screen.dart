@@ -1,7 +1,9 @@
 // Mobile/wiz/lib/screens/Booking/views/rate_review_screen.dart
-// ✅ UPDATED: Integrate with review API
+// ✅ UPDATED: Support real photo uploads for vehicle reviews
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/review_api_service.dart';
 
@@ -25,10 +27,12 @@ class RateReviewScreen extends StatefulWidget {
 
 class _RateReviewScreenState extends State<RateReviewScreen> {
   final ReviewApiService _reviewApi = ReviewApiService();
+  final ImagePicker _picker = ImagePicker();
 
   // Vehicle review
   int _vehicleRating = 0;
   final TextEditingController _vehicleReviewController = TextEditingController();
+  List<File> _vehiclePhotos = []; // ✅ Changed to File list
   bool _vehicleReviewSubmitted = false;
 
   // Owner review
@@ -49,6 +53,57 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
     super.dispose();
   }
 
+  // ✅ NEW: Add photo to vehicle review
+  Future<void> _addVehiclePhoto() async {
+    if (_vehiclePhotos.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 photos allowed')));
+      return;
+    }
+
+    try {
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
+      final XFile? image = await _picker.pickImage(source: source, maxWidth: 1920, maxHeight: 1080, imageQuality: 85);
+
+      if (image != null) {
+        setState(() {
+          _vehiclePhotos.add(File(image.path));
+        });
+      }
+    } catch (e) {
+      print('❌ Error adding photo: $e');
+    }
+  }
+
+  // ✅ NEW: Remove photo from vehicle review
+  void _removeVehiclePhoto(int index) {
+    setState(() {
+      _vehiclePhotos.removeAt(index);
+    });
+  }
+
   Future<void> _submitVehicleReview() async {
     if (_vehicleRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -60,11 +115,13 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      // ✅ Pass File list instead of String list
       await _reviewApi.submitVehicleReview(
         bookingId: widget.bookingId,
         vehicleId: widget.vehicleId,
         rating: _vehicleRating,
         comment: _vehicleReviewController.text,
+        photoFiles: _vehiclePhotos.isNotEmpty ? _vehiclePhotos : null,
       );
 
       setState(() {
@@ -77,11 +134,9 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Vehicle review submitted!'), backgroundColor: Colors.green));
 
-        // ✅ If owner review not needed, go back
         if (widget.ownerId == null || widget.ownerId!.isEmpty) {
           Navigator.pop(context, true);
         } else {
-          // Switch to owner review tab
           setState(() => _currentTab = 1);
         }
       }
@@ -127,7 +182,6 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Owner review submitted!'), backgroundColor: Colors.green));
 
-        // Go back to booking details
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           Navigator.pop(context, true);
@@ -157,7 +211,6 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
       ),
       body: Column(
         children: [
-          // ✅ Tab selector (if owner exists)
           if (widget.ownerId != null && widget.ownerId!.isNotEmpty)
             Container(
               margin: const EdgeInsets.all(16),
@@ -297,6 +350,62 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
                   style: AppStyles.body(context),
                 ),
 
+                const SizedBox(height: 24),
+
+                // ✅ NEW: Photo upload section
+                if (!_vehicleReviewSubmitted) ...[
+                  Text('Add Photos (Optional)', style: AppStyles.h3(context)),
+                  const SizedBox(height: 12),
+
+                  // Display added photos
+                  if (_vehiclePhotos.isNotEmpty)
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _vehiclePhotos.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(_vehiclePhotos[index], width: 100, height: 100, fit: BoxFit.cover),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => _removeVehiclePhoto(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Add photo button
+                  OutlinedButton.icon(
+                    onPressed: _vehiclePhotos.length < 5 ? _addVehiclePhoto : null,
+                    icon: const Icon(Icons.add_photo_alternate),
+                    label: Text(
+                      _vehiclePhotos.isEmpty ? 'Add Photos (Max 5)' : 'Add More (${_vehiclePhotos.length}/5)',
+                    ),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16)),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 if (_vehicleReviewSubmitted)
                   Container(
                     margin: const EdgeInsets.only(top: 16),
@@ -344,6 +453,7 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
     );
   }
 
+  // ... [Keep _buildOwnerReviewTab and _buildAspectRating methods unchanged]
   Widget _buildOwnerReviewTab() {
     if (widget.ownerId == null || widget.ownerId!.isEmpty) {
       return Center(child: Text('No owner information available', style: AppStyles.caption(context)));
@@ -384,7 +494,6 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
 
                 const SizedBox(height: 48),
 
-                // Aspect ratings (optional)
                 Text('Detailed Ratings (Optional)', style: AppStyles.h3(context)),
                 const SizedBox(height: 16),
 
@@ -410,7 +519,6 @@ class _RateReviewScreenState extends State<RateReviewScreen> {
 
                 const SizedBox(height: 32),
 
-                // Comment
                 Text('Your Review (Optional)', style: AppStyles.h3(context)),
                 const SizedBox(height: 12),
                 TextField(

@@ -1,11 +1,13 @@
-// lib/screens/Booking/services/booking_api_service.dart
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
+import 'package:wiz/services/media_api_service.dart';
 
 class BookingApiService {
   static const String baseUrl = 'http://10.0.2.2:3004'; // booking-service
   final _localStorageService = LocalStorageService();
+  final _mediaApiService = MediaApiService();
 
   // Get auth token
   Future<String?> _getAuthToken() async {
@@ -44,16 +46,16 @@ class BookingApiService {
     }
   }
 
-  /// Upload verification (license + selfies) - MOCK
+  /// ✅ UPDATED: Upload verification with real media service
   Future<void> uploadVerification({
     required String fullName,
     required String licenseNumber,
     required String expiryDate,
-    required String licenseFrontPhoto, // Mock path
-    required String licenseBackPhoto, // Mock path
-    required String frontSelfie, // Mock path
-    required String leftSelfie, // Mock path
-    required String rightSelfie, // Mock path
+    required File licenseFrontPhoto,
+    required File licenseBackPhoto,
+    required File frontSelfie,
+    required File leftSelfie,
+    required File rightSelfie,
   }) async {
     try {
       final token = await _getAuthToken();
@@ -61,29 +63,76 @@ class BookingApiService {
         throw Exception('Authentication required');
       }
 
+      // Get user ID from token or local storage
+      final userInfo = await _localStorageService.getUserInfo();
+      final userId = userInfo['userId'] ?? '';
+
+      if (userId.isEmpty) {
+        throw Exception('User ID not found');
+      }
+
+      print('📤 Uploading verification documents for user: $userId');
+
+      // Upload license photos
+      final licenseFrontId = await _mediaApiService.uploadSingle(
+        file: licenseFrontPhoto,
+        ownerId: userId,
+        ownerType: 'USER',
+        type: 'license',
+      );
+
+      final licenseBackId = await _mediaApiService.uploadSingle(
+        file: licenseBackPhoto,
+        ownerId: userId,
+        ownerType: 'USER',
+        type: 'license',
+      );
+
+      // Upload selfie photos
+      final frontSelfieId = await _mediaApiService.uploadSingle(
+        file: frontSelfie,
+        ownerId: userId,
+        ownerType: 'USER',
+        type: 'selfie',
+      );
+
+      final leftSelfieId = await _mediaApiService.uploadSingle(
+        file: leftSelfie,
+        ownerId: userId,
+        ownerType: 'USER',
+        type: 'selfie',
+      );
+
+      final rightSelfieId = await _mediaApiService.uploadSingle(
+        file: rightSelfie,
+        ownerId: userId,
+        ownerType: 'USER',
+        type: 'selfie',
+      );
+
+      print('✅ All verification files uploaded');
+
+      // Submit verification to booking service
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
-      // Mock: In real implementation, upload to media service first
       final body = jsonEncode({
         'fullName': fullName,
         'licenseNumber': licenseNumber,
         'expiryDate': expiryDate,
-        'licenseFrontPhoto': 'https://mock-cdn.com/licenses/$licenseFrontPhoto',
-        'licenseBackPhoto': 'https://mock-cdn.com/licenses/$licenseBackPhoto',
-        'frontSelfie': 'https://mock-cdn.com/selfies/$frontSelfie',
-        'leftSelfie': 'https://mock-cdn.com/selfies/$leftSelfie',
-        'rightSelfie': 'https://mock-cdn.com/selfies/$rightSelfie',
+        'licenseFrontPhoto': licenseFrontId,
+        'licenseBackPhoto': licenseBackId,
+        'frontSelfie': frontSelfieId,
+        'leftSelfie': leftSelfieId,
+        'rightSelfie': rightSelfieId,
       });
-
-      print('📤 Uploading verification...');
 
       final response = await http.post(Uri.parse('$baseUrl/bookings/verification'), headers: headers, body: body);
 
       if (response.statusCode == 200) {
-        print('✅ Verification uploaded successfully');
+        print('✅ Verification submitted successfully');
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['error'] ?? 'Failed to upload verification');
+        throw Exception(errorData['error'] ?? 'Failed to submit verification');
       }
     } catch (e) {
       print('❌ Upload verification error: $e');
@@ -254,10 +303,10 @@ class BookingApiService {
     }
   }
 
-  /// Confirm car pickup (with photos) - MOCK
+  /// ✅ UPDATED: Confirm pickup with real photo uploads
   Future<void> confirmPickup({
     required String bookingId,
-    required List<String> pickupPhotos, // Mock paths
+    required List<File> pickupPhotos,
     required int odometerReading,
     String? notes,
   }) async {
@@ -267,20 +316,26 @@ class BookingApiService {
         throw Exception('Authentication required');
       }
 
-      // Mock: Convert local paths to mock URLs
-      final mockPhotoUrls = pickupPhotos
-          .map((path) => 'https://mock-cdn.com/pickup/${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}')
-          .toList();
+      print('📸 Uploading ${pickupPhotos.length} pickup photos for booking: $bookingId');
 
+      // Upload photos to media service
+      final photoIds = await _mediaApiService.uploadBatch(
+        files: pickupPhotos,
+        ownerId: bookingId,
+        ownerType: 'REQUEST',
+        type: 'document',
+      );
+
+      print('✅ Pickup photos uploaded: $photoIds');
+
+      // Submit pickup confirmation to booking service
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final body = jsonEncode({
-        'pickupPhotos': mockPhotoUrls,
+        'pickupPhotos': photoIds,
         'odometerReading': odometerReading,
         if (notes != null) 'notes': notes,
       });
-
-      print('📸 Confirming pickup for booking: $bookingId');
 
       final response = await http.post(
         Uri.parse('$baseUrl/bookings/$bookingId/confirm-pickup'),
@@ -300,10 +355,10 @@ class BookingApiService {
     }
   }
 
-  /// Confirm car return (with photos) - MOCK
+  /// ✅ UPDATED: Confirm return with real photo uploads
   Future<void> confirmReturn({
     required String bookingId,
-    required List<String> returnPhotos, // Mock paths
+    required List<File> returnPhotos,
     required int odometerReading,
     String? notes,
   }) async {
@@ -313,20 +368,26 @@ class BookingApiService {
         throw Exception('Authentication required');
       }
 
-      // Mock: Convert local paths to mock URLs
-      final mockPhotoUrls = returnPhotos
-          .map((path) => 'https://mock-cdn.com/return/${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}')
-          .toList();
+      print('📸 Uploading ${returnPhotos.length} return photos for booking: $bookingId');
 
+      // Upload photos to media service
+      final photoIds = await _mediaApiService.uploadBatch(
+        files: returnPhotos,
+        ownerId: bookingId,
+        ownerType: 'REQUEST',
+        type: 'document',
+      );
+
+      print('✅ Return photos uploaded: $photoIds');
+
+      // Submit return confirmation to booking service
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final body = jsonEncode({
-        'returnPhotos': mockPhotoUrls,
+        'returnPhotos': photoIds,
         'odometerReading': odometerReading,
         if (notes != null) 'notes': notes,
       });
-
-      print('📸 Confirming return for booking: $bookingId');
 
       final response = await http.post(
         Uri.parse('$baseUrl/bookings/$bookingId/confirm-return'),
@@ -475,10 +536,10 @@ class BookingApiService {
     }
   }
 
-  /// Owner confirms vehicle return - MOCK photos
+  /// ✅ UPDATED: Owner confirms return with real photo uploads
   Future<void> ownerConfirmReturn({
     required String bookingId,
-    required List<String> conditionPhotos, // Mock paths
+    required List<File> conditionPhotos,
     required String conditionNotes,
     required bool damagesReported,
     required int odometerReading,
@@ -490,25 +551,28 @@ class BookingApiService {
         throw Exception('Authentication required');
       }
 
-      // Mock: Convert local paths to mock URLs
-      final mockPhotoUrls = conditionPhotos
-          .map(
-            (path) =>
-                'https://mock-cdn.com/owner-return/${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}',
-          )
-          .toList();
+      print('📸 Owner uploading ${conditionPhotos.length} condition photos for booking: $bookingId');
 
+      // Upload photos to media service
+      final photoIds = await _mediaApiService.uploadBatch(
+        files: conditionPhotos,
+        ownerId: bookingId,
+        ownerType: 'REQUEST',
+        type: 'document',
+      );
+
+      print('✅ Condition photos uploaded: $photoIds');
+
+      // Submit owner return confirmation to booking service
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final body = jsonEncode({
-        'conditionPhotos': mockPhotoUrls,
+        'conditionPhotos': photoIds,
         'conditionNotes': conditionNotes,
         'damagesReported': damagesReported,
         'odometerReading': odometerReading,
         'action': action,
       });
-
-      print('📸 Owner confirming return for booking: $bookingId with action: $action');
 
       final response = await http.post(
         Uri.parse('$baseUrl/bookings/owner/$bookingId/confirm-return'),
@@ -517,7 +581,7 @@ class BookingApiService {
       );
 
       if (response.statusCode == 200) {
-        print('✅ Return confirmed by owner successfully');
+        print('✅ Owner return confirmation successful');
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['error'] ?? 'Failed to confirm return');
@@ -733,7 +797,14 @@ class Pagination {
 
 // ==================== DETAILED BOOKING RESPONSE ====================
 
-// ✅ UPDATED: BookingActions with all required fields
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 class BookingActions {
   final bool canSignContract;
   final bool canSubmitPickupPhotos;
@@ -767,31 +838,8 @@ class BookingActions {
       needsFinalPayment: json['needsFinalPayment'] == true,
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'canSignContract': canSignContract,
-      'canSubmitPickupPhotos': canSubmitPickupPhotos,
-      'canSubmitReturnPhotos': canSubmitReturnPhotos,
-      'canReview': canReview,
-      'canCancel': canCancel,
-      'needsDepositPayment': needsDepositPayment,
-      'needsOwnerApproval': needsOwnerApproval,
-      'needsFinalPayment': needsFinalPayment,
-    };
-  }
 }
 
-// ✅ Helper function to safely parse integers
-int? _parseInt(dynamic value) {
-  if (value == null) return null;
-  if (value is int) return value;
-  if (value is double) return value.toInt();
-  if (value is String) return int.tryParse(value);
-  return null;
-}
-
-// ✅ UPDATED: BookingDetailsResponse with cancellation/rejection fields
 class BookingDetailsResponse {
   final String id;
   final String status;
@@ -807,8 +855,6 @@ class BookingDetailsResponse {
   final String? additionalNotes;
   final ContractInfo? contract;
   final BookingActions actions;
-
-  // ✅ NEW: Cancellation and rejection fields
   final String? cancellationReason;
   final String? rejectionReason;
   final DateTime? cancellationDate;
@@ -838,74 +884,56 @@ class BookingDetailsResponse {
   });
 
   factory BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
-    print('📦 Parsing booking details JSON: ${json.keys}');
+    final timelineData = json['timeline'];
+    Map<String, dynamic> timeline;
 
-    // ✅ DEBUG: Print cancellation/rejection fields
-    print('🔍 Cancellation/Rejection Debug:');
-    print('   cancellationReason: ${json['cancellationReason']}');
-    print('   rejectionReason: ${json['rejectionReason']}');
-    print('   cancellationDate: ${json['cancellationDate']}');
-    print('   refundAmount: ${json['refundAmount']}');
-    print('   refundStatus: ${json['refundStatus']}');
-
-    try {
-      // Parse timeline with null safety
-      final timelineData = json['timeline'];
-      Map<String, dynamic> timeline;
-
-      if (timelineData is Map<String, dynamic>) {
-        timeline = {
-          'startDate': timelineData['startDate'] ?? DateTime.now().toIso8601String(),
-          'endDate': timelineData['endDate'] ?? DateTime.now().add(Duration(days: 1)).toIso8601String(),
-          'duration': timelineData['duration'] ?? '1 days',
-          'isBookingDay': timelineData['isBookingDay'] ?? false,
-          'isAfterBookingDay': timelineData['isAfterBookingDay'] ?? false,
-          'isReturnDay': timelineData['isReturnDay'] ?? false,
-          'isAfterReturnDay': timelineData['isAfterReturnDay'] ?? false,
-          'isTestingMode': timelineData['isTestingMode'] ?? false,
-        };
-      } else {
-        timeline = {
-          'startDate': DateTime.now().toIso8601String(),
-          'endDate': DateTime.now().add(Duration(days: 1)).toIso8601String(),
-          'duration': '1 days',
-          'isBookingDay': false,
-          'isAfterBookingDay': false,
-          'isReturnDay': false,
-          'isAfterReturnDay': false,
-          'isTestingMode': false,
-        };
-      }
-
-      return BookingDetailsResponse(
-        id: json['id']?.toString() ?? '',
-        status: json['status']?.toString() ?? 'pending',
-        vehicle: VehicleInfo.fromJson(json['vehicle'] ?? {}),
-        customerId: json['customerId']?.toString() ?? '',
-        timeline: timeline,
-        pickup: Map<String, dynamic>.from(json['pickup'] ?? {}),
-        dropoff: Map<String, dynamic>.from(json['dropoff'] ?? {}),
-        billing: BillingInfo.fromJson(json['billing'] ?? {}),
-        insurance: InsuranceInfo.fromJson(json['insurance'] ?? {}),
-        pickupPhotos: json['pickupPhotos'] != null ? List<String>.from(json['pickupPhotos']) : null,
-        returnPhotos: json['returnPhotos'] != null ? List<String>.from(json['returnPhotos']) : null,
-        additionalNotes: json['additionalNotes']?.toString(),
-        contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
-        actions: BookingActions.fromJson(json['actions'] ?? {}),
-        // ✅ FIXED: Parse cancellation/rejection fields
-        cancellationReason: json['cancellationReason']?.toString(),
-        rejectionReason: json['rejectionReason']?.toString(),
-        cancellationDate: json['cancellationDate'] != null
-            ? DateTime.tryParse(json['cancellationDate'].toString())
-            : null,
-        refundAmount: _parseInt(json['refundAmount']),
-        refundStatus: json['refundStatus']?.toString(),
-      );
-    } catch (e) {
-      print('❌ Error parsing BookingDetailsResponse: $e');
-      print('JSON data: $json');
-      rethrow;
+    if (timelineData is Map<String, dynamic>) {
+      timeline = {
+        'startDate': timelineData['startDate'] ?? DateTime.now().toIso8601String(),
+        'endDate': timelineData['endDate'] ?? DateTime.now().add(Duration(days: 1)).toIso8601String(),
+        'duration': timelineData['duration'] ?? '1 days',
+        'isBookingDay': timelineData['isBookingDay'] ?? false,
+        'isAfterBookingDay': timelineData['isAfterBookingDay'] ?? false,
+        'isReturnDay': timelineData['isReturnDay'] ?? false,
+        'isAfterReturnDay': timelineData['isAfterReturnDay'] ?? false,
+        'isTestingMode': timelineData['isTestingMode'] ?? false,
+      };
+    } else {
+      timeline = {
+        'startDate': DateTime.now().toIso8601String(),
+        'endDate': DateTime.now().add(Duration(days: 1)).toIso8601String(),
+        'duration': '1 days',
+        'isBookingDay': false,
+        'isAfterBookingDay': false,
+        'isReturnDay': false,
+        'isAfterReturnDay': false,
+        'isTestingMode': false,
+      };
     }
+
+    return BookingDetailsResponse(
+      id: json['id']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      vehicle: VehicleInfo.fromJson(json['vehicle'] ?? {}),
+      customerId: json['customerId']?.toString() ?? '',
+      timeline: timeline,
+      pickup: Map<String, dynamic>.from(json['pickup'] ?? {}),
+      dropoff: Map<String, dynamic>.from(json['dropoff'] ?? {}),
+      billing: BillingInfo.fromJson(json['billing'] ?? {}),
+      insurance: InsuranceInfo.fromJson(json['insurance'] ?? {}),
+      pickupPhotos: json['pickupPhotos'] != null ? List<String>.from(json['pickupPhotos']) : null,
+      returnPhotos: json['returnPhotos'] != null ? List<String>.from(json['returnPhotos']) : null,
+      additionalNotes: json['additionalNotes']?.toString(),
+      contract: json['contract'] != null ? ContractInfo.fromJson(json['contract']) : null,
+      actions: BookingActions.fromJson(json['actions'] ?? {}),
+      cancellationReason: json['cancellationReason']?.toString(),
+      rejectionReason: json['rejectionReason']?.toString(),
+      cancellationDate: json['cancellationDate'] != null
+          ? DateTime.tryParse(json['cancellationDate'].toString())
+          : null,
+      refundAmount: _parseInt(json['refundAmount']),
+      refundStatus: json['refundStatus']?.toString(),
+    );
   }
 }
 
@@ -986,7 +1014,6 @@ class ContractInfo {
         url: json['url']?.toString() ?? '',
       );
     } catch (e) {
-      print('⚠️ Error parsing ContractInfo: $e');
       return ContractInfo(signedAt: DateTime.now(), url: '');
     }
   }
