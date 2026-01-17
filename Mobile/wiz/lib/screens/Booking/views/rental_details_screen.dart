@@ -4,6 +4,7 @@ import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 import 'package:wiz/screens/Booking/views/contract_signing_screen.dart';
 import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
+import 'package:wiz/services/media_api_service.dart';
 
 class RentalDetailsScreen extends StatefulWidget {
   final String bookingId;
@@ -16,9 +17,14 @@ class RentalDetailsScreen extends StatefulWidget {
 
 class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   final _bookingApiService = BookingApiService();
+  final _mediaApiService = MediaApiService();
   bool _isLoading = true;
   BookingDetailsResponse? _bookingDetails;
   String? _errorMessage;
+
+  // Media URLs cache
+  Map<String, String> _mediaUrls = {};
+  bool _isLoadingMedia = false;
 
   @override
   void initState() {
@@ -38,10 +44,77 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         _bookingDetails = details;
         _isLoading = false;
       });
+
+      // Load media URLs after booking details are loaded
+      _loadMediaUrls();
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMediaUrls() async {
+    if (_bookingDetails == null) return;
+
+    setState(() {
+      _isLoadingMedia = true;
+    });
+
+    try {
+      final booking = _bookingDetails!;
+      Map<String, String> urls = {};
+
+      // ✅ FIX: Load contract media - contract.url is actually the fileId
+      if (booking.contract != null && booking.contract!.url.isNotEmpty) {
+        try {
+          final contractFile = await _mediaApiService.getFileById(booking.contract!.url);
+          urls['contract'] = contractFile.url; // MediaFile has a url property
+          print('✅ Contract URL loaded: ${contractFile.url}');
+        } catch (e) {
+          print('❌ Failed to load contract: $e');
+        }
+      }
+
+      // ✅ FIX: Load pickup photos
+      if (booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty) {
+        for (int i = 0; i < booking.pickupPhotos!.length; i++) {
+          final photoId = booking.pickupPhotos![i];
+          try {
+            final photoFile = await _mediaApiService.getFileById(photoId);
+            urls['pickup_$i'] = photoFile.url; // MediaFile has a url property
+            print('✅ Pickup photo $i URL loaded: ${photoFile.url}');
+          } catch (e) {
+            print('❌ Failed to load pickup photo $i: $e');
+          }
+        }
+      }
+
+      // ✅ FIX: Load return photos
+      if (booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty) {
+        for (int i = 0; i < booking.returnPhotos!.length; i++) {
+          final photoId = booking.returnPhotos![i];
+          try {
+            final photoFile = await _mediaApiService.getFileById(photoId);
+            urls['return_$i'] = photoFile.url; // MediaFile has a url property
+            print('✅ Return photo $i URL loaded: ${photoFile.url}');
+          } catch (e) {
+            print('❌ Failed to load return photo $i: $e');
+          }
+        }
+      }
+
+      setState(() {
+        _mediaUrls = urls;
+        _isLoadingMedia = false;
+      });
+
+      print('📦 Total media URLs loaded: ${urls.length}');
+    } catch (e) {
+      print('❌ Error loading media URLs: $e');
+      setState(() {
+        _isLoadingMedia = false;
       });
     }
   }
@@ -107,7 +180,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             _buildStatusCard(booking),
             const SizedBox(height: 16),
 
-            // Show cancellation/rejection reason if cancelled
             if (isCancelled) ...[_buildCancellationReasonCard(booking), const SizedBox(height: 16)],
 
             _buildVehicleCard(booking),
@@ -119,15 +191,14 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             _buildBillingCard(booking),
             const SizedBox(height: 16),
 
-            // Only show payment steps if NOT cancelled
             if (!isCancelled) ...[
-              _buildPaymentStepsCard(booking),
+              _buildPaymentStepsCardWithMedia(booking),
               const SizedBox(height: 16),
               _buildActionButtons(booking),
             ],
 
-            // ✅ NEW: Rate & Review button after return submitted or completed
-            if ((isReturnSubmitted || isCompleted) && !isCancelled) ...[
+            // ✅ FIX: Only show Rate & Review if canReview is true (not reviewed yet)
+            if ((isReturnSubmitted || isCompleted) && !isCancelled && booking.actions.canReview) ...[
               const SizedBox(height: 16),
               _buildRateReviewSection(booking),
             ],
@@ -238,7 +309,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: AppStyles.background(context), borderRadius: BorderRadius.circular(8)),
               child: Text(reason ?? 'No reason provided', style: AppStyles.body(context)),
             ),
             if (refundInfo != null) ...[
@@ -440,7 +511,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  Widget _buildPaymentStepsCard(BookingDetailsResponse booking) {
+  // ✅ FIXED: Payment steps with proper media display
+  Widget _buildPaymentStepsCardWithMedia(BookingDetailsResponse booking) {
     return Card(
       color: AppStyles.surface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -468,14 +540,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsOwnerApproval,
             ),
 
-            _buildPaymentStep(
+            // ✅ Step 3: Sign Contract with media
+            _buildPaymentStepWithMedia(
               step: 3,
               title: 'Sign Contract',
               description: 'Sign rental agreement',
               isCompleted: booking.contract != null,
               isCurrent: booking.actions.canSignContract,
+              mediaWidget: booking.contract != null ? _buildContractMedia() : null,
             ),
 
+            // ✅ Step 4: Final Payment
             _buildPaymentStep(
               step: 4,
               title: 'Final Payment',
@@ -484,20 +559,28 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsFinalPayment,
             ),
 
-            _buildPaymentStep(
+            // ✅ Step 5: Pickup Photos with media
+            _buildPaymentStepWithMedia(
               step: 5,
               title: 'Pickup Photos',
               description: 'Submit vehicle condition',
-              isCompleted: booking.pickupPhotos != null,
+              isCompleted: booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty,
               isCurrent: booking.actions.canSubmitPickupPhotos,
+              mediaWidget: booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty
+                  ? _buildPhotoGallery(booking.pickupPhotos!, 'pickup')
+                  : null,
             ),
 
-            _buildPaymentStep(
+            // ✅ Step 6: Return Photos with media
+            _buildPaymentStepWithMedia(
               step: 6,
               title: 'Return Photos',
               description: 'Submit return condition',
-              isCompleted: booking.returnPhotos != null,
+              isCompleted: booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty,
               isCurrent: booking.actions.canSubmitReturnPhotos,
+              mediaWidget: booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty
+                  ? _buildPhotoGallery(booking.returnPhotos!, 'return')
+                  : null,
               isLast: true,
             ),
           ],
@@ -512,6 +595,26 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     required String description,
     required bool isCompleted,
     required bool isCurrent,
+    bool isLast = false,
+  }) {
+    return _buildPaymentStepWithMedia(
+      step: step,
+      title: title,
+      description: description,
+      isCompleted: isCompleted,
+      isCurrent: isCurrent,
+      isLast: isLast,
+      mediaWidget: null,
+    );
+  }
+
+  Widget _buildPaymentStepWithMedia({
+    required int step,
+    required String title,
+    required String description,
+    required bool isCompleted,
+    required bool isCurrent,
+    Widget? mediaWidget,
     bool isLast = false,
   }) {
     Color stepColor = isCompleted
@@ -559,16 +662,318 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ),
           ],
         ),
+
+        // ✅ Display media if step is completed
+        if (isCompleted && mediaWidget != null) ...[
+          Padding(padding: const EdgeInsets.only(left: 56, top: 12, bottom: 8), child: mediaWidget),
+        ],
+
         if (!isLast)
           Padding(
             padding: const EdgeInsets.only(left: 19, top: 4, bottom: 4),
-            child: Container(width: 2, height: 24, color: isCompleted ? Colors.green : Colors.grey.shade300),
+            child: Container(
+              width: 2,
+              height: mediaWidget != null && isCompleted ? 16 : 24,
+              color: isCompleted ? Colors.green : Colors.grey.shade300,
+            ),
           ),
       ],
     );
   }
 
-  // ✅ NEW: Rate & Review Section
+  // ✅ FIXED: Contract media display
+  Widget _buildContractMedia() {
+    final contractUrl = _mediaUrls['contract'];
+
+    if (_isLoadingMedia) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+        child: Row(
+          children: [
+            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 12),
+            Text('Loading contract...', style: AppStyles.caption(context)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.description, color: Colors.green, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Contract Signed ✓',
+                  style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _bookingDetails!.contract!.signedAt != null
+                      ? _formatDateTime(_bookingDetails!.contract!.signedAt)
+                      : 'Signed',
+                  style: AppStyles.caption(context),
+                ),
+              ],
+            ),
+          ),
+          if (contractUrl != null)
+            IconButton(
+              icon: Icon(Icons.visibility, color: AppStyles.primary),
+              onPressed: () {
+                // Open contract in viewer
+                _showContractDialog(contractUrl);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ FIXED: Photo gallery display
+  Widget _buildPhotoGallery(List<String> photoIds, String type) {
+    if (_isLoadingMedia) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+        child: Row(
+          children: [
+            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 12),
+            Text('Loading photos...', style: AppStyles.caption(context)),
+          ],
+        ),
+      );
+    }
+
+    // Filter available photo URLs
+    List<String> availableUrls = [];
+    for (int i = 0; i < photoIds.length; i++) {
+      final url = _mediaUrls['${type}_$i'];
+      if (url != null) {
+        availableUrls.add(url);
+      }
+    }
+
+    if (availableUrls.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '${photoIds.length} photo(s) submitted',
+              style: AppStyles.caption(context).copyWith(color: Colors.green.shade700),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              '${availableUrls.length} photo(s) submitted',
+              style: AppStyles.caption(context).copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: availableUrls.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => _showPhotoDialog(availableUrls, index),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      availableUrls[index],
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey.shade300,
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey.shade200,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ Photo viewer dialog
+  void _showPhotoDialog(List<String> urls, int initialIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            PageView.builder(
+              itemCount: urls.length,
+              controller: PageController(initialPage: initialIndex),
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(
+                    child: Image.network(
+                      urls[index],
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.white, size: 48),
+                              const SizedBox(height: 16),
+                              Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                child: Text(
+                  '${initialIndex + 1}/${urls.length}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ Contract viewer dialog
+  void _showContractDialog(String contractUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            AppBar(
+              title: const Text('Contract Document'),
+              backgroundColor: AppStyles.primary,
+              leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('Contract PDF', style: AppStyles.h3(context)),
+                    const SizedBox(height: 8),
+                    Text('PDF viewer coming soon', style: AppStyles.caption(context)),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      style: AppStyles.primaryButtonStyle(context),
+                      onPressed: () {
+                        // TODO: Open in browser or PDF viewer
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('Contract URL: $contractUrl')));
+                      },
+                      icon: const Icon(Icons.open_in_browser, color: Colors.white),
+                      label: Text('Open in Browser', style: AppStyles.button),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ FIXED: Rate & Review Section (only shows when canReview is true)
   Widget _buildRateReviewSection(BookingDetailsResponse booking) {
     return Card(
       color: AppStyles.surface(context),
@@ -590,7 +995,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Help others by sharing your rental experience. You can rate the vehicle and owner, and add photos!',
+              'Help others by sharing your rental experience. You can rate the vehicle and owner!',
               style: AppStyles.caption(context),
             ),
             const SizedBox(height: 16),
@@ -630,7 +1035,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               style: AppStyles.primaryButtonStyle(context),
-              onPressed: () => _handleSignContract(booking), 
+              onPressed: () => _handleSignContract(booking),
               icon: const Icon(Icons.edit_document, color: Colors.white),
               label: Text('Sign Contract', style: AppStyles.button),
             ),
@@ -714,22 +1119,18 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSignContract(BookingDetailsResponse booking) async {
-    // Check if contract exists
     try {
-      final contractInfo = await _bookingApiService.getContract(booking.id);
+      await _bookingApiService.getContract(booking.id);
 
-      // Navigate to contract signing screen
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
       );
 
-      // Reload if contract was signed
       if (result == true) {
         _loadBookingDetails();
       }
     } catch (e) {
-      // Contract doesn't exist yet, try to generate it
       final shouldGenerate = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -755,7 +1156,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       );
 
       if (shouldGenerate == true) {
-        // Show loading
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -780,9 +1180,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           await _bookingApiService.generateContract(booking.id);
 
           if (mounted) {
-            Navigator.pop(context); // Close loading
+            Navigator.pop(context);
 
-            // Now navigate to signing screen
             final result = await Navigator.push<bool>(
               context,
               MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
@@ -794,7 +1193,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           }
         } catch (generateError) {
           if (mounted) {
-            Navigator.pop(context); // Close loading
+            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to generate contract: $generateError'), backgroundColor: Colors.red),
             );
@@ -834,7 +1233,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     ).then((_) => _loadBookingDetails());
   }
 
-  // ✅ NEW: Handle Rate & Review Navigation
   Future<void> _handleRateReview(BookingDetailsResponse booking) async {
     final result = await Navigator.pushNamed(
       context,
@@ -847,7 +1245,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       },
     );
 
-    // Reload if review was submitted
     if (result == true) {
       _loadBookingDetails();
     }

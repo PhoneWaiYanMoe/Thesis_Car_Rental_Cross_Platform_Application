@@ -14,7 +14,6 @@ import 'package:wiz/screens/Cars/views/widgets/_buildFeatures.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildInsurance.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildLimitsAndFees.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildPaymentMethod.dart';
-import 'package:wiz/screens/Cars/views/widgets/_buildReviews.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildRules.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTravelScope.dart';
 import 'package:wiz/screens/Cars/views/widgets/_buildTripSummary.dart';
@@ -23,6 +22,310 @@ import 'package:wiz/screens/Location/views/map_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'widgets/_buildCarImage.dart';
 import 'package:wiz/screens/Booking/models/booking_data.dart';
+import 'package:wiz/services/media_api_service.dart';
+
+class ReviewItemWidget extends StatefulWidget {
+  final Map<String, dynamic> review;
+
+  const ReviewItemWidget({super.key, required this.review});
+
+  @override
+  State<ReviewItemWidget> createState() => _ReviewItemWidgetState();
+}
+
+class _ReviewItemWidgetState extends State<ReviewItemWidget> {
+  final _mediaApiService = MediaApiService();
+  List<String> _photoUrls = [];
+  bool _isLoadingPhotos = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReviewPhotos();
+  }
+
+  Future<void> _loadReviewPhotos() async {
+    final photoIds = widget.review['photos'] as List<dynamic>? ?? [];
+
+    if (photoIds.isEmpty) return;
+
+    setState(() {
+      _isLoadingPhotos = true;
+    });
+
+    try {
+      List<String> urls = [];
+
+      for (final photoId in photoIds) {
+        try {
+          final photoFile = await _mediaApiService.getFileById(photoId.toString());
+          urls.add(photoFile.url);
+          print('✅ Review photo loaded: ${photoFile.url}');
+        } catch (e) {
+          print('❌ Failed to load review photo $photoId: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _photoUrls = urls;
+          _isLoadingPhotos = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading review photos: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPhotos = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = (widget.review['rating'] as num?)?.toInt() ?? 0;
+    final comment = widget.review['comment'] as String? ?? '';
+    final reviewerName =
+        widget.review['reviewerName'] as String? ?? (widget.review['user']?['name'] as String?) ?? 'Anonymous';
+    final reviewerAvatar = widget.review['reviewerAvatar'] as String? ?? (widget.review['user']?['avatar'] as String?);
+    final createdAt = widget.review['createdAt'] as String?;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppStyles.surface(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Reviewer Info & Rating
+          Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: reviewerAvatar != null && reviewerAvatar.isNotEmpty
+                    ? NetworkImage(reviewerAvatar)
+                    : null,
+                backgroundColor: AppStyles.primary.withOpacity(0.1),
+                child: reviewerAvatar == null || reviewerAvatar.isEmpty
+                    ? Text(
+                        reviewerName[0].toUpperCase(),
+                        style: TextStyle(color: AppStyles.primary, fontWeight: FontWeight.bold),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+
+              // Name & Date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(reviewerName, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+                    if (createdAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(_formatDate(createdAt), style: AppStyles.caption(context)),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Star Rating
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.amber, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      rating.toString(),
+                      style: AppStyles.body(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.bold, color: Colors.amber.shade700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Review Comment
+          if (comment.isNotEmpty) ...[const SizedBox(height: 12), Text(comment, style: AppStyles.body(context))],
+
+          // Review Photos
+          if (_isLoadingPhotos) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 12),
+                  Text('Loading photos...', style: AppStyles.caption(context)),
+                ],
+              ),
+            ),
+          ] else if (_photoUrls.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _photoUrls.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => _showPhotoDialog(_photoUrls, index),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _photoUrls[index],
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              color: Colors.grey.shade300,
+                              child: Icon(Icons.broken_image, color: Colors.grey),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              color: Colors.grey.shade200,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showPhotoDialog(List<String> urls, int initialIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            PageView.builder(
+              itemCount: urls.length,
+              controller: PageController(initialPage: initialIndex),
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(
+                    child: Image.network(
+                      urls[index],
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.white, size: 48),
+                              const SizedBox(height: 16),
+                              Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                child: Text(
+                  '${initialIndex + 1}/${urls.length}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return '$months ${months == 1 ? 'month' : 'months'} ago';
+      } else {
+        return '${date.day}/${date.month}/${date.year}';
+      }
+    } catch (e) {
+      return dateStr;
+    }
+  }
+}
 
 class CarDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> arguments;
@@ -37,7 +340,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   final VehicleApiService _apiService = VehicleApiService();
   final ReviewApiService _reviewApiService = ReviewApiService();
 
-  BookingData? _bookingData; // ✅ Now nullable
+  BookingData? _bookingData;
   bool _isLoading = true;
   bool _isCheckingAvailability = false;
   bool _isLoadingReviews = false;
@@ -51,10 +354,8 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   bool _isTogglingFavorite = false;
   Car? _car;
 
-  // ✅ NEW: Track if we have trip data
   bool get _hasTripData => _bookingData != null;
 
-  // ✅ NEW: Temporary trip data before creating BookingData
   String? _tempLocation;
   String? _tempCity;
   String? _tempDistrict;
@@ -65,14 +366,13 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   String? _tempDestinationCity;
   String? _tempDestinationDistrict;
   String? _tempDatetime;
-  bool _tempWithDriver = false; // ✅ Driver toggle state
-  int _selectedDriveMode = 0; // ✅ 0 = Self Drive, 1 = With Driver
+  bool _tempWithDriver = false;
+  int _selectedDriveMode = 0;
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Try to create BookingData - may fail if coming from favorites
     try {
       _bookingData = BookingData.fromMap(widget.arguments);
       _tempWithDriver = _bookingData!.withDriver;
@@ -80,7 +380,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     } catch (e) {
       print('⚠️ No complete trip data available: $e');
       _bookingData = null;
-      // ✅ Check if withDriver was passed in arguments
       if (widget.arguments.containsKey('withDriver')) {
         _tempWithDriver = widget.arguments['withDriver'] as bool;
         _selectedDriveMode = _tempWithDriver ? 1 : 0;
@@ -107,7 +406,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
         throw Exception('Car object not found in arguments');
       }
 
-      // Fetch fresh details from API
       try {
         final vehicleDetails = await _apiService.getVehicleDetails(car.id);
         car = vehicleDetails.toCar();
@@ -118,7 +416,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
 
       _car = car;
 
-      // Only check availability if we have trip data
       if (_hasTripData) {
         await Future.wait([_checkAvailability(), _loadReviews(car.id)]);
       } else {
@@ -318,20 +615,16 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ NEW: Handle drive mode toggle
   void _handleDriveModeChange(int index) {
     setState(() {
       _selectedDriveMode = index;
       _tempWithDriver = index == 1;
 
-      // Clear location data when switching modes
       if (_tempWithDriver) {
-        // Switching to With Driver - clear self-drive location
         _tempLocation = null;
         _tempCity = null;
         _tempDistrict = null;
       } else {
-        // Switching to Self Drive - clear with-driver locations
         _tempPickup = null;
         _tempPickupCity = null;
         _tempPickupDistrict = null;
@@ -344,7 +637,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     print('🔄 Drive mode changed to: ${_tempWithDriver ? "With Driver" : "Self Drive"}');
   }
 
-  // ✅ UPDATED: Navigate to select location (for self-drive)
   Future<void> _selectLocation() async {
     final result = await Navigator.push(
       context,
@@ -363,7 +655,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ NEW: Navigate to select pickup location (for with-driver)
   Future<void> _selectPickup() async {
     final result = await Navigator.push(
       context,
@@ -382,7 +673,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ NEW: Navigate to select destination (for with-driver)
   Future<void> _selectDestination() async {
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(title: 'Destination')));
 
@@ -398,7 +688,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ UPDATED: Navigate to select date/time
   Future<void> _selectDateTime() async {
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const DateTimeScreen()));
 
@@ -412,18 +701,14 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     }
   }
 
-  // ✅ UPDATED: Try to create BookingData from temp values
   void _tryCreateBookingData() {
     if (_car == null || _tempDatetime == null) return;
 
-    // Check if we have all required data based on mode
     bool hasRequiredData = false;
 
     if (_tempWithDriver) {
-      // With Driver mode: need pickup and destination
       hasRequiredData = _tempPickup != null && _tempDestination != null;
     } else {
-      // Self Drive mode: need location
       hasRequiredData = _tempLocation != null;
     }
 
@@ -437,7 +722,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       'carIndex': 0,
     };
 
-    // Add location data based on mode (only add non-null values)
     if (_tempWithDriver) {
       if (_tempPickup != null) tripData['pickup'] = _tempPickup!;
       if (_tempPickupCity != null) tripData['pickupCity'] = _tempPickupCity!;
@@ -457,7 +741,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
 
     print('✅ Created booking data in ${_tempWithDriver ? "With Driver" : "Self Drive"} mode');
 
-    // Check availability immediately after creating booking data
     _checkAvailability();
   }
 
@@ -544,10 +827,8 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             buildCarImage(images: car.images, height: 240),
             const SizedBox(height: 16),
 
-            // ✅ NEW: Show trip setup section if no trip data
             if (!_hasTripData) ...[_buildTripSetupCard(), const SizedBox(height: 16)],
 
-            // ✅ Availability indicator (only if has trip data)
             if (_hasTripData) ...[
               if (_isCheckingAvailability)
                 Container(
@@ -642,7 +923,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ✅ Only show trip summary if we have booking data
             if (_hasTripData) ...[
               BuildTripSummary(bookingData: _bookingData!),
               const SizedBox(height: 24),
@@ -699,7 +979,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ✅ Only show booking options if we have trip data
             if (_hasTripData) ...[
               InsuranceSelector(
                 initialOption: _bookingData!.insurance,
@@ -713,35 +992,53 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
               const SizedBox(height: 24),
             ],
 
+            // ──────────────────────────────────────────────
+            //                REVIEWS SECTION
+            // ──────────────────────────────────────────────
             if (_isLoadingReviews)
               const Center(
-                child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()),
+                child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
               )
-            else if (_reviewsResponse != null)
-              ReviewsSection(
-                reviews: _reviewsResponse!.reviews.map((r) {
-                  String formattedDate = r.createdAt;
-                  try {
-                    final date = DateTime.parse(r.createdAt);
-                    formattedDate = '${date.day}/${_getMonthName(date.month)}/${date.year}';
-                  } catch (e) {
-                    // Keep original format if parsing fails
-                  }
+            else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Reviews', style: AppStyles.h2(context)),
+                    if (_reviewsResponse != null)
+                      Text(
+                        '${_reviewsResponse!.reviews.length} review${_reviewsResponse!.reviews.length != 1 ? 's' : ''}',
+                        style: AppStyles.caption(context),
+                      ),
+                  ],
+                ),
+              ),
+              if (_reviewsResponse == null || _reviewsResponse!.reviews.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text('No reviews yet.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  ),
+                )
+              else
+                Column(
+                  children: _reviewsResponse!.reviews.map((review) {
+                    return ReviewItemWidget(
+                      review: {
+                        'rating': review.rating,
+                        'comment': review.comment,
+                        'createdAt': review.createdAt,
+                        'reviewerName': review.user?.name ?? 'Anonymous',
+                        'reviewerAvatar': review.user?.avatar,
+                        'photos': review.photos ?? [],
+                      },
+                    );
+                  }).toList(),
+                ),
+            ],
 
-                  return Review(
-                    name: r.user.name,
-                    date: formattedDate,
-                    rating: r.rating.toDouble(),
-                    comment: r.comment,
-                  );
-                }).toList(),
-                onSeeMorePressed: () {
-                  // TODO: Navigate to full reviews screen
-                },
-              )
-            else
-              ReviewsSection(reviews: [], onSeeMorePressed: () {}),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -760,9 +1057,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     );
   }
 
-  // ✅ UPDATED: Trip setup card with drive mode toggle
   Widget _buildTripSetupCard() {
-    // Check what's required based on current mode
     final hasRequiredLocation = _tempWithDriver
         ? (_tempPickup != null && _tempDestination != null)
         : _tempLocation != null;
@@ -794,13 +1089,10 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ✅ Drive Mode Toggle
             _buildDriveModeToggle(),
             const SizedBox(height: 16),
 
-            // ✅ Show different fields based on drive mode
             if (!_tempWithDriver) ...[
-              // Self Drive: Single location field
               _buildSetupButton(
                 icon: Icons.location_on,
                 label: _tempLocation ?? 'Select Location',
@@ -808,7 +1100,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                 onTap: _selectLocation,
               ),
             ] else ...[
-              // With Driver: Pickup and destination fields
               _buildSetupButton(
                 icon: Icons.pin_drop,
                 label: _tempPickup ?? 'Pickup Location',
@@ -825,7 +1116,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
             ],
             const SizedBox(height: 12),
 
-            // Date/Time button
             _buildSetupButton(
               icon: Icons.calendar_today,
               label: _tempDatetime ?? 'Select Date & Time',
@@ -858,7 +1148,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     );
   }
 
-  // ✅ NEW: Drive mode toggle widget
   Widget _buildDriveModeToggle() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -941,10 +1230,5 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
         ),
       ),
     );
-  }
-
-  String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
   }
 }

@@ -291,6 +291,7 @@ services:
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
+      - MEDIA_SERVICE_URL=http://wiz-media-service:3008 
     depends_on:
       postgres:
         condition: service_healthy
