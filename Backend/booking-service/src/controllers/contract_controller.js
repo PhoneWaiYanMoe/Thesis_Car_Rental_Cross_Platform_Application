@@ -42,7 +42,7 @@ class ContractController {
         doc.moveDown(0.5);
         doc.text(`Renter: ${customerInfo.full_name}`);
         doc.text(`Email: ${customerInfo.email}`);
-        doc.text(`License: ${customerInfo.license_number}`);
+        doc.text(`License: ${customerInfo.license_number || "N/A"}`);
         doc.moveDown(2);
 
         // Vehicle Details
@@ -158,6 +158,8 @@ class ContractController {
       const { id } = req.params;
       const userId = req.user.userId;
 
+      console.log(`\n📄 Generating contract for booking: ${id}`);
+
       // Get booking details
       const bookingResult = await client.query(
         `SELECT * FROM bookings WHERE booking_id = $1`,
@@ -186,37 +188,67 @@ class ContractController {
         });
       }
 
-      // Fetch vehicle, customer, owner info
+      // ✅ FIX 1: Fetch vehicle info via gRPC
       const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
       const vehicleInfo = await vehicleGrpcClient.getVehicleInfo(
         booking.vehicle_id
       );
 
-      // Get customer verification info
-      const customerResult = await client.query(
-        `SELECT uv.*, u.email, u.full_name 
-         FROM user_verifications uv
-         JOIN users u ON u.user_id = uv.user_id
-         WHERE uv.user_id = $1`,
-        [booking.customer_id]
-      );
+      console.log(`✅ Fetched vehicle info: ${vehicleInfo.name}`);
 
-      const customerInfo = customerResult.rows[0] || {
-        full_name: "Customer",
-        email: "customer@example.com",
-        license_number: "N/A",
-      };
+      // ✅ FIX 2: Fetch customer info via user-service gRPC
+      const userGrpcClient = require("../grpc/user_grpc_client");
 
-      // Get owner info
-      const ownerResult = await client.query(
-        `SELECT email, full_name FROM users WHERE user_id = $1`,
-        [vehicleInfo.owner_id]
-      );
+      let customerInfo;
+      try {
+        const customerProfile = await userGrpcClient.getUserProfile(
+          booking.customer_id
+        );
 
-      const ownerInfo = ownerResult.rows[0] || {
-        full_name: "Owner",
-        email: "owner@example.com",
-      };
+        // Get verification info from booking database
+        const verificationResult = await client.query(
+          `SELECT license_number, license_full_name 
+           FROM user_verifications 
+           WHERE user_id = $1`,
+          [booking.customer_id]
+        );
+
+        customerInfo = {
+          full_name: customerProfile.full_name,
+          email: customerProfile.email,
+          license_number: verificationResult.rows[0]?.license_number || "N/A",
+        };
+
+        console.log(`✅ Fetched customer info: ${customerInfo.full_name}`);
+      } catch (error) {
+        console.error("⚠️  Could not fetch customer info:", error.message);
+        customerInfo = {
+          full_name: "Customer",
+          email: "customer@example.com",
+          license_number: "N/A",
+        };
+      }
+
+      // ✅ FIX 3: Fetch owner info via user-service gRPC
+      let ownerInfo;
+      try {
+        const ownerProfile = await userGrpcClient.getUserProfile(
+          vehicleInfo.owner_id
+        );
+
+        ownerInfo = {
+          full_name: ownerProfile.full_name,
+          email: ownerProfile.email,
+        };
+
+        console.log(`✅ Fetched owner info: ${ownerInfo.full_name}`);
+      } catch (error) {
+        console.error("⚠️  Could not fetch owner info:", error.message);
+        ownerInfo = {
+          full_name: "Owner",
+          email: "owner@example.com",
+        };
+      }
 
       // Generate PDF
       console.log("📄 Generating platform contract PDF...");
@@ -226,6 +258,8 @@ class ContractController {
         customerInfo,
         ownerInfo
       );
+
+      console.log(`✅ PDF generated (${pdfBuffer.length} bytes)`);
 
       // Upload to media service
       const mediaServiceUrl =
@@ -239,6 +273,8 @@ class ContractController {
       formData.append("ownerId", booking.booking_id);
       formData.append("ownerType", "REQUEST");
       formData.append("type", "contract");
+
+      console.log(`📤 Uploading contract to media service...`);
 
       const uploadResponse = await axios.post(
         `${mediaServiceUrl}/upload`,
@@ -266,6 +302,8 @@ class ContractController {
       );
 
       await client.query("COMMIT");
+
+      console.log(`✅ Contract generation complete for booking: ${id}`);
 
       res.json({
         message: "Platform contract generated successfully",
@@ -346,8 +384,6 @@ class ContractController {
       await client.query("COMMIT");
 
       console.log(`✅ Owner uploaded custom contract for booking: ${id}`);
-
-      // TODO: Send notification to customer
 
       res.json({
         message: "Custom contract uploaded successfully",
