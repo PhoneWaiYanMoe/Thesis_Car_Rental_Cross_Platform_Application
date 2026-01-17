@@ -1,10 +1,11 @@
-// lib/screens/Owner/views/owner_booking_details_screen.dart
+// lib/screens/Owner/views/vehicle_booking_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 import 'package:wiz/screens/Owner/models/owner_vehicle_model.dart';
 import 'package:wiz/screens/Owner/views/owner_contract_upload_screen.dart';
 import 'package:wiz/screens/Owner/views/owner_return_confirmation_screen.dart';
+import 'package:wiz/services/media_api_service.dart';
 
 class VehicleBookingsDetailScreen extends StatefulWidget {
   final OwnerVehicle vehicle;
@@ -17,6 +18,7 @@ class VehicleBookingsDetailScreen extends StatefulWidget {
 
 class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScreen> {
   final BookingApiService _bookingApi = BookingApiService();
+  final MediaApiService _mediaApiService = MediaApiService();
 
   List<OwnerBooking> _bookings = [];
   List<OwnerBooking> _filteredBookings = [];
@@ -28,6 +30,10 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
 
   int _currentPage = 1;
   final int _bookingsPerPage = 10;
+
+  // Media URLs cache for each booking
+  Map<String, Map<String, String>> _bookingMediaUrls = {};
+  Set<String> _loadingMediaForBookings = {};
 
   @override
   void initState() {
@@ -51,12 +57,95 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
       });
 
       print('✅ Loaded ${_bookings.length} bookings for vehicle ${widget.vehicle.name}');
+
+      // Load media for return_submitted and completed bookings
+      _loadMediaForBookings();
     } catch (e) {
       print('❌ Error loading bookings: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadMediaForBookings() async {
+    for (var booking in _bookings) {
+      if (booking.status == 'return_submitted' || booking.status == 'completed') {
+        _loadBookingMedia(booking.id);
+      }
+    }
+  }
+
+  Future<void> _loadBookingMedia(String bookingId) async {
+    if (_loadingMediaForBookings.contains(bookingId)) return;
+
+    setState(() {
+      _loadingMediaForBookings.add(bookingId);
+    });
+
+    try {
+      // Get full booking details to access return photos
+      final bookingDetails = await _bookingApi.getBookingDetails(bookingId);
+
+      Map<String, String> urls = {};
+
+      // Load owner's return confirmation photos
+      if (bookingDetails.returnPhotos != null && bookingDetails.returnPhotos!.isNotEmpty) {
+        for (int i = 0; i < bookingDetails.returnPhotos!.length; i++) {
+          final photoId = bookingDetails.returnPhotos![i];
+          try {
+            final photoFile = await _mediaApiService.getFileById(photoId);
+            urls['owner_return_$i'] = photoFile.url;
+            print('✅ Owner return photo $i loaded for booking $bookingId');
+          } catch (e) {
+            print('❌ Failed to load owner return photo $i: $e');
+          }
+        }
+      }
+
+      // Load customer's pickup photos
+      if (bookingDetails.pickupPhotos != null && bookingDetails.pickupPhotos!.isNotEmpty) {
+        for (int i = 0; i < bookingDetails.pickupPhotos!.length; i++) {
+          final photoId = bookingDetails.pickupPhotos![i];
+          try {
+            final photoFile = await _mediaApiService.getFileById(photoId);
+            urls['customer_pickup_$i'] = photoFile.url;
+            print('✅ Customer pickup photo $i loaded for booking $bookingId');
+          } catch (e) {
+            print('❌ Failed to load customer pickup photo $i: $e');
+          }
+        }
+      }
+
+      // Load customer's return photos
+      if (bookingDetails.returnPhotos != null && bookingDetails.returnPhotos!.isNotEmpty) {
+        for (int i = 0; i < bookingDetails.returnPhotos!.length; i++) {
+          final photoId = bookingDetails.returnPhotos![i];
+          try {
+            final photoFile = await _mediaApiService.getFileById(photoId);
+            urls['customer_return_$i'] = photoFile.url;
+            print('✅ Customer return photo $i loaded for booking $bookingId');
+          } catch (e) {
+            print('❌ Failed to load customer return photo $i: $e');
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _bookingMediaUrls[bookingId] = urls;
+          _loadingMediaForBookings.remove(bookingId);
+        });
+        print('📦 Total media URLs loaded for booking $bookingId: ${urls.length}');
+      }
+    } catch (e) {
+      print('❌ Error loading media for booking $bookingId: $e');
+      if (mounted) {
+        setState(() {
+          _loadingMediaForBookings.remove(bookingId);
+        });
+      }
     }
   }
 
@@ -333,6 +422,100 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     }
   }
 
+  // ✅ NEW: Show photo viewer dialog
+  void _showPhotoDialog(List<String> urls, int initialIndex, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            PageView.builder(
+              itemCount: urls.length,
+              controller: PageController(initialPage: initialIndex),
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(
+                    child: Image.network(
+                      urls[index],
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.white, size: 48),
+                              const SizedBox(height: 16),
+                              Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              top: 40,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                      child: Text(
+                        '${initialIndex + 1}/${urls.length}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                        child: Text(
+                          title,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<OwnerBooking> get _paginatedBookings {
     final start = (_currentPage - 1) * _bookingsPerPage;
     final end = start + _bookingsPerPage;
@@ -458,6 +641,10 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
   }
 
   Widget _buildBookingCard(OwnerBooking booking) {
+    final hasMedia = _bookingMediaUrls.containsKey(booking.id);
+    final isLoadingMedia = _loadingMediaForBookings.contains(booking.id);
+    final mediaUrls = _bookingMediaUrls[booking.id] ?? {};
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -509,6 +696,20 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
               'Total: ${_formatPrice(booking.totalAmount)} ₫',
               style: AppStyles.body(context).copyWith(color: AppStyles.primary, fontWeight: FontWeight.bold),
             ),
+
+            // ✅ NEW: Show owner's return confirmation photos
+            if ((booking.status == 'completed' || booking.status == 'return_submitted') && hasMedia) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 12),
+              _buildReturnPhotosSection(booking.id, mediaUrls),
+            ] else if ((booking.status == 'completed' || booking.status == 'return_submitted') && isLoadingMedia) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 12),
+              _buildLoadingPhotosSection(),
+            ],
+
             const SizedBox(height: 16),
 
             if (booking.status == 'pending')
@@ -578,6 +779,152 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ✅ NEW: Build return photos section
+  Widget _buildReturnPhotosSection(String bookingId, Map<String, String> mediaUrls) {
+    // Get owner's return confirmation photos
+    List<String> ownerReturnUrls = [];
+    mediaUrls.forEach((key, value) {
+      if (key.startsWith('owner_return_')) {
+        ownerReturnUrls.add(value);
+      }
+    });
+
+    // Get customer's pickup photos
+    List<String> customerPickupUrls = [];
+    mediaUrls.forEach((key, value) {
+      if (key.startsWith('customer_pickup_')) {
+        customerPickupUrls.add(value);
+      }
+    });
+
+    // Get customer's return photos
+    List<String> customerReturnUrls = [];
+    mediaUrls.forEach((key, value) {
+      if (key.startsWith('customer_return_')) {
+        customerReturnUrls.add(value);
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (ownerReturnUrls.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 16),
+              const SizedBox(width: 6),
+              Text('Your Return Confirmation', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildPhotoGallery(ownerReturnUrls, 'Your Return Photos', Colors.green),
+        ],
+
+        if (customerPickupUrls.isNotEmpty) ...[
+          if (ownerReturnUrls.isNotEmpty) const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.photo_camera, color: Colors.blue, size: 16),
+              const SizedBox(width: 6),
+              Text('Customer Pickup Photos', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildPhotoGallery(customerPickupUrls, 'Customer Pickup', Colors.blue),
+        ],
+
+        if (customerReturnUrls.isNotEmpty) ...[
+          if (ownerReturnUrls.isNotEmpty || customerPickupUrls.isNotEmpty) const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.photo_camera, color: Colors.orange, size: 16),
+              const SizedBox(width: 6),
+              Text('Customer Return Photos', style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildPhotoGallery(customerReturnUrls, 'Customer Return', Colors.orange),
+        ],
+
+        if (ownerReturnUrls.isEmpty && customerPickupUrls.isEmpty && customerReturnUrls.isEmpty)
+          Text('No photos available', style: AppStyles.caption(context).copyWith(color: Colors.grey)),
+      ],
+    );
+  }
+
+  // ✅ NEW: Build photo gallery
+  Widget _buildPhotoGallery(List<String> urls, String title, Color accentColor) {
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: urls.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => _showPhotoDialog(urls, index, title),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: accentColor.withOpacity(0.3), width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Image.network(
+                    urls[index],
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey.shade300,
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey.shade200,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ✅ NEW: Build loading photos section
+  Widget _buildLoadingPhotosSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        children: [
+          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: 12),
+          Text('Loading photos...', style: AppStyles.caption(context)),
+        ],
       ),
     );
   }
