@@ -1,3 +1,4 @@
+// Mobile/wiz/lib/screens/Booking/services/booking_api_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -46,7 +47,7 @@ class BookingApiService {
     }
   }
 
-  /// ✅ UPDATED: Upload verification with real media service
+  /// Upload verification with real media service
   Future<void> uploadVerification({
     required String fullName,
     required String licenseNumber,
@@ -269,41 +270,7 @@ class BookingApiService {
     }
   }
 
-  /// Sign contract
-  Future<void> signContract({
-    required String bookingId,
-    required String signature, // Base64 signature
-    required bool agreedToTerms,
-  }) async {
-    try {
-      final token = await _getAuthToken();
-      if (token == null) {
-        throw Exception('Authentication required');
-      }
-
-      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
-
-      final body = jsonEncode({'signature': signature, 'agreedToTerms': agreedToTerms});
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/bookings/$bookingId/sign-contract'),
-        headers: headers,
-        body: body,
-      );
-
-      if (response.statusCode == 200) {
-        print('✅ Contract signed successfully');
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['error'] ?? 'Failed to sign contract');
-      }
-    } catch (e) {
-      print('❌ Sign contract error: $e');
-      rethrow;
-    }
-  }
-
-  /// ✅ UPDATED: Confirm pickup with real photo uploads
+  /// Confirm pickup with real photo uploads
   Future<void> confirmPickup({
     required String bookingId,
     required List<File> pickupPhotos,
@@ -339,7 +306,6 @@ class BookingApiService {
 
       print('📤 Sending pickup confirmation to booking service...');
 
-      // ✅ FIX: Add 30 second timeout
       final response = await http
           .post(Uri.parse('$baseUrl/bookings/$bookingId/confirm-pickup'), headers: headers, body: body)
           .timeout(
@@ -365,7 +331,7 @@ class BookingApiService {
     }
   }
 
-  /// ✅ FIXED: Confirm return with proper timeout
+  /// Confirm return with proper timeout
   Future<void> confirmReturn({
     required String bookingId,
     required List<File> returnPhotos,
@@ -401,7 +367,6 @@ class BookingApiService {
 
       print('📤 Sending return confirmation to booking service...');
 
-      // ✅ FIX: Add 30 second timeout
       final response = await http
           .post(Uri.parse('$baseUrl/bookings/$bookingId/confirm-return'), headers: headers, body: body)
           .timeout(
@@ -453,9 +418,156 @@ class BookingApiService {
     }
   }
 
+  // ==================== CONTRACT METHODS ====================
+
+  /// Preview contract before signing
+  Future<Map<String, dynamic>> previewContract(String bookingId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Authorization': 'Bearer $token'};
+
+      final response = await http.get(Uri.parse('$baseUrl/bookings/$bookingId/preview-contract'), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to preview contract');
+      }
+    } catch (e) {
+      print('❌ Preview contract error: $e');
+      rethrow;
+    }
+  }
+
+  /// Get contract details
+  Future<Map<String, dynamic>> getContract(String bookingId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Authorization': 'Bearer $token'};
+
+      final response = await http.get(Uri.parse('$baseUrl/bookings/$bookingId/contract'), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to get contract');
+      }
+    } catch (e) {
+      print('❌ Get contract error: $e');
+      rethrow;
+    }
+  }
+
+  /// Sign contract with uploaded file
+  Future<void> signContract({
+    required String bookingId,
+    required String signedContractFileId,
+    required bool agreedToTerms,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
+
+      final body = jsonEncode({'signedContractFileId': signedContractFileId, 'agreedToTerms': agreedToTerms});
+
+      print('📝 Signing contract for booking: $bookingId');
+
+      final response = await http
+          .post(Uri.parse('$baseUrl/bookings/$bookingId/sign-contract'), headers: headers, body: body)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timed out. Please try again.');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        print('✅ Contract signed successfully');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to sign contract');
+      }
+    } catch (e) {
+      print('❌ Sign contract error: $e');
+      rethrow;
+    }
+  }
+
+  /// Generate platform contract (system/manual trigger)
+  Future<Map<String, dynamic>> generateContract(String bookingId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
+
+      final response = await http.post(Uri.parse('$baseUrl/bookings/$bookingId/generate-contract'), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Contract generated successfully');
+        return data;
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to generate contract');
+      }
+    } catch (e) {
+      print('❌ Generate contract error: $e');
+      rethrow;
+    }
+  }
+
+  /// Owner uploads custom contract (for owner app)
+  Future<void> uploadOwnerContract({required String bookingId, required String contractFileId}) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
+
+      final body = jsonEncode({'contractFileId': contractFileId});
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/upload-owner-contract'),
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Owner contract uploaded successfully');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to upload owner contract');
+      }
+    } catch (e) {
+      print('❌ Upload owner contract error: $e');
+      rethrow;
+    }
+  }
+
   // ==================== OWNER APIS ====================
 
-  /// Get owner's booking requests
+  /// Get owner's rental requests
   Future<OwnerBookingsResponse> getOwnerBookings({
     String? status,
     String? vehicleId,
@@ -556,7 +668,7 @@ class BookingApiService {
     }
   }
 
-  /// ✅ UPDATED: Owner confirms return with real photo uploads
+  /// Owner confirms return with real photo uploads
   Future<void> ownerConfirmReturn({
     required String bookingId,
     required List<File> conditionPhotos,

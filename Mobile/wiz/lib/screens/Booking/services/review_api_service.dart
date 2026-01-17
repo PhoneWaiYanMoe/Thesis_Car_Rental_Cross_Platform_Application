@@ -19,13 +19,13 @@ class ReviewApiService {
     }
   }
 
-  /// ✅ UPDATED: Submit vehicle review with real photo uploads
+  /// ✅ FIXED: Submit vehicle review with correct ownerType and type
   Future<void> submitVehicleReview({
     required String bookingId,
     required String vehicleId,
     required int rating,
     String? comment,
-    List<File>? photoFiles, // ✅ Changed from List<String> to List<File>
+    List<File>? photoFiles,
   }) async {
     try {
       final token = await _getAuthToken();
@@ -35,16 +35,15 @@ class ReviewApiService {
 
       List<String>? photoIds;
 
-      // Upload photos if provided
+      // ✅ FIX: Upload photos with ownerType: "REVIEW" and type: "review_photo"
       if (photoFiles != null && photoFiles.isNotEmpty) {
         print('📸 Uploading ${photoFiles.length} review photos...');
 
-        // Use bookingId as ownerId since photos are for this specific booking's review
         photoIds = await _mediaApiService.uploadBatch(
           files: photoFiles,
-          ownerId: bookingId,
-          ownerType: 'REVIEW',
-          type: 'review_photo',
+          ownerId: bookingId, // Use bookingId as ownerId
+          ownerType: 'REVIEW', // ✅ Changed from 'REQUEST' to 'REVIEW'
+          type: 'review_photo', // ✅ Correct type for review photos
         );
 
         print('✅ Review photos uploaded: $photoIds');

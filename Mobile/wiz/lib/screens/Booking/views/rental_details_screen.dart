@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
+import 'package:wiz/screens/Booking/views/contract_signing_screen.dart';
 import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
 
@@ -629,7 +630,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               style: AppStyles.primaryButtonStyle(context),
-              onPressed: () => _handleSignContract(booking),
+              onPressed: () => _handleSignContract(booking), 
               icon: const Icon(Icons.edit_document, color: Colors.white),
               label: Text('Sign Contract', style: AppStyles.button),
             ),
@@ -713,7 +714,94 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSignContract(BookingDetailsResponse booking) async {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contract signing feature coming soon')));
+    // Check if contract exists
+    try {
+      final contractInfo = await _bookingApiService.getContract(booking.id);
+
+      // Navigate to contract signing screen
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
+      );
+
+      // Reload if contract was signed
+      if (result == true) {
+        _loadBookingDetails();
+      }
+    } catch (e) {
+      // Contract doesn't exist yet, try to generate it
+      final shouldGenerate = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppStyles.surface(context),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Generate Contract', style: AppStyles.h2(context)),
+          content: Text(
+            'The rental contract hasn\'t been generated yet. Would you like to generate it now?',
+            style: AppStyles.body(context),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: AppStyles.primaryButtonStyle(context),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Generate', style: AppStyles.button),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldGenerate == true) {
+        // Show loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('Generating contract...', style: AppStyles.body(context)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        try {
+          await _bookingApiService.generateContract(booking.id);
+
+          if (mounted) {
+            Navigator.pop(context); // Close loading
+
+            // Now navigate to signing screen
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
+            );
+
+            if (result == true) {
+              _loadBookingDetails();
+            }
+          }
+        } catch (generateError) {
+          if (mounted) {
+            Navigator.pop(context); // Close loading
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to generate contract: $generateError'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    }
   }
 
   Future<void> _handleFinalPayment(BookingDetailsResponse booking) async {

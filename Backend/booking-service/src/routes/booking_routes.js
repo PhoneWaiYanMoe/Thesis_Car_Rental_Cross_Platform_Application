@@ -6,6 +6,7 @@ const router = express.Router();
 const bookingController = require("../controllers/booking_controller");
 const { authenticate } = require("../middleware/auth");
 const { validateBooking } = require("../middleware/validation");
+const contractRoutes = require("./contract_routes");
 
 // All routes require authentication
 router.use(authenticate);
@@ -33,6 +34,7 @@ router.get("/:id", (req, res, next) =>
 router.post("/:id/sign-contract", (req, res, next) =>
   bookingController.signContract(req, res, next)
 );
+router.use("/", contractRoutes);
 
 // ✅ NEW: Final payment endpoint (must be called AFTER signing contract)
 router.post("/:id/pay-final", (req, res, next) =>
