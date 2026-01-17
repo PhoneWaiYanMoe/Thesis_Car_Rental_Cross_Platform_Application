@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const pool = require("../config/database");
 const emailService = require("../services/email_service");
 const otpService = require("../services/otp_service");
+const eventPublisher = require("../services/event_publisher");
 
 class AuthController {
   async register(req, res, next) {
@@ -44,14 +45,8 @@ class AuthController {
 
       console.log("OTP Code:", otp);
 
-      // Try to send email (don't fail in development)
-      try {
-        await emailService.sendOTPEmail(email, otp, "Email Verification");
-        console.log("Email sent");
-      } catch (emailError) {
-        console.error("Email failed:", emailError.message);
-        console.log("Using mock email mode - OTP:", otp);
-      }
+      // ✅ Publish event to RabbitMQ (Notification service will send email)
+      await eventPublisher.publishUserRegistered(email, otp, userId);
 
       res.status(201).json({
         message: "OTP sent to email",
@@ -64,6 +59,7 @@ class AuthController {
       next(error);
     }
   }
+
   //Verify email OTP
   async verifyEmailOTP(req, res, next) {
     try {
@@ -130,93 +126,100 @@ class AuthController {
   }
 
   //Login
- 
-async login(req, res, next) {
-  try {
-    const { email, password } = req.body;
 
-    console.log(`🔐 Login attempt for: ${email}`);
+  async login(req, res, next) {
+    try {
+      const { email, password } = req.body;
 
-    // Find user
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+      console.log(`🔐 Login attempt for: ${email}`);
 
-    if (result.rows.length === 0) {
-      console.log(`❌ User not found: ${email}`);
-      return res.status(401).json({
-        error: "Invalid email or password",
-        debug: process.env.NODE_ENV === 'development' ? "User not found" : undefined
+      // Find user
+      const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+        email,
+      ]);
+
+      if (result.rows.length === 0) {
+        console.log(`❌ User not found: ${email}`);
+        return res.status(401).json({
+          error: "Invalid email or password",
+          debug:
+            process.env.NODE_ENV === "development"
+              ? "User not found"
+              : undefined,
+        });
+      }
+
+      const user = result.rows[0];
+
+      // Check if verified - WITH BETTER ERROR MESSAGE
+      if (!user.is_verified) {
+        console.log(`❌ Email not verified: ${email}`);
+        return res.status(403).json({
+          error: "Please verify your email before logging in",
+          needsVerification: true,
+          email: email,
+        });
+      }
+
+      // Check if password exists (for OAuth-only users)
+      if (!user.password_hash) {
+        console.log(`❌ No password set (OAuth user): ${email}`);
+        return res.status(401).json({
+          error:
+            "This account uses social login. Please use Google/Facebook to sign in.",
+          isOAuthUser: true,
+        });
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.password_hash
+      );
+
+      if (!isPasswordValid) {
+        console.log(`❌ Invalid password for: ${email}`);
+        return res.status(401).json({
+          error: "Invalid email or password",
+          debug:
+            process.env.NODE_ENV === "development"
+              ? "Password incorrect"
+              : undefined,
+        });
+      }
+
+      // Generate tokens
+      const token = jwt.sign(
+        { userId: user.user_id, email: user.email, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: user.user_id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+      );
+
+      console.log(`✅ Login successful: ${email}`);
+
+      res.json({
+        token,
+        refreshToken,
+        user: {
+          id: user.user_id,
+          email: user.email,
+          fullName: user.full_name,
+          phone: user.phone,
+          avatarUrl: user.avatar_url,
+          role: user.role,
+        },
       });
+    } catch (error) {
+      console.error("❌ Login error:", error);
+      next(error);
     }
-
-    const user = result.rows[0];
-
-    // Check if verified - WITH BETTER ERROR MESSAGE
-    if (!user.is_verified) {
-      console.log(`❌ Email not verified: ${email}`);
-      return res.status(403).json({
-        error: "Please verify your email before logging in",
-        needsVerification: true,
-        email: email
-      });
-    }
-
-    // Check if password exists (for OAuth-only users)
-    if (!user.password_hash) {
-      console.log(`❌ No password set (OAuth user): ${email}`);
-      return res.status(401).json({
-        error: "This account uses social login. Please use Google/Facebook to sign in.",
-        isOAuthUser: true
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
-
-    if (!isPasswordValid) {
-      console.log(`❌ Invalid password for: ${email}`);
-      return res.status(401).json({
-        error: "Invalid email or password",
-        debug: process.env.NODE_ENV === 'development' ? "Password incorrect" : undefined
-      });
-    }
-
-    // Generate tokens
-    const token = jwt.sign(
-      { userId: user.user_id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.user_id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
-    );
-
-    console.log(`✅ Login successful: ${email}`);
-
-    res.json({
-      token,
-      refreshToken,
-      user: {
-        id: user.user_id,
-        email: user.email,
-        fullName: user.full_name,
-        phone: user.phone,
-        avatarUrl: user.avatar_url,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("❌ Login error:", error);
-    next(error);
   }
-}
 
   //Forgot password
   async forgotPassword(req, res, next) {
@@ -243,14 +246,8 @@ async login(req, res, next) {
 
       console.log("Reset OTP Code:", otp);
 
-      // Try to send email (don't fail in development)
-      try {
-        await emailService.sendOTPEmail(email, otp, "Password Reset");
-        console.log("Email sent");
-      } catch (emailError) {
-        console.error("Email failed:", emailError.message);
-        console.log("Using mock email mode - OTP:", otp);
-      }
+      // ✅ Publish event to RabbitMQ (Notification service will send email)
+      await eventPublisher.publishPasswordResetRequested(email, otp);
 
       res.json({
         message: "Reset code sent",
@@ -294,7 +291,7 @@ async login(req, res, next) {
 
       console.log(`🔄 Reset password request for: ${email}`);
 
-      // Validate passwords match (extra validation)
+      // Validate passwords match
       if (newPassword !== confirmNewPassword) {
         return res.status(400).json({
           error: "Passwords do not match",
@@ -341,6 +338,9 @@ async login(req, res, next) {
 
       console.log("✅ Password updated successfully");
 
+      // ✅ Publish event to RabbitMQ (Notification service will send confirmation email)
+      await eventPublisher.publishPasswordChanged(email);
+
       res.json({
         message: "Password updated successfully",
       });
@@ -349,7 +349,6 @@ async login(req, res, next) {
       next(error);
     }
   }
-
 
   //Refresh token
   async refreshToken(req, res, next) {
@@ -418,8 +417,7 @@ async login(req, res, next) {
     }
   }
 
-// NEW METHODS FOR OAUTH:
-
+  // NEW METHODS FOR OAUTH:
 
   //  Google OAuth callback
   //  Called by Google after user authorizes
@@ -427,28 +425,33 @@ async login(req, res, next) {
   async googleCallback(req, res) {
     try {
       const oauthData = req.user; // Set by Passport
-      
-      console.log('Google callback received:', oauthData.email);
-      
+
+      console.log("Google callback received:", oauthData.email);
+
       // Find or create user
-      const user = await require('../services/oauth_service').findOrCreateOAuthUser(oauthData);
-      
+      const user =
+        await require("../services/oauth_service").findOrCreateOAuthUser(
+          oauthData
+        );
+
       // Generate JWT tokens
-      const { accessToken, refreshToken } = require('../services/oauth_service').generateTokens(user);
-      
+      const { accessToken, refreshToken } =
+        require("../services/oauth_service").generateTokens(user);
+
       // Redirect to frontend with tokens
       const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${accessToken}&refreshToken=${refreshToken}`;
-      
-      console.log('Redirecting to frontend:', redirectUrl);
+
+      console.log("Redirecting to frontend:", redirectUrl);
       res.redirect(redirectUrl);
-      
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      const errorUrl = `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`;
+      console.error("Google OAuth callback error:", error);
+      const errorUrl = `${
+        process.env.FRONTEND_URL
+      }/auth/error?message=${encodeURIComponent(error.message)}`;
       res.redirect(errorUrl);
     }
   }
-  
+
   /**
    * Facebook OAuth callback
    * Called by Facebook after user authorizes
@@ -456,22 +459,27 @@ async login(req, res, next) {
   async facebookCallback(req, res) {
     try {
       const oauthData = req.user;
-      
-      console.log('Facebook callback received:', oauthData.email);
-      
-      const user = await require('../services/oauth_service').findOrCreateOAuthUser(oauthData);
-      const { accessToken, refreshToken } = require('../services/oauth_service').generateTokens(user);
-      
+
+      console.log("Facebook callback received:", oauthData.email);
+
+      const user =
+        await require("../services/oauth_service").findOrCreateOAuthUser(
+          oauthData
+        );
+      const { accessToken, refreshToken } =
+        require("../services/oauth_service").generateTokens(user);
+
       const redirectUrl = `${process.env.FRONTEND_URL}/auth/facebook/callback?token=${accessToken}&refreshToken=${refreshToken}`;
       res.redirect(redirectUrl);
-      
     } catch (error) {
-      console.error('Facebook OAuth callback error:', error);
-      const errorUrl = `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`;
+      console.error("Facebook OAuth callback error:", error);
+      const errorUrl = `${
+        process.env.FRONTEND_URL
+      }/auth/error?message=${encodeURIComponent(error.message)}`;
       res.redirect(errorUrl);
     }
   }
-  
+
   /**
    * Link OAuth account to currently logged-in user
    * User must be authenticated to use this
@@ -480,58 +488,80 @@ async login(req, res, next) {
     try {
       const oauthData = req.user.oauthData; // Set by middleware
       const userId = req.user.userId; // From JWT token
-      
+
       console.log(`Linking Google account to user: ${userId}`);
-      
-      const result = await require('../services/oauth_service').linkOAuthAccount(userId, oauthData);
-      
-      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=success&provider=google&message=${encodeURIComponent(result.message)}`;
+
+      const result =
+        await require("../services/oauth_service").linkOAuthAccount(
+          userId,
+          oauthData
+        );
+
+      const redirectUrl = `${
+        process.env.FRONTEND_URL
+      }/settings/accounts?status=success&provider=google&message=${encodeURIComponent(
+        result.message
+      )}`;
       res.redirect(redirectUrl);
-      
     } catch (error) {
-      console.error('Link Google error:', error);
-      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=error&provider=google&message=${encodeURIComponent(error.message)}`;
+      console.error("Link Google error:", error);
+      const redirectUrl = `${
+        process.env.FRONTEND_URL
+      }/settings/accounts?status=error&provider=google&message=${encodeURIComponent(
+        error.message
+      )}`;
       res.redirect(redirectUrl);
     }
   }
-  
+
   async linkFacebookCallback(req, res) {
     try {
       const oauthData = req.user.oauthData;
       const userId = req.user.userId;
-      
+
       console.log(`Linking Facebook account to user: ${userId}`);
-      
-      const result = await require('../services/oauth_service').linkOAuthAccount(userId, oauthData);
-      
-      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=success&provider=facebook&message=${encodeURIComponent(result.message)}`;
+
+      const result =
+        await require("../services/oauth_service").linkOAuthAccount(
+          userId,
+          oauthData
+        );
+
+      const redirectUrl = `${
+        process.env.FRONTEND_URL
+      }/settings/accounts?status=success&provider=facebook&message=${encodeURIComponent(
+        result.message
+      )}`;
       res.redirect(redirectUrl);
-      
     } catch (error) {
-      console.error('Link Facebook error:', error);
-      const redirectUrl = `${process.env.FRONTEND_URL}/settings/accounts?status=error&provider=facebook&message=${encodeURIComponent(error.message)}`;
+      console.error("Link Facebook error:", error);
+      const redirectUrl = `${
+        process.env.FRONTEND_URL
+      }/settings/accounts?status=error&provider=facebook&message=${encodeURIComponent(
+        error.message
+      )}`;
       res.redirect(redirectUrl);
     }
   }
-  
+
   /**
    * Get linked OAuth accounts for current user
    */
   async getLinkedAccounts(req, res, next) {
     try {
       const userId = req.user.userId;
-      
-      const providers = await require('../services/oauth_service').getLinkedProviders(userId);
-      
+
+      const providers =
+        await require("../services/oauth_service").getLinkedProviders(userId);
+
       res.json({
-        linkedAccounts: providers
+        linkedAccounts: providers,
       });
-      
     } catch (error) {
       next(error);
     }
   }
-  
+
   /**
    * Unlink OAuth provider from account
    */
@@ -539,29 +569,31 @@ async login(req, res, next) {
     try {
       const userId = req.user.userId;
       const { provider } = req.params;
-      
-      if (!['google', 'facebook'].includes(provider)) {
-        return res.status(400).json({ error: 'Invalid provider' });
+
+      if (!["google", "facebook"].includes(provider)) {
+        return res.status(400).json({ error: "Invalid provider" });
       }
-      
-      const result = await require('../services/oauth_service').unlinkOAuthAccount(userId, provider);
-      
+
+      const result =
+        await require("../services/oauth_service").unlinkOAuthAccount(
+          userId,
+          provider
+        );
+
       res.json(result);
-      
     } catch (error) {
       next(error);
     }
   }
 
-// Keep existing socialLogin method or replace it:
+  // Keep existing socialLogin method or replace it:
   async socialLogin(req, res, next) {
     // This endpoint is now handled by Passport OAuth flow
     res.status(410).json({
-      error: 'This endpoint is deprecated. Use /auth/google or /auth/facebook instead'
+      error:
+        "This endpoint is deprecated. Use /auth/google or /auth/facebook instead",
     });
   }
 }
-
-
 
 module.exports = new AuthController();

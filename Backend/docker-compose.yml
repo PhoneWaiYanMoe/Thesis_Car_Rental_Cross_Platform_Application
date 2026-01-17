@@ -130,9 +130,12 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy 
     volumes:
       - ./user-service/src:/app/src
       - ./user-service/proto:/app/proto

@@ -6,6 +6,7 @@ const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const path = require("path");
 const passport = require("./config/passport");
+const { connectRabbitMQ } = require("./config/rabbitmq");
 
 // Routes
 const authRoutes = require("./routes/auth_routes");
@@ -64,6 +65,10 @@ async function startServer() {
   try {
     console.log("🔄 Running database migrations...");
     await runMigrations();
+
+    // ✅ Connect to RabbitMQ
+    console.log("🔄 Connecting to RabbitMQ...");
+    await connectRabbitMQ();
 
     // Start HTTP server
     const PORT = process.env.PORT || 3001;
