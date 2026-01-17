@@ -1,4 +1,3 @@
-// Mobile/wiz/lib/screens/Booking/services/booking_api_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -430,7 +429,11 @@ class BookingApiService {
 
       final headers = {'Authorization': 'Bearer $token'};
 
+      // ✅ FIX: Correct path
       final response = await http.get(Uri.parse('$baseUrl/bookings/$bookingId/preview-contract'), headers: headers);
+
+      print('📥 Preview contract response: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -455,7 +458,11 @@ class BookingApiService {
 
       final headers = {'Authorization': 'Bearer $token'};
 
+      // ✅ FIX: Correct path
       final response = await http.get(Uri.parse('$baseUrl/bookings/$bookingId/contract'), headers: headers);
+
+      print('📥 Get contract response: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -470,7 +477,7 @@ class BookingApiService {
     }
   }
 
-  /// Sign contract with uploaded file
+  /// Sign contract with uploaded file (CUSTOMER)
   Future<void> signContract({
     required String bookingId,
     required String signedContractFileId,
@@ -519,7 +526,11 @@ class BookingApiService {
 
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
+      // ✅ FIX: Correct path
       final response = await http.post(Uri.parse('$baseUrl/bookings/$bookingId/generate-contract'), headers: headers);
+
+      print('📥 Generate contract response: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -535,14 +546,29 @@ class BookingApiService {
     }
   }
 
-  /// Owner uploads custom contract (for owner app)
-  Future<void> uploadOwnerContract({required String bookingId, required String contractFileId}) async {
+  /// ✅ NEW: Owner uploads custom contract (for owner app)
+  Future<void> uploadOwnerContract({required String bookingId, required File contractFile}) async {
     try {
       final token = await _getAuthToken();
       if (token == null) {
         throw Exception('Authentication required');
       }
 
+      final userInfo = await _localStorageService.getUserInfo();
+      final userId = userInfo['userId'] ?? '';
+
+      // Step 1: Upload contract file to media service
+      print('📤 Uploading owner contract to media service...');
+      final contractFileId = await _mediaApiService.uploadSingle(
+        file: contractFile,
+        ownerId: bookingId,
+        ownerType: 'REQUEST',
+        type: 'contract',
+      );
+
+      print('✅ Contract uploaded to media service: $contractFileId');
+
+      // Step 2: Submit to booking service
       final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
 
       final body = jsonEncode({'contractFileId': contractFileId});

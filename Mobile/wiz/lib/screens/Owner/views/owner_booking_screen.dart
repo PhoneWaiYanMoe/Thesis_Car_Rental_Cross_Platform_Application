@@ -6,6 +6,7 @@ import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/screens/Booking/services/booking_api_service.dart';
 import 'package:wiz/screens/Owner/services/vehicle_api_services.dart';
 import 'package:wiz/screens/Owner/models/owner_vehicle_model.dart';
+import 'package:wiz/screens/Owner/views/owner_contract_upload_screen.dart';
 
 class OwnerBookingsScreen extends StatefulWidget {
   const OwnerBookingsScreen({super.key});
@@ -799,6 +800,24 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     );
   }
 
+  Future<void> _handleUploadContract(OwnerBooking booking) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            OwnerContractUploadScreen(bookingId: booking.id, vehicleName: booking.vehicle['name'] ?? 'Vehicle'),
+      ),
+    );
+
+    // Reload bookings if contract was uploaded
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Custom contract uploaded successfully!'), backgroundColor: Colors.green),
+      );
+      _loadBookings(); // Refresh the list
+    }
+  }
+
   List<OwnerBooking> get _paginatedBookings {
     final startIndex = (_currentPage - 1) * _bookingsPerPage;
     final endIndex = startIndex + _bookingsPerPage;
@@ -1119,7 +1138,7 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
             ),
             const SizedBox(height: 16),
 
-            // Action buttons
+            // ✅ UPDATED: Action buttons with contract upload option
             if (booking.status == 'pending')
               Row(
                 children: [
@@ -1136,6 +1155,44 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
                       onPressed: () => _handleAccept(booking),
                       style: AppStyles.primaryButtonStyle(context),
                       child: const Text('Accept'),
+                    ),
+                  ),
+                ],
+              )
+            // ✅ NEW: Upload Contract button for 'booking' status
+            else if (booking.status == 'booking')
+              Column(
+                children: [
+                  // Info banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'You can upload a custom rental contract (optional)',
+                            style: AppStyles.caption(context).copyWith(color: Colors.blue.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleUploadContract(booking),
+                      style: AppStyles.primaryButtonStyle(context),
+                      icon: const Icon(Icons.upload_file, size: 20),
+                      label: const Text('Upload Custom Contract'),
                     ),
                   ),
                 ],
