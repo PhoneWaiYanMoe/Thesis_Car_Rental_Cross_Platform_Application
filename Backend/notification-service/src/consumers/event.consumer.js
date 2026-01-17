@@ -7,65 +7,94 @@ class EventConsumer {
     const channel = getChannel();
 
     if (!channel) {
-      console.error("RabbitMQ channel not available");
+      console.error("❌ RabbitMQ channel not available");
       return;
     }
 
     const exchange = "wiz.events";
     const queue = "notification-service-queue";
 
-    await channel.assertQueue(queue, { durable: true });
+    try {
+      // Assert exchange exists
+      await channel.assertExchange(exchange, "topic", { durable: true });
+      console.log(`✅ Exchange "${exchange}" asserted`);
 
-    const routingKeys = [
-      "user.registered",
-      "user.password_reset_requested",
-      "user.password_changed",
-      "user.license_uploaded",
-      "user.status_changed",
-      "booking.created",
-      "booking.accepted_by_owner",
-      "booking.rejected_by_owner",
-      "booking.pickup_confirmed",
-      "booking.completed",
-      "booking.cancelled",
-      "payment.deposit_completed",
-      "payment.final_completed",
-      "payment.refund_initiated",
-      "payment.refund_completed",
-      "payment.payout_completed",
-      "review.created",
-      "review.owner_reviewed",
-      "review.response_posted",
-      "vehicle.created",
-      "vehicle.status_changed",
-      "request.created",
-      "request.approved",
-      "request.denied",
-      "contract.signed",
-      "staff.created",
-    ];
+      // Assert queue exists
+      await channel.assertQueue(queue, { durable: true });
+      console.log(`✅ Queue "${queue}" asserted`);
 
-    for (const key of routingKeys) {
-      await channel.bindQueue(queue, exchange, key);
-    }
+      const routingKeys = [
+        "user.registered",
+        "user.password_reset_requested",
+        "user.password_changed",
+        "user.license_uploaded",
+        "user.status_changed",
+        "booking.created",
+        "booking.accepted_by_owner",
+        "booking.rejected_by_owner",
+        "booking.pickup_confirmed",
+        "booking.completed",
+        "booking.cancelled",
+        "payment.deposit_completed",
+        "payment.final_completed",
+        "payment.refund_initiated",
+        "payment.refund_completed",
+        "payment.payout_completed",
+        "review.created",
+        "review.owner_reviewed",
+        "review.response_posted",
+        "vehicle.created",
+        "vehicle.status_changed",
+        "request.created",
+        "request.approved",
+        "request.denied",
+        "contract.signed",
+        "staff.created",
+      ];
 
-    console.log("Notification consumer started, waiting for messages...");
-
-    channel.consume(queue, async (msg) => {
-      if (msg) {
-        try {
-          const event = JSON.parse(msg.content.toString());
-          console.log(`Received event: ${event.eventType}`);
-
-          await this.handleEvent(event);
-
-          channel.ack(msg);
-        } catch (error) {
-          console.error("Error processing event:", error);
-          channel.nack(msg, false, true);
-        }
+      // Bind all routing keys
+      for (const key of routingKeys) {
+        await channel.bindQueue(queue, exchange, key);
+        console.log(`✅ Bound routing key: ${key}`);
       }
-    });
+
+      // Set prefetch to process one message at a time
+      await channel.prefetch(1);
+
+      console.log("✅ Notification consumer started, waiting for messages...");
+      console.log(`📡 Listening on queue: ${queue}`);
+      console.log(`📡 Bound to exchange: ${exchange}`);
+
+      channel.consume(
+        queue,
+        async (msg) => {
+          if (msg) {
+            try {
+              const event = JSON.parse(msg.content.toString());
+              console.log(`📥 Received event: ${event.eventType}`);
+              console.log(
+                `📄 Event data:`,
+                JSON.stringify(event.data, null, 2)
+              );
+
+              await this.handleEvent(event);
+
+              channel.ack(msg);
+              console.log(`✅ Event processed: ${event.eventType}`);
+            } catch (error) {
+              console.error("❌ Error processing event:", error);
+              console.error("❌ Error stack:", error.stack);
+              // Requeue the message for retry
+              channel.nack(msg, false, true);
+            }
+          }
+        },
+        { noAck: false } // Require manual acknowledgment
+      );
+    } catch (error) {
+      console.error("❌ Error setting up consumer:", error);
+      throw error;
+    }
   }
 
   async handleEvent(event) {
@@ -75,22 +104,29 @@ class EventConsumer {
       switch (eventType) {
         // user events
         case "user.registered":
+          console.log(`📧 Sending registration OTP to: ${data.email}`);
           await emailService.sendOTPEmail(
             data.email,
             data.otp,
             "Email Verification"
           );
+          console.log(`✅ Registration OTP sent to: ${data.email}`);
           break;
 
         case "user.password_reset_requested":
+          console.log(`📧 Sending password reset OTP to: ${data.email}`);
           await emailService.sendOTPEmail(
             data.email,
             data.otp,
             "Password Reset"
           );
+          console.log(`✅ Password reset OTP sent to: ${data.email}`);
           break;
 
         case "user.password_changed":
+          console.log(
+            `📧 Sending password change confirmation to: ${data.email}`
+          );
           await notificationService.sendNotification(
             "system",
             "Password Changed",
@@ -98,6 +134,7 @@ class EventConsumer {
             { email: data.email },
             ["email"]
           );
+          console.log(`✅ Password change confirmation sent to: ${data.email}`);
           break;
 
         case "user.license_uploaded":
@@ -397,10 +434,11 @@ class EventConsumer {
           break;
 
         default:
-          console.log(`No handler for event: ${eventType}`);
+          console.log(`⚠️ No handler for event: ${eventType}`);
       }
     } catch (error) {
-      console.error(`Error handling ${eventType}:`, error);
+      console.error(`❌ Error handling ${eventType}:`, error);
+      console.error(`❌ Error stack:`, error.stack);
       throw error;
     }
   }

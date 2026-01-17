@@ -35,14 +35,19 @@ class EventPublisher {
 
       const exchange = "wiz.events";
 
+      // Log the event being published
+      console.log(`📤 Publishing event: ${eventType}`);
+      console.log(`   Data:`, JSON.stringify(data, null, 2));
+
       channel.publish(exchange, eventType, Buffer.from(JSON.stringify(event)), {
         persistent: true,
       });
 
-      console.log(`📤 Event published: ${eventType}`);
+      console.log(`✅ Event published successfully: ${eventType}`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to publish event ${eventType}:`, error.message);
+      console.error(`   Stack:`, error.stack);
       return false;
     }
   }
@@ -53,6 +58,7 @@ class EventPublisher {
    * Publish user registered event (sends OTP email)
    */
   async publishUserRegistered(email, otp, userId) {
+    console.log(`🔔 Publishing user.registered for: ${email}`);
     return this.publishEvent("user.registered", {
       userId: userId,
       email: email,
@@ -64,6 +70,7 @@ class EventPublisher {
    * Publish password reset requested event (sends OTP email)
    */
   async publishPasswordResetRequested(email, otp) {
+    console.log(`🔔 Publishing user.password_reset_requested for: ${email}`);
     return this.publishEvent("user.password_reset_requested", {
       email: email,
       otp: otp,
@@ -74,6 +81,7 @@ class EventPublisher {
    * Publish password changed event (sends confirmation email)
    */
   async publishPasswordChanged(email) {
+    console.log(`🔔 Publishing user.password_changed for: ${email}`);
     return this.publishEvent("user.password_changed", {
       email: email,
     });
@@ -83,6 +91,7 @@ class EventPublisher {
    * Publish license uploaded event
    */
   async publishLicenseUploaded(email, userId) {
+    console.log(`🔔 Publishing user.license_uploaded for: ${email}`);
     return this.publishEvent("user.license_uploaded", {
       email: email,
       userId: userId,
@@ -93,6 +102,7 @@ class EventPublisher {
    * Publish user status changed event
    */
   async publishUserStatusChanged(email, userId, newStatus, oldStatus) {
+    console.log(`🔔 Publishing user.status_changed for: ${email}`);
     return this.publishEvent("user.status_changed", {
       email: email,
       userId: userId,
