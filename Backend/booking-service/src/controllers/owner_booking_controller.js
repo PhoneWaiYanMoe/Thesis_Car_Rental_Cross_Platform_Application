@@ -1,6 +1,8 @@
 // Backend/booking-service/src/controllers/owner_booking_controller.js
 const pool = require("../config/database");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
+const userGrpcClient = require("../grpc/user_grpc_client");
+const eventPublisher = require("../utils/eventPublisher");
 
 class OwnerBookingController {
   async getOwnerBookings(req, res, next) {
@@ -24,7 +26,6 @@ class OwnerBookingController {
         limit = 10,
       } = req.query;
 
-      // Get all bookings
       let query = `
         SELECT 
           b.booking_id,
@@ -61,7 +62,6 @@ class OwnerBookingController {
 
       const result = await pool.query(query, params);
 
-      // Fetch vehicle info and filter by owner
       const vehicleIds = [...new Set(result.rows.map((row) => row.vehicle_id))];
       let ownerVehicles = new Set();
 
@@ -79,7 +79,6 @@ class OwnerBookingController {
         });
       }
 
-      // Filter bookings to only owner's vehicles
       const filteredBookings = result.rows.filter((row) =>
         ownerVehicles.has(row.vehicle_id)
       );
@@ -184,6 +183,33 @@ class OwnerBookingController {
 
       console.log(`✅ Owner ${userId} accepted booking: ${id}`);
 
+      // ✅ Fetch info for notification
+      let vehicle, customerInfo;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+        customerInfo = await userGrpcClient.getUserProfile(booking.customer_id);
+
+        // ✅ Publish booking accepted event
+        const updatedBooking = {
+          ...booking,
+          status: "booking",
+          owner_approved_at: new Date(),
+        };
+        await eventPublisher.bookingAcceptedByOwner(
+          updatedBooking,
+          vehicle,
+          customerInfo
+        );
+        console.log(
+          `📧 Booking accepted notification sent to ${customerInfo.email}`
+        );
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not send acceptance notification:",
+          error.message
+        );
+      }
+
       res.json({
         message: "Booking accepted successfully",
         bookingStatus: "booking",
@@ -197,83 +223,82 @@ class OwnerBookingController {
     }
   }
 
-  
-async rejectBooking(req, res, next) {
-  const client = await pool.connect();
+  async rejectBooking(req, res, next) {
+    const client = await pool.connect();
 
-  try {
-    await client.query("BEGIN");
-
-    const userId = req.user.userId;
-    const userRole = req.user.role;
-    const { id } = req.params;
-    const { reason, refundAmount } = req.body;
-
-    if (userRole !== "owner") {
-      return res.status(403).json({
-        error: "Access denied. Only vehicle owners can reject bookings.",
-        requiredRole: "owner",
-      });
-    }
-
-    if (!reason || reason.trim() === "") {
-      return res.status(400).json({
-        error: "Please provide a reason for rejection",
-      });
-    }
-
-    if (refundAmount === undefined || refundAmount === null) {
-      return res.status(400).json({
-        error: "Refund amount is required",
-      });
-    }
-
-    const bookingResult = await client.query(
-      `SELECT * FROM bookings WHERE booking_id = $1`,
-      [id]
-    );
-
-    if (bookingResult.rows.length === 0) {
-      return res.status(404).json({
-        error: "Booking not found",
-      });
-    }
-
-    const booking = bookingResult.rows[0];
-
-    // Verify ownership via gRPC
     try {
-      const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
-        booking.vehicle_id,
-        userId
-      );
+      await client.query("BEGIN");
 
-      if (!ownershipCheck.is_owner) {
+      const userId = req.user.userId;
+      const userRole = req.user.role;
+      const { id } = req.params;
+      const { reason, refundAmount } = req.body;
+
+      if (userRole !== "owner") {
         return res.status(403).json({
-          error: "You don't own this vehicle",
+          error: "Access denied. Only vehicle owners can reject bookings.",
+          requiredRole: "owner",
         });
       }
-    } catch (error) {
-      return res.status(503).json({
-        error: "Could not verify vehicle ownership",
-      });
-    }
 
-    if (booking.status !== "pending") {
-      return res.status(400).json({
-        error: `Cannot reject booking with status: ${booking.status}`,
-      });
-    }
+      if (!reason || reason.trim() === "") {
+        return res.status(400).json({
+          error: "Please provide a reason for rejection",
+        });
+      }
 
-    const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
-    if (refundAmount > maxRefund) {
-      return res.status(400).json({
-        error: `Refund amount cannot exceed deposit: ${maxRefund}`,
-      });
-    }
+      if (refundAmount === undefined || refundAmount === null) {
+        return res.status(400).json({
+          error: "Refund amount is required",
+        });
+      }
 
-    await client.query(
-      `UPDATE bookings 
+      const bookingResult = await client.query(
+        `SELECT * FROM bookings WHERE booking_id = $1`,
+        [id]
+      );
+
+      if (bookingResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Booking not found",
+        });
+      }
+
+      const booking = bookingResult.rows[0];
+
+      // Verify ownership via gRPC
+      try {
+        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+          booking.vehicle_id,
+          userId
+        );
+
+        if (!ownershipCheck.is_owner) {
+          return res.status(403).json({
+            error: "You don't own this vehicle",
+          });
+        }
+      } catch (error) {
+        return res.status(503).json({
+          error: "Could not verify vehicle ownership",
+        });
+      }
+
+      if (booking.status !== "pending") {
+        return res.status(400).json({
+          error: `Cannot reject booking with status: ${booking.status}`,
+        });
+      }
+
+      const maxRefund = booking.deposit_paid ? booking.deposit_amount : 0;
+      if (refundAmount > maxRefund) {
+        return res.status(400).json({
+          error: `Refund amount cannot exceed deposit: ${maxRefund}`,
+        });
+      }
+
+      await client.query(
+        `UPDATE bookings 
        SET status = 'cancelled',
            rejection_reason = $1,
            rejected_at = NOW(),
@@ -281,41 +306,71 @@ async rejectBooking(req, res, next) {
            refund_status = $3,
            updated_at = NOW()
        WHERE booking_id = $4`,
-      [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
-    );
-
-    await client.query("COMMIT");
-
-    // ✅ FIX: Remove unavailability when owner rejects booking
-    try {
-      await vehicleGrpcClient.syncUnavailability(
-        booking.vehicle_id,
-        booking.start_date,
-        booking.end_date,
-        id,
-        'remove'
+        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
       );
-      console.log(`✅ Removed unavailability after owner rejection: ${id}`);
+
+      await client.query("COMMIT");
+
+      // Remove unavailability when owner rejects booking
+      try {
+        await vehicleGrpcClient.syncUnavailability(
+          booking.vehicle_id,
+          booking.start_date,
+          booking.end_date,
+          id,
+          "remove"
+        );
+        console.log(`✅ Removed unavailability after owner rejection: ${id}`);
+      } catch (error) {
+        console.error(
+          `⚠️  Could not remove unavailability after rejection: ${error.message}`
+        );
+      }
+
+      console.log(`❌ Owner ${userId} rejected booking: ${id}`);
+
+      // ✅ Fetch info for notification
+      let vehicle, customerInfo;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+        customerInfo = await userGrpcClient.getUserProfile(booking.customer_id);
+
+        // ✅ Publish booking rejected event
+        const updatedBooking = {
+          ...booking,
+          status: "cancelled",
+          rejection_reason: reason,
+          rejected_at: new Date(),
+        };
+        await eventPublisher.bookingRejectedByOwner(
+          updatedBooking,
+          vehicle,
+          customerInfo,
+          reason
+        );
+        console.log(
+          `📧 Booking rejection notification sent to ${customerInfo.email}`
+        );
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not send rejection notification:",
+          error.message
+        );
+      }
+
+      res.json({
+        message: "Booking rejected",
+        refundAmount,
+        customerNotified: true,
+      });
     } catch (error) {
-      console.error(`⚠️  Could not remove unavailability after rejection: ${error.message}`);
-      // Don't fail the rejection - log and continue
+      await client.query("ROLLBACK");
+      console.error("Reject booking error:", error);
+      next(error);
+    } finally {
+      client.release();
     }
-
-    console.log(`❌ Owner ${userId} rejected booking: ${id}`);
-
-    res.json({
-      message: "Booking rejected",
-      refundAmount,
-      customerNotified: true,
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Reject booking error:", error);
-    next(error);
-  } finally {
-    client.release();
   }
-}
 
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
@@ -418,7 +473,7 @@ async rejectBooking(req, res, next) {
 
       await client.query("COMMIT");
 
-      // ✅ INCREMENT TOTAL RENTALS WHEN COMPLETED
+      // Increment total rentals when completed
       if (action === "complete") {
         try {
           await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
@@ -431,7 +486,7 @@ async rejectBooking(req, res, next) {
           );
         }
 
-        // Also remove from unavailability
+        // Remove from unavailability
         try {
           await vehicleGrpcClient.syncUnavailability(
             booking.vehicle_id,
@@ -443,6 +498,30 @@ async rejectBooking(req, res, next) {
           console.log(`✅ Removed completed booking from unavailability`);
         } catch (error) {
           console.error(`⚠️  Could not sync unavailability: ${error.message}`);
+        }
+
+        // ✅ Fetch info for notification
+        let customerInfo;
+        try {
+          customerInfo = await userGrpcClient.getUserProfile(
+            booking.customer_id
+          );
+
+          // ✅ Publish booking completed event
+          const updatedBooking = {
+            ...booking,
+            status: "completed",
+            owner_confirmed_return_at: new Date(),
+          };
+          await eventPublisher.bookingCompleted(updatedBooking, customerInfo);
+          console.log(
+            `📧 Booking completed notification sent to ${customerInfo.email}`
+          );
+        } catch (error) {
+          console.warn(
+            "⚠️  Could not send completion notification:",
+            error.message
+          );
         }
       }
 

@@ -295,6 +295,7 @@ services:
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
       - MEDIA_SERVICE_URL=http://wiz-media-service:3008 
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
@@ -305,6 +306,8 @@ services:
       user-service:
         condition: service_healthy
       payment-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ./booking-service/src:/app/src

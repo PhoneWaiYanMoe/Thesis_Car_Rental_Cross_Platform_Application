@@ -1,7 +1,10 @@
+// Backend/booking-service/src/controllers/booking_controller.js
 const pool = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 const paymentGrpcClient = require("../grpc/payment_grpc_client");
+const userGrpcClient = require("../grpc/user_grpc_client");
+const eventPublisher = require("../utils/eventPublisher");
 
 class BookingController {
   // ==================== HELPER FUNCTIONS ====================
@@ -68,13 +71,11 @@ class BookingController {
     }
   }
 
-  // ✅ NEW: Calculate refund based on policy
   calculateRefundAmount(booking, cancelTime = new Date()) {
     const startDate = new Date(booking.start_date);
     const hoursUntilStart = (startDate - cancelTime) / (1000 * 60 * 60);
     const daysUntilStart = hoursUntilStart / 24;
 
-    // Calculate total amount paid
     const totalPaid =
       (booking.deposit_paid ? booking.deposit_amount : 0) +
       (booking.final_payment_paid ? booking.remaining_payment : 0);
@@ -83,31 +84,25 @@ class BookingController {
       return { refundAmount: 0, refundReason: "No payment made" };
     }
 
-    // ✅ REFUND POLICY IMPLEMENTATION
     if (daysUntilStart >= 3) {
-      // 3-7 days before: Full refund
       return {
         refundAmount: totalPaid,
         refundReason: "Cancelled 3+ days before start date",
       };
     } else if (hoursUntilStart >= 24 && hoursUntilStart < 72) {
-      // 24-48 hours before: Deposit = No refund, Fully paid = Partial refund
       if (booking.final_payment_paid) {
-        // If fully paid, refund the remaining payment only (keep deposit)
         return {
           refundAmount: booking.remaining_payment,
           refundReason:
             "Cancelled 24-48 hours before - partial refund (remaining payment only)",
         };
       } else {
-        // Only deposit paid, no refund
         return {
           refundAmount: 0,
           refundReason: "Cancelled 24-48 hours before - no refund for deposit",
         };
       }
     } else if (hoursUntilStart < 24) {
-      // Less than 24 hours: No refund
       return {
         refundAmount: 0,
         refundReason: "Cancelled less than 24 hours before - no refund",
@@ -260,7 +255,6 @@ class BookingController {
 
   // ==================== BOOKING MANAGEMENT ====================
 
-  // ✅ COMPLETELY REWRITTEN: Create booking in 2 steps
   async createBooking(req, res, next) {
     const client = await pool.connect();
 
@@ -280,8 +274,6 @@ class BookingController {
         additionalNotes,
         provider = "vnpay",
       } = req.body;
-
-      // ✅ STEP 1: VALIDATE EVERYTHING (but don't save booking yet)
 
       // Check verification
       const verificationResult = await client.query(
@@ -371,13 +363,10 @@ class BookingController {
       const deposit = Math.round(total * 0.3);
       const remainingPayment = total - deposit;
 
-      // ✅ STEP 2: CREATE PAYMENT INTENT FIRST (before creating booking)
-
       console.log(`\n💳 Creating payment intent BEFORE booking...`);
 
       let paymentIntent;
       try {
-        // Generate a temporary booking ID for payment intent
         const tempBookingId = uuidv4();
 
         paymentIntent = await paymentGrpcClient.createDepositIntent(
@@ -390,10 +379,7 @@ class BookingController {
 
         console.log(`✅ Payment intent created: ${paymentIntent.intent_id}`);
 
-        // ✅ STEP 3: NOW create booking with status 'pending_payment' and payment_expiry
-        const bookingId = tempBookingId; // Use the same ID we used for payment
-
-        // Set expiry to 30 minutes from now
+        const bookingId = tempBookingId;
         const paymentExpiry = new Date();
         paymentExpiry.setMinutes(paymentExpiry.getMinutes() + 30);
 
@@ -436,12 +422,35 @@ class BookingController {
         console.log(
           `✅ Booking created with 30min payment window: ${bookingId}`
         );
-        console.log(
-          `   Payment must be completed before: ${paymentExpiry.toISOString()}`
+
+        // ✅ Fetch customer info for notification
+        let customerInfo;
+        try {
+          customerInfo = await userGrpcClient.getUserProfile(userId);
+        } catch (error) {
+          console.warn("⚠️  Could not fetch customer info:", error.message);
+          customerInfo = {
+            email: "unknown@example.com",
+            full_name: "Customer",
+          };
+        }
+
+        // ✅ Publish booking.created event (notification will be sent)
+        const bookingForEvent = await client.query(
+          "SELECT * FROM bookings WHERE booking_id = $1",
+          [bookingId]
         );
 
-        // ✅ NOTE: We do NOT add to vehicle unavailability yet
-        // That will happen in the webhook after payment succeeds
+        if (bookingForEvent.rows.length > 0) {
+          await eventPublisher.bookingCreated(
+            bookingForEvent.rows[0],
+            vehicle,
+            customerInfo
+          );
+          console.log(
+            `📧 Booking created notification sent to ${customerInfo.email}`
+          );
+        }
 
         res.status(201).json({
           message:
@@ -737,14 +746,6 @@ class BookingController {
         startDate > now;
       const isFullyPaid = booking.deposit_paid && booking.final_payment_paid;
 
-      // ✅ LOG the actual database values for debugging
-      console.log("📋 Booking cancellation info from DB:");
-      console.log("   cancellation_reason:", booking.cancellation_reason);
-      console.log("   rejection_reason:", booking.rejection_reason);
-      console.log("   cancellation_date:", booking.cancellation_date);
-      console.log("   refund_amount:", booking.refund_amount);
-      console.log("   refund_status:", booking.refund_status);
-
       res.json({
         booking: {
           id: booking.booking_id,
@@ -793,7 +794,6 @@ class BookingController {
                 url: `https://cdn.com/contracts/${booking.booking_id}.pdf`,
               }
             : null,
-          // ✅ CRITICAL FIX: Map snake_case DB fields to camelCase JSON fields
           cancellationReason: booking.cancellation_reason || null,
           rejectionReason: booking.rejection_reason || null,
           cancellationDate: booking.cancellation_date || null,
@@ -882,6 +882,31 @@ class BookingController {
 
       console.log(`✅ Contract signed for booking: ${id}`);
 
+      // ✅ Fetch info for notification
+      let vehicle, customerInfo, ownerInfo;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+        customerInfo = await userGrpcClient.getUserProfile(userId);
+        ownerInfo = await userGrpcClient.getUserProfile(vehicle.owner_id);
+
+        // ✅ Publish contract signed event
+        const updatedBooking = { ...booking, contract_signed_at: new Date() };
+        await eventPublisher.contractSigned(
+          updatedBooking,
+          vehicle,
+          customerInfo,
+          ownerInfo
+        );
+        console.log(
+          `📧 Contract signed notification sent to ${ownerInfo.email}`
+        );
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not send contract notification:",
+          error.message
+        );
+      }
+
       res.json({
         message:
           "Contract signed successfully. You can now pay the remaining amount.",
@@ -951,26 +976,21 @@ class BookingController {
         });
       }
 
-      // Check if contract is signed
       if (!booking.contract_signed_at) {
         return res.status(400).json({
           error: "Contract must be signed before pickup",
         });
       }
 
-      // Check if it's on or after the booking day
       const dateCheck = this.isActionAllowedByDate(booking, "pickup");
       if (!dateCheck.allowed) {
         return res.status(400).json({ error: dateCheck.reason });
       }
 
-      // ✅ FIX: Use the real photo IDs from media service (they are already uploaded)
-      // These are media file IDs that can be used to retrieve the actual photos
       console.log(
         `✅ Storing ${pickupPhotos.length} photo IDs from media service`
       );
 
-      // Update booking to "picked_up" status
       await client.query(
         `UPDATE bookings 
        SET pickup_condition_photos = $1,
@@ -988,10 +1008,36 @@ class BookingController {
       console.log(`✅ Pickup confirmed for booking: ${id} (status: picked_up)`);
       console.log(`✅ Stored photo IDs: ${pickupPhotos.join(", ")}`);
 
+      // ✅ Fetch info for notification
+      let vehicle, customerInfo, ownerInfo;
+      try {
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+        customerInfo = await userGrpcClient.getUserProfile(userId);
+        ownerInfo = await userGrpcClient.getUserProfile(vehicle.owner_id);
+
+        // ✅ Publish pickup confirmed event
+        const updatedBooking = {
+          ...booking,
+          status: "picked_up",
+          pickup_confirmed_at: new Date(),
+        };
+        await eventPublisher.pickupConfirmed(
+          updatedBooking,
+          vehicle,
+          customerInfo,
+          ownerInfo
+        );
+        console.log(
+          `📧 Pickup confirmed notification sent to ${ownerInfo.email}`
+        );
+      } catch (error) {
+        console.warn("⚠️  Could not send pickup notification:", error.message);
+      }
+
       res.json({
         message: "Pickup confirmed successfully. Enjoy your ride!",
         bookingStatus: "picked_up",
-        photoIds: pickupPhotos, // Return the media service file IDs
+        photoIds: pickupPhotos,
         nextStep: "Return the vehicle on the end date and submit return photos",
       });
     } catch (error) {
@@ -1003,7 +1049,6 @@ class BookingController {
     }
   }
 
-  // ✅ FIXED: Confirm return function
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -1016,7 +1061,6 @@ class BookingController {
 
       console.log(`📸 Received return photos:`, returnPhotos);
 
-      // Validate return photos
       if (
         !returnPhotos ||
         !Array.isArray(returnPhotos) ||
@@ -1033,7 +1077,6 @@ class BookingController {
         });
       }
 
-      // Get booking
       const bookingResult = await client.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
         [id, userId]
@@ -1045,14 +1088,12 @@ class BookingController {
 
       const booking = bookingResult.rows[0];
 
-      // ✅ Must be picked_up before return
       if (booking.status !== "picked_up") {
         return res.status(400).json({
           error: `Cannot confirm return. Current status: ${booking.status}. Expected status: picked_up`,
         });
       }
 
-      // Date check
       const dateCheck = this.isActionAllowedByDate(booking, "return");
       if (!dateCheck.allowed) {
         return res.status(400).json({ error: dateCheck.reason });
@@ -1062,7 +1103,6 @@ class BookingController {
         `✅ Storing ${returnPhotos.length} return photo IDs from media service`
       );
 
-      // ✅ Store real media file IDs (same as pickup)
       await client.query(
         `UPDATE bookings 
        SET return_photos = $1,
@@ -1086,7 +1126,7 @@ class BookingController {
         message:
           "Return submitted successfully. Waiting for owner confirmation.",
         bookingStatus: "return_submitted",
-        photoIds: returnPhotos, // ✅ return media service IDs
+        photoIds: returnPhotos,
         nextStep: "Owner will review and confirm the return",
       });
     } catch (error) {
@@ -1098,7 +1138,6 @@ class BookingController {
     }
   }
 
-  // ✅ NEW: Pay final payment (after signing contract)
   async payFinalPayment(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -1141,7 +1180,6 @@ class BookingController {
         });
       }
 
-      // Create final payment intent via Payment Service gRPC
       try {
         const paymentIntent = await paymentGrpcClient.createFinalPaymentIntent(
           id,
@@ -1217,18 +1255,16 @@ class BookingController {
       let refundAmount = 0;
       const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
 
-      // Calculate refund based on what was paid
       const totalPaid =
         (booking.deposit_paid ? booking.deposit_amount : 0) +
         (booking.final_payment_paid ? booking.remaining_payment : 0);
 
       if (totalPaid > 0) {
         if (hoursUntilStart > 24) {
-          refundAmount = totalPaid; // Full refund
+          refundAmount = totalPaid;
         } else if (hoursUntilStart > 12) {
-          refundAmount = Math.round(totalPaid * 0.5); // 50% refund
+          refundAmount = Math.round(totalPaid * 0.5);
         }
-        // else: No refund if < 12 hours
       }
 
       await client.query(
@@ -1275,6 +1311,35 @@ class BookingController {
         } catch (error) {
           console.error(`⚠️  Could not process refund: ${error.message}`);
         }
+      }
+
+      // ✅ Fetch info for notification
+      let customerInfo, ownerInfo, vehicle;
+      try {
+        customerInfo = await userGrpcClient.getUserProfile(userId);
+        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
+        ownerInfo = await userGrpcClient.getUserProfile(vehicle.owner_id);
+
+        // ✅ Publish booking cancelled event
+        const updatedBooking = {
+          ...booking,
+          status: "cancelled",
+          cancellation_reason: reason,
+          cancellation_date: new Date(),
+        };
+        await eventPublisher.bookingCancelled(
+          updatedBooking,
+          customerInfo,
+          ownerInfo
+        );
+        console.log(
+          `📧 Booking cancelled notifications sent to customer and owner`
+        );
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not send cancellation notification:",
+          error.message
+        );
       }
 
       res.json({
