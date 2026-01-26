@@ -30,10 +30,7 @@ class Database {
         retryWrites: true,
         retryReads: true,
         directConnection: false,
-        ssl:
-          process.env.DB_SSL === "require"
-            ? { rejectUnauthorized: false }
-            : false,
+        // Remove the ssl option entirely - let the connection string handle it
       };
 
       this.connection = await mongoose.connect(mongoUri, options);
