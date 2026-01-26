@@ -16,7 +16,9 @@ const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-  }
+    ssl:
+      process.env.DB_SSL === "require" ? { rejectUnauthorized: false } : false,
+  },
 );
 
 const connectDB = async () => {

@@ -17,7 +17,7 @@ class Database {
       console.log("🔄 Connecting to MongoDB...");
       console.log(
         "📍 URI:",
-        mongoUri.replace(/\/\/([^:]+):([^@]+)@/, "//***:***@")
+        mongoUri.replace(/\/\/([^:]+):([^@]+)@/, "//***:***@"),
       );
 
       const options = {
@@ -30,6 +30,10 @@ class Database {
         retryWrites: true,
         retryReads: true,
         directConnection: false,
+        ssl:
+          process.env.DB_SSL === "require"
+            ? { rejectUnauthorized: false }
+            : false,
       };
 
       this.connection = await mongoose.connect(mongoUri, options);
@@ -56,7 +60,7 @@ class Database {
     } catch (error) {
       console.error("❌ MongoDB connection failed:", error.message);
       console.error(
-        "💡 Check if MongoDB is running on port 27020 and credentials are correct"
+        "💡 Check if MongoDB is running on port 27020 and credentials are correct",
       );
       throw error;
     }
