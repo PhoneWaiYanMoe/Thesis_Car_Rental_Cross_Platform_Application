@@ -1,0 +1,362 @@
+version: "3.9"
+
+services:
+  # ==================== REDIS (Internal Only) ====================
+  redis:
+    image: redis:7-alpine
+    container_name: wiz-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==================== RABBITMQ (Internal Only) ====================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: wiz-rabbitmq
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== USER SERVICE ====================
+  user-service:
+    build: ./user-service
+    container_name: wiz-user-service
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_user
+      - DB_SSL=${DB_SSL}
+      - PORT=3001
+      - GRPC_PORT=50053
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - OTP_EXPIRY_MINUTES=10
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=${BASE_URL}/auth/google/callback
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
+      - FACEBOOK_CALLBACK_URL=${BASE_URL}/auth/facebook/callback
+      - FRONTEND_URL=${FRONTEND_URL}
+      - LOCATION_SERVICE_GRPC_URL=location-service:50051
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== LOCATION SERVICE ====================
+  location-service:
+    build: ./location-service
+    container_name: wiz-location-service
+    restart: always
+    ports:
+      - "3003:3003"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_location
+      - DB_SSL=${DB_SSL}
+      - PORT=3003
+      - GRPC_PORT=50051
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    networks:
+      - wiz-network
+
+  # ==================== VEHICLE SERVICE ====================
+  vehicle-service:
+    build: ./vehicle-service
+    container_name: wiz-vehicle-service
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_vehicle
+      - DB_SSL=${DB_SSL}
+      - PORT=3002
+      - GRPC_PORT=50055
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
+    depends_on:
+      user-service:
+        condition: service_healthy
+    networks:
+      - wiz-network
+
+  # ==================== PAYMENT SERVICE ====================
+  payment-service:
+    build: ./payment-service
+    container_name: wiz-payment-service
+    restart: always
+    ports:
+      - "3006:3006"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_payment
+      - DB_SSL=${DB_SSL}
+      - PORT=3006
+      - GRPC_PORT=50056
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - MOCK_PAYMENT=${MOCK_PAYMENT}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - PAYPAL_MODE=${PAYPAL_MODE}
+      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
+      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
+      - VNPAY_URL=${VNPAY_URL}
+      - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ENCRYPTION_IV=${ENCRYPTION_IV}
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== BOOKING SERVICE ====================
+  booking-service:
+    build: ./booking-service
+    container_name: wiz-booking-service
+    restart: always
+    ports:
+      - "3004:3004"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_booking
+      - DB_SSL=${DB_SSL}
+      - PORT=3004
+      - GRPC_PORT=50052
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
+      - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
+      - MEDIA_SERVICE_URL=http://wiz-media-service:3008
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+    depends_on:
+      location-service:
+        condition: service_started
+      vehicle-service:
+        condition: service_started
+      user-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - wiz-network
+
+  # ==================== REVIEW SERVICE ====================
+  review-service:
+    build: ./review-service
+    container_name: wiz-review-service
+    restart: always
+    ports:
+      - "3005:3005"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - PORT=3005
+      - GRPC_PORT=50054
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+    depends_on:
+      booking-service:
+        condition: service_started
+      vehicle-service:
+        condition: service_started
+      user-service:
+        condition: service_healthy
+    networks:
+      - wiz-network
+
+  # ==================== NOTIFICATION SERVICE ====================
+  notification-service:
+    build: ./notification-service
+    container_name: wiz-notification-service
+    restart: always
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - NODE_ENV=${NODE_ENV}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - USER_SERVICE_URL=http://user-service:3001
+      - FRONTEND_URL=${FRONTEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_SECURE=false
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM_NAME=Wiz Car Rental
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== MEDIA SERVICE ====================
+  media-service:
+    build: ./media-service
+    container_name: wiz-media-service
+    restart: always
+    ports:
+      - "3008:3008"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_media_db
+      - DB_SSL=${DB_SSL}
+      - PORT=3008
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - MAX_FILE_SIZE=5242880
+      - ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/jpg,image/webp
+      - ALLOWED_DOCUMENT_TYPES=application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== REQUEST SERVICE ====================
+  request-service:
+    build: ./request-service
+    container_name: wiz-request-service
+    restart: always
+    ports:
+      - "3010:3010"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_request_db
+      - DB_SSL=${DB_SSL}
+      - PORT=3010
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - USER_SERVICE_URL=http://user-service:3001
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3007
+      - ANALYTICS_SERVICE_URL=http://analytics-service:3009
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - wiz-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3010/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  wiz-network:
+    driver: bridge
