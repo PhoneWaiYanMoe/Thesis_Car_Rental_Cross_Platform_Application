@@ -8,11 +8,21 @@ class Database {
   async connect() {
     try {
       // Get MongoDB URI from environment
-      const mongoUri =
-        process.env.MONGODB_URI ||
-        `mongodb://${process.env.MONGODB_USER || "wiz_user"}:${
+      let mongoUri = process.env.MONGODB_URI;
+
+      // Only use fallback in development
+      if (!mongoUri) {
+        if (process.env.NODE_ENV === "production") {
+          throw new Error(
+            "MONGODB_URI environment variable is required in production",
+          );
+        }
+        // Development fallback
+        mongoUri = `mongodb://${process.env.MONGODB_USER || "wiz_user"}:${
           process.env.MONGODB_PASSWORD || "wiz_password"
         }@localhost:27020/wiz_reviews?authSource=admin&directConnection=true`;
+        console.warn("⚠️  Using development MongoDB fallback connection");
+      }
 
       console.log("🔄 Connecting to MongoDB...");
       console.log(
@@ -30,7 +40,7 @@ class Database {
         retryWrites: true,
         retryReads: true,
         directConnection: false,
-        // Remove the ssl option entirely - let the connection string handle it
+        // SSL is handled by the connection string
       };
 
       this.connection = await mongoose.connect(mongoUri, options);
@@ -56,9 +66,15 @@ class Database {
       return this.connection;
     } catch (error) {
       console.error("❌ MongoDB connection failed:", error.message);
-      console.error(
-        "💡 Check if MongoDB is running on port 27020 and credentials are correct",
-      );
+      if (error.message.includes("MONGODB_URI")) {
+        console.error(
+          "💡 Set MONGODB_URI environment variable to your MongoDB connection string",
+        );
+      } else {
+        console.error(
+          "💡 Check MongoDB connection string and network connectivity",
+        );
+      }
       throw error;
     }
   }
