@@ -16,8 +16,17 @@ const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-    ssl:
-      process.env.DB_SSL === "require" ? { rejectUnauthorized: false } : false,
+    dialectOptions:
+      process.env.DB_SSL === "true" ||
+      process.env.DB_SSL === "require" ||
+      process.env.DB_SSL === "1"
+        ? {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false,
+            },
+          }
+        : {},
   },
 );
 
