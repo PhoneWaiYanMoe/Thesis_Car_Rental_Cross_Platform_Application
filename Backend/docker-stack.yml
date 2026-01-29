@@ -4,7 +4,7 @@ services:
   # ==================== REDIS ====================
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass $${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
@@ -32,8 +32,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
-      - RABBITMQ_DEFAULT_USER=$${RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=$${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -63,36 +63,36 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_user
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3001
       - GRPC_PORT=50053
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
-      - JWT_REFRESH_SECRET=$${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_SECRET}
       - JWT_REFRESH_EXPIRES_IN=7d
       - OTP_EXPIRY_MINUTES=10
-      - EMAIL_HOST=$${EMAIL_HOST}
-      - EMAIL_PORT=$${EMAIL_PORT}
-      - EMAIL_SECURE=$${EMAIL_SECURE}
-      - EMAIL_USER=$${EMAIL_USER}
-      - EMAIL_PASSWORD=$${EMAIL_PASSWORD}
-      - GOOGLE_CLIENT_ID=$${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=$${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=$${BASE_URL}/auth/google/callback
-      - FACEBOOK_APP_ID=$${FACEBOOK_APP_ID}
-      - FACEBOOK_APP_SECRET=$${FACEBOOK_APP_SECRET}
-      - FACEBOOK_CALLBACK_URL=$${BASE_URL}/auth/facebook/callback
-      - FRONTEND_URL=$${FRONTEND_URL}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=${BASE_URL}/auth/google/callback
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
+      - FACEBOOK_CALLBACK_URL=${BASE_URL}/auth/facebook/callback
+      - FRONTEND_URL=${FRONTEND_URL}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
-      - RABBITMQ_URL=amqp://$${RABBITMQ_USER}:$${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     networks:
       - wiz-network
     deploy:
@@ -119,17 +119,17 @@ services:
     ports:
       - "3003:3003"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_location
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3003
       - GRPC_PORT=50051
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - RATE_LIMIT_WINDOW_MS=900000
       - RATE_LIMIT_MAX_REQUESTS=100
     networks:
@@ -149,17 +149,17 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_vehicle
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3002
       - GRPC_PORT=50055
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=user-service:50053
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
     networks:
@@ -179,33 +179,33 @@ services:
     ports:
       - "3006:3006"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_payment
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3006
       - GRPC_PORT=50056
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
-      - MOCK_PAYMENT=$${MOCK_PAYMENT}
-      - STRIPE_SECRET_KEY=$${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=$${STRIPE_PUBLISHABLE_KEY}
-      - STRIPE_WEBHOOK_SECRET=$${STRIPE_WEBHOOK_SECRET}
-      - PAYPAL_CLIENT_ID=$${PAYPAL_CLIENT_ID}
-      - PAYPAL_CLIENT_SECRET=$${PAYPAL_CLIENT_SECRET}
-      - PAYPAL_MODE=$${PAYPAL_MODE}
-      - VNPAY_TMN_CODE=$${VNPAY_TMN_CODE}
-      - VNPAY_HASH_SECRET=$${VNPAY_HASH_SECRET}
-      - VNPAY_URL=$${VNPAY_URL}
-      - VNPAY_RETURN_URL=$${VNPAY_RETURN_URL}
-      - FRONTEND_URL=$${FRONTEND_URL}
-      - ENCRYPTION_KEY=$${ENCRYPTION_KEY}
-      - ENCRYPTION_IV=$${ENCRYPTION_IV}
+      - MOCK_PAYMENT=${MOCK_PAYMENT}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - PAYPAL_MODE=${PAYPAL_MODE}
+      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
+      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
+      - VNPAY_URL=${VNPAY_URL}
+      - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ENCRYPTION_IV=${ENCRYPTION_IV}
     networks:
       - wiz-network
     deploy:
@@ -229,24 +229,24 @@ services:
     ports:
       - "3004:3004"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_booking
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3004
       - GRPC_PORT=50052
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - USER_SERVICE_GRPC_URL=user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
       - MEDIA_SERVICE_URL=http://media-service:3008
-      - RABBITMQ_URL=amqp://$${RABBITMQ_USER}:$${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     networks:
       - wiz-network
     deploy:
@@ -264,14 +264,14 @@ services:
     ports:
       - "3005:3005"
     environment:
-      - MONGODB_URI=$${MONGODB_URI}
-      - MONGODB_USER=$${MONGODB_USER}
-      - MONGODB_PASSWORD=$${MONGODB_PASSWORD}
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - PORT=3005
       - GRPC_PORT=50054
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
       - USER_SERVICE_GRPC_URL=user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
@@ -293,21 +293,21 @@ services:
       - "3007:3007"
     environment:
       - PORT=3007
-      - NODE_ENV=$${NODE_ENV}
-      - RABBITMQ_URL=amqp://$${RABBITMQ_USER}:$${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - NODE_ENV=${NODE_ENV}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       - USER_SERVICE_URL=http://user-service:3001
-      - FRONTEND_URL=$${FRONTEND_URL}
-      - JWT_SECRET=$${JWT_SECRET}
-      - EMAIL_HOST=$${EMAIL_HOST}
-      - EMAIL_PORT=$${EMAIL_PORT}
-      - EMAIL_SECURE=$${EMAIL_SECURE}
-      - EMAIL_USER=$${EMAIL_USER}
-      - EMAIL_PASSWORD=$${EMAIL_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - EMAIL_FROM_NAME=Wiz Car Rental
-      - EMAIL_FROM_ADDRESS=$${EMAIL_FROM_ADDRESS}
-      - FIREBASE_PROJECT_ID=$${FIREBASE_PROJECT_ID}
-      - FIREBASE_PRIVATE_KEY=$${FIREBASE_PRIVATE_KEY}
-      - FIREBASE_CLIENT_EMAIL=$${FIREBASE_CLIENT_EMAIL}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
     networks:
       - wiz-network
     deploy:
@@ -331,19 +331,19 @@ services:
     ports:
       - "3008:3008"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_media_db
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3008
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
-      - CLOUDINARY_CLOUD_NAME=$${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=$${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=$${CLOUDINARY_API_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - MAX_FILE_SIZE=5242880
       - ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/jpg,image/webp
       - ALLOWED_DOCUMENT_TYPES=application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
@@ -370,17 +370,17 @@ services:
     ports:
       - "3010:3010"
     environment:
-      - DB_HOST=$${DB_HOST}
-      - DB_PORT=$${DB_PORT}
-      - DB_USER=$${DB_USER}
-      - DB_PASSWORD=$${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_request_db
-      - DB_SSL=$${DB_SSL}
+      - DB_SSL=${DB_SSL}
       - PORT=3010
-      - NODE_ENV=$${NODE_ENV}
-      - BASE_URL=$${BASE_URL}
-      - JWT_SECRET=$${JWT_SECRET}
-      - RABBITMQ_URL=amqp://$${RABBITMQ_USER}:$${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       - USER_SERVICE_URL=http://user-service:3001
       - NOTIFICATION_SERVICE_URL=http://notification-service:3007
       - ANALYTICS_SERVICE_URL=http://analytics-service:3009
