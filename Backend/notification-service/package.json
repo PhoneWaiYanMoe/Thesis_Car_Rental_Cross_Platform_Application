@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "amqplib": "^0.10.9",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
