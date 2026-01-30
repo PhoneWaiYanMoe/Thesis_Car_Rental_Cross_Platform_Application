@@ -1,6 +1,33 @@
 version: "3.8"
 
 services:
+  # ==================== NGINX REVERSE PROXY ====================
+  nginx:
+    image: 206.189.147.242:5000/wiz-nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - wiz-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # ==================== REDIS ====================
   redis:
     image: redis:7-alpine
@@ -325,7 +352,7 @@ services:
       retries: 5
       start_period: 40s
 
-# ==================== MEDIA SERVICE ====================
+  # ==================== MEDIA SERVICE ====================
   media-service:
     image: 206.189.147.242:5000/wiz-media-service:latest
     ports:
