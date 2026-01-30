@@ -1,10 +1,10 @@
-const transporter = require("../config/nodemailer");
+const sgMail = require("../config/sendgrid");
 const handlebars = require("handlebars");
 require("dotenv").config();
 
 class EmailService {
   /**
-   * Send email using template
+   * Send email using SendGrid API
    * @param {string} to - Recipient email address
    * @param {string} subject - Email subject
    * @param {string} template - HTML template string
@@ -13,34 +13,44 @@ class EmailService {
    */
   async sendEmail(to, subject, template, variables = {}) {
     try {
-      // compile template with handlebars
+      // Compile template with handlebars
       const compiledTemplate = handlebars.compile(template);
       const html = compiledTemplate(variables);
 
-      // email options
-      const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+      // Email options for SendGrid
+      const msg = {
         to: to,
+        from: {
+          email: process.env.EMAIL_FROM_ADDRESS,
+          name: process.env.EMAIL_FROM_NAME || "Wiz Car Rental",
+        },
         subject: subject,
         html: html,
       };
 
-      // send email
-      const info = await transporter.sendMail(mailOptions);
+      // Send email via SendGrid API
+      const response = await sgMail.send(msg);
 
-      console.log(`Email sent to ${to}: ${info.messageId}`);
+      console.log(`✅ Email sent to ${to} via SendGrid`);
+      console.log(`📧 Message ID: ${response[0].headers["x-message-id"]}`);
 
       return {
         success: true,
-        messageId: info.messageId,
+        messageId: response[0].headers["x-message-id"],
+        statusCode: response[0].statusCode,
       };
     } catch (error) {
-      console.error("Email send failed:", error);
+      console.error("❌ SendGrid email send failed:", error);
+
+      if (error.response) {
+        console.error("SendGrid Error Details:", error.response.body);
+      }
+
       throw error;
     }
   }
 
-  // send otp verification email
+  // Send OTP verification email
   async sendOTPEmail(email, otp, purpose = "Email Verification") {
     const subject = `${purpose} - Your OTP Code`;
     const template = `
@@ -124,7 +134,7 @@ class EmailService {
     return await this.sendEmail(email, subject, template, { otp, purpose });
   }
 
-  // send booking confirmation email
+  // Send booking confirmation email
   async sendBookingConfirmation(email, bookingData) {
     const subject = "Booking Confirmed - Wiz Car Rental";
     const template = `
@@ -201,7 +211,7 @@ class EmailService {
     });
   }
 
-  // send payment receipt email
+  // Send payment receipt email
   async sendPaymentReceipt(email, paymentData) {
     const subject = "Payment Receipt - Wiz Car Rental";
     const template = `
@@ -264,7 +274,7 @@ class EmailService {
     return await this.sendEmail(email, subject, template, paymentData);
   }
 
-  // send generic notification email
+  // Send generic notification email
   async sendNotificationEmail(email, title, message, actionUrl = null) {
     const subject = title;
     const template = `
