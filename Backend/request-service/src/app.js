@@ -1,6 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
 
 const pool = require("./config/database");
 const rabbitmqConnection = require("./config/rabbitmq");

@@ -1,7 +1,6 @@
 // Backend/vehicle-service/src/utils/debug_vehicles.js
 // Run with: node src/utils/debug_vehicles.js
 
-require("dotenv").config();
 const pool = require("../config/database");
 
 async function debugVehicles() {

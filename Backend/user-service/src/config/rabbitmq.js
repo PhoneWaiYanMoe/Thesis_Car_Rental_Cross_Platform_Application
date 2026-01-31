@@ -1,6 +1,5 @@
 // Backend/user-service/src/config/rabbitmq.js
 const amqp = require("amqplib");
-require("dotenv").config();
 
 let connection = null;
 let channel = null;

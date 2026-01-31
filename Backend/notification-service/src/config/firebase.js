@@ -1,5 +1,4 @@
 const admin = require("firebase-admin");
-require("dotenv").config();
 
 // initialize Firebase Admin SDK only if credentials are provided
 let firebaseApp = null;

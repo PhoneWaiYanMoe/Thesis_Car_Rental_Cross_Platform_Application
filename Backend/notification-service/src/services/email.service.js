@@ -1,6 +1,5 @@
 const sgMail = require("../config/sendgrid");
 const handlebars = require("handlebars");
-require("dotenv").config();
 
 class EmailService {
   /**

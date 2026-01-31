@@ -24,7 +24,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   mongodb:
     image: mongo:8.0
     container_name: wiz-mongodb
@@ -80,8 +79,8 @@ services:
     container_name: wiz-rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"      # AMQP
-      - "15672:15672"    # Management UI
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-admin123}
@@ -135,7 +134,7 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
-        condition: service_healthy 
+        condition: service_healthy
     volumes:
       - ./user-service/src:/app/src
       - ./user-service/proto:/app/proto
@@ -294,7 +293,7 @@ services:
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
-      - MEDIA_SERVICE_URL=http://wiz-media-service:3008 
+      - MEDIA_SERVICE_URL=http://wiz-media-service:3008
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       postgres:
@@ -428,50 +427,66 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3008/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3008/health",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-    analytics-service:
-      build: ./analysis-service
-      container_name: wiz-analytics-service
-      restart: unless-stopped
-      ports:
-        - "3009:3009"
-      environment:
-        - DB_HOST=postgres
-        - DB_PORT=5432
-        - DB_USER=${DB_USER}
-        - DB_PASSWORD=${DB_PASSWORD}
-        - DB_NAME=wiz_analytics
-        - PORT=3009
-        - NODE_ENV=development
-        - BASE_URL=http://localhost:3009
-        - JWT_SECRET=${JWT_SECRET}
-        - USER_SERVICE_GRPC_URL=wiz-user-service:50053
-        - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
-        - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
-        - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
-        - REDIS_HOST=redis
-        - REDIS_PORT=6379
-        - REDIS_PASSWORD=${REDIS_PASSWORD}
-      depends_on:
-        postgres:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
-      volumes:
-        - ./analysis-service/src:/app/src
-      networks:
-        - wiz-network
-      healthcheck:
-        test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3009/health"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-        start_period: 30s
+  analytics-service:
+    build: ./analysis-service
+    container_name: wiz-analytics-service
+    restart: unless-stopped
+    ports:
+      - "3009:3009"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_analytics
+      - PORT=3009
+      - NODE_ENV=development
+      - BASE_URL=http://localhost:3009
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+      - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./analysis-service/src:/app/src
+    networks:
+      - wiz-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3009/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
@@ -504,12 +519,20 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3010/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3010/health",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-      
+
 volumes:
   postgres_shared_data:
   mongodb_data:

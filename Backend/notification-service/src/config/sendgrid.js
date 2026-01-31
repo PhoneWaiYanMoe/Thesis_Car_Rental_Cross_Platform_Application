@@ -1,5 +1,4 @@
 const sgMail = require("@sendgrid/mail");
-require("dotenv").config();
 
 // Initialize SendGrid
 if (process.env.EMAIL_PASSWORD) {
