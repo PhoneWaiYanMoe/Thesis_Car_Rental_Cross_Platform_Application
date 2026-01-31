@@ -145,6 +145,17 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
 
+  - job_name: 'analytics-service'
+    dns_sd_configs:
+      - names:
+          - 'tasks.analytics-service'
+        type: 'A'
+        port: 3009
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
   - job_name: 'request-service'
     dns_sd_configs:
       - names:
