@@ -341,16 +341,18 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+        delay: 10s
+        max_attempts: 5
       resources:
         limits:
           cpus: '0.3'
           memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3007/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 90s
 
   # ==================== MEDIA SERVICE ====================
   media-service:
@@ -386,6 +388,46 @@ services:
           memory: 256M
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3008/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  
+  # ==================== ANALYTICS SERVICE ====================
+  analytics-service:
+    image: 206.189.147.242:5000/wiz-analytics-service:latest
+    ports:
+      - "3009:3009"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_analytics
+      - DB_SSL=${DB_SSL}
+      - PORT=3009
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_GRPC_URL=user-service:50053
+      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
+      - BOOKING_SERVICE_GRPC_URL=booking-service:50052
+      - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - wiz-network
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3009/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5

@@ -1,10 +1,10 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const sequelize = require("./config/database");
-const analyticsRoutes = require("./routes/analytics");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const sequelize = require('./config/database');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -19,30 +19,30 @@ app.use(express.urlencoded({ extended: true }));
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: "Too many requests from this IP, please try again later.",
+  message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
 
 // Health check
-app.get("/health", (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
     success: true,
-    service: "Analysis Service",
-    status: "healthy",
-    timestamp: new Date().toISOString(),
+    service: 'Analysis Service',
+    status: 'healthy',
+    timestamp: new Date().toISOString()
   });
 });
 
 // Routes
-app.use("/analytics", analyticsRoutes);
+app.use('/analytics', analyticsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
+  console.error('Unhandled error:', err);
   res.status(500).json({
     success: false,
-    message: "Internal server error",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
@@ -50,7 +50,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
+    message: 'Route not found'
   });
 });
 
@@ -59,33 +59,33 @@ const startServer = async () => {
   try {
     // Test database connection
     await sequelize.authenticate();
-    console.log("✓ Database connection established");
+    console.log('✓ Database connection established');
 
     // Sync database models
-    await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
-    console.log("✓ Database models synchronized");
+    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    console.log('✓ Database models synchronized');
 
     // Start server
     app.listen(PORT, () => {
       console.log(`✓ Analysis Service running on port ${PORT}`);
-      console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`✓ Health check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
 // Handle shutdown gracefully
-process.on("SIGINT", async () => {
-  console.log("\nShutting down gracefully...");
+process.on('SIGINT', async () => {
+  console.log('\nShutting down gracefully...');
   await sequelize.close();
   process.exit(0);
 });
 
-process.on("SIGTERM", async () => {
-  console.log("\nShutting down gracefully...");
+process.on('SIGTERM', async () => {
+  console.log('\nShutting down gracefully...');
   await sequelize.close();
   process.exit(0);
 });

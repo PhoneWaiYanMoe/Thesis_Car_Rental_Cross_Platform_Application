@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db
+      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db,wiz_analytics
     ports:
       - "5432:5432"
     volumes:
@@ -433,6 +433,45 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+    analytics-service:
+      build: ./analysis-service
+      container_name: wiz-analytics-service
+      restart: unless-stopped
+      ports:
+        - "3009:3009"
+      environment:
+        - DB_HOST=postgres
+        - DB_PORT=5432
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=wiz_analytics
+        - PORT=3009
+        - NODE_ENV=development
+        - BASE_URL=http://localhost:3009
+        - JWT_SECRET=${JWT_SECRET}
+        - USER_SERVICE_GRPC_URL=wiz-user-service:50053
+        - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+        - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
+        - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
+        - REDIS_HOST=redis
+        - REDIS_PORT=6379
+        - REDIS_PASSWORD=${REDIS_PASSWORD}
+      depends_on:
+        postgres:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      volumes:
+        - ./analysis-service/src:/app/src
+      networks:
+        - wiz-network
+      healthcheck:
+        test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3009/health"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 30s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
