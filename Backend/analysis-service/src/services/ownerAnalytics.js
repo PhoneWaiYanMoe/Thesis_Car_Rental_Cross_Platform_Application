@@ -41,7 +41,7 @@ class OwnerAnalyticsService {
       const stats = await vehicleService.get(
         `/analytics/vehicles/owner/${ownerId}/stats`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 
@@ -71,7 +71,7 @@ class OwnerAnalyticsService {
       const stats = await bookingService.get(
         `/analytics/bookings/owner/${ownerId}/stats`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 
@@ -100,7 +100,7 @@ class OwnerAnalyticsService {
       const stats = await paymentService.get(
         `/analytics/payments/owner/${ownerId}/revenue`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 
@@ -129,7 +129,7 @@ class OwnerAnalyticsService {
       const stats = await reviewService.get(
         `/analytics/reviews/owner/${ownerId}/stats`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 
@@ -202,7 +202,7 @@ class OwnerAnalyticsService {
       const stats = await bookingService.get(
         `/analytics/bookings/vehicle/${vehicleId}/stats`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 
@@ -230,7 +230,7 @@ class OwnerAnalyticsService {
       const stats = await paymentService.get(
         `/analytics/payments/vehicle/${vehicleId}/revenue`,
         {
-          timeRange,
+          params: { timeRange },
         },
       );
 

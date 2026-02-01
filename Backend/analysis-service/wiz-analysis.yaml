@@ -1,0 +1,413 @@
+openapi: 3.0.0
+info:
+  title: Wiz Analysis Service API
+  description: Analytics and reporting service for Wiz Car Rental Platform
+  version: 1.0.0
+servers:
+  - url: http://localhost:3010
+    description: Development server
+
+tags:
+  - name: Admin Analytics
+    description: Analytics endpoints for admin and support staff
+  - name: Owner Analytics
+    description: Analytics endpoints for vehicle owners
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  service:
+                    type: string
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+
+  /analytics/admin/dashboard:
+    get:
+      summary: Get admin dashboard statistics
+      description: Get overview statistics for admin dashboard
+      tags: [Admin Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        $ref: '#/components/schemas/BookingStats'
+                      users:
+                        $ref: '#/components/schemas/UserStats'
+                      vehicles:
+                        $ref: '#/components/schemas/VehicleStats'
+                      revenue:
+                        $ref: '#/components/schemas/RevenueStats'
+                      requests:
+                        $ref: '#/components/schemas/RequestStats'
+
+  /analytics/admin/bookings:
+    get:
+      summary: Get detailed booking analytics
+      tags: [Admin Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Booking analytics
+
+  /analytics/admin/revenue:
+    get:
+      summary: Get revenue analytics
+      tags: [Admin Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Revenue analytics
+
+  /analytics/admin/users:
+    get:
+      summary: Get user growth analytics
+      tags: [Admin Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User growth analytics
+
+  /analytics/admin/staff/performance:
+    get:
+      summary: Get staff performance analytics
+      tags: [Admin Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Staff performance metrics
+
+  /analytics/owner/dashboard:
+    get:
+      summary: Get owner dashboard statistics
+      description: Get overview statistics for vehicle owner
+      tags: [Owner Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
+      responses:
+        '200':
+          description: Owner dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      vehicles:
+                        $ref: '#/components/schemas/OwnerVehicleStats'
+                      bookings:
+                        $ref: '#/components/schemas/OwnerBookingStats'
+                      revenue:
+                        $ref: '#/components/schemas/OwnerRevenueStats'
+                      reviews:
+                        $ref: '#/components/schemas/OwnerReviewStats'
+
+  /analytics/owner/vehicle/{vehicleId}:
+    get:
+      summary: Get analytics for specific vehicle
+      tags: [Owner Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            default: 30d
+      responses:
+        '200':
+          description: Vehicle analytics
+        '403':
+          description: Unauthorized - Vehicle does not belong to owner
+
+  /analytics/owner/vehicles/comparison:
+    get:
+      summary: Compare performance across owner's vehicles
+      tags: [Owner Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            default: 30d
+      responses:
+        '200':
+          description: Vehicle comparison data
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BookingStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        completed:
+          type: integer
+        cancelled:
+          type: integer
+        pending:
+          type: integer
+        growth:
+          type: number
+        byStatus:
+          type: object
+        trend:
+          type: array
+          items:
+            type: object
+
+    UserStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        newUsers:
+          type: integer
+        renters:
+          type: integer
+        owners:
+          type: integer
+        growth:
+          type: number
+        byType:
+          type: object
+        byStatus:
+          type: object
+
+    VehicleStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        available:
+          type: integer
+        rented:
+          type: integer
+        maintenance:
+          type: integer
+        growth:
+          type: number
+        byType:
+          type: object
+        byStatus:
+          type: object
+        topPerforming:
+          type: array
+
+    RevenueStats:
+      type: object
+      properties:
+        totalRevenue:
+          type: number
+        deposits:
+          type: number
+        finalPayments:
+          type: number
+        refunds:
+          type: number
+        netRevenue:
+          type: number
+        growth:
+          type: number
+        trend:
+          type: array
+        byProvider:
+          type: object
+
+    RequestStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        approved:
+          type: integer
+        denied:
+          type: integer
+        byCategory:
+          type: object
+        byStatus:
+          type: object
+        avgResponseTime:
+          type: number
+
+    OwnerVehicleStats:
+      type: object
+      properties:
+        totalVehicles:
+          type: integer
+        activeVehicles:
+          type: integer
+        rentedVehicles:
+          type: integer
+        availableVehicles:
+          type: integer
+        averageRating:
+          type: number
+        totalRentals:
+          type: integer
+        utilizationRate:
+          type: number
+        topPerforming:
+          type: array
+        byType:
+          type: object
+
+    OwnerBookingStats:
+      type: object
+      properties:
+        totalBookings:
+          type: integer
+        activeBookings:
+          type: integer
+        completedBookings:
+          type: integer
+        cancelledBookings:
+          type: integer
+        acceptanceRate:
+          type: number
+        averageDuration:
+          type: number
+        trend:
+          type: array
+        byStatus:
+          type: object
+
+    OwnerRevenueStats:
+      type: object
+      properties:
+        totalRevenue:
+          type: number
+        pendingRevenue:
+          type: number
+        completedRevenue:
+          type: number
+        refundedAmount:
+          type: number
+        averageBookingValue:
+          type: number
+        growth:
+          type: number
+        trend:
+          type: array
+        topEarningVehicles:
+          type: array
+
+    OwnerReviewStats:
+      type: object
+      properties:
+        averageRating:
+          type: number
+        totalReviews:
+          type: integer
+        vehicleReviews:
+          type: integer
+        ownerReviews:
+          type: integer
+        ratingDistribution:
+          type: object
+        recentReviews:
+          type: array
+        trend:
+          type: array

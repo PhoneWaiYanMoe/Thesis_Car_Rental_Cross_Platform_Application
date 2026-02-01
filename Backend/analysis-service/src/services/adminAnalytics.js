@@ -48,7 +48,7 @@ class AdminAnalyticsService {
     try {
       // This will call the new endpoint we need: GET /analytics/bookings/stats
       const stats = await bookingService.get("/analytics/bookings/stats", {
-        timeRange,
+        params: { timeRange },
       });
 
       return {
@@ -74,7 +74,7 @@ class AdminAnalyticsService {
     try {
       // This will call: GET /analytics/users/stats
       const stats = await userService.get("/analytics/users/stats", {
-        timeRange,
+        params: { timeRange },
       });
 
       return {
@@ -100,7 +100,7 @@ class AdminAnalyticsService {
     try {
       // This will call: GET /analytics/vehicles/stats
       const stats = await vehicleService.get("/analytics/vehicles/stats", {
-        timeRange,
+        params: { timeRange },
       });
 
       return {
@@ -126,7 +126,7 @@ class AdminAnalyticsService {
     try {
       // This will call: GET /analytics/payments/revenue
       const stats = await paymentService.get("/analytics/payments/revenue", {
-        timeRange,
+        params: { timeRange },
       });
 
       return {
@@ -152,7 +152,7 @@ class AdminAnalyticsService {
     try {
       // This will call: GET /analytics/requests/stats
       const stats = await requestService.get("/analytics/requests/stats", {
-        timeRange,
+        params: { timeRange },
       });
 
       return {
