@@ -161,6 +161,9 @@ const ownerReviewSchema = new mongoose.Schema(
 
 // Indexes
 vehicleReviewSchema.index({ vehicleId: 1, createdAt: -1 });
+
+vehicleReviewSchema.index({ ownerId: 1, createdAt: -1 });
+
 vehicleReviewSchema.index({ customerId: 1, vehicleId: 1 });
 vehicleReviewSchema.index({ rating: 1 });
 
