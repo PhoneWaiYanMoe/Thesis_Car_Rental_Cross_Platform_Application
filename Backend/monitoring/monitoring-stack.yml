@@ -21,8 +21,8 @@ services:
       - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
-      - /root/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - /root/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     networks:
       - wiz-network
     deploy:
@@ -63,7 +63,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - /root/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - wiz-network
     deploy:
@@ -158,7 +158,7 @@ services:
       - "9093:9093"
     volumes:
       - alertmanager_data:/alertmanager
-      - /root/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
     networks:
       - wiz-network
     deploy:
