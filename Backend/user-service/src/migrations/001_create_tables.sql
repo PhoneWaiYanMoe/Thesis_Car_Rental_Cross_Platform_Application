@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255),
     full_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role VARCHAR(20) NOT NULL CHECK (role IN ('customer', 'owner', 'admin')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('customer', 'owner', 'admin', 'support')),
     is_verified BOOLEAN DEFAULT FALSE,
     avatar_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

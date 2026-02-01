@@ -14,6 +14,8 @@ const YAML = require("yamljs");
 const path = require("path");
 const passport = require("./config/passport");
 const { connectRabbitMQ } = require("./config/rabbitmq");
+const seedAdmin = require("./seed/admin_seed");
+// const seedSupport = require("./seed/support_seed");
 
 // Routes
 const authRoutes = require("./routes/auth_routes");
@@ -76,6 +78,12 @@ async function startServer() {
   try {
     console.log("🔄 Running database migrations...");
     await runMigrations();
+
+    console.log("🔄 Seeding admin user...");
+    await seedAdmin();
+
+    // console.log("🔄 Seeding support user...");
+    // await seedSupport();
 
     // ✅ Connect to RabbitMQ
     console.log("🔄 Connecting to RabbitMQ...");

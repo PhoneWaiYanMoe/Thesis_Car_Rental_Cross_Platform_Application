@@ -47,7 +47,7 @@ class RequestController {
           );
       }
 
-      const request = await requestService.createRequest(req.user.id, {
+      const request = await requestService.createRequest(req.user.userId, {
         category,
         title,
         description,
@@ -60,7 +60,7 @@ class RequestController {
         successResponse(
           {
             request: {
-              id: request.id,
+              userId: request.userId,
               title: request.title,
               category: request.category,
               status: request.status,
@@ -81,7 +81,7 @@ class RequestController {
         status: req.query.status,
         category: req.query.category,
         handledBy: req.query.handledBy,
-        currentUserId: req.user.id,
+        currentUserId: req.user.userId,
         search: req.query.search,
         sortBy: req.query.sortBy,
         page: parseInt(req.query.page) || 1,
@@ -125,7 +125,7 @@ class RequestController {
         limit: parseInt(req.query.limit) || 10,
       };
 
-      const result = await requestService.getUserRequests(req.user.id, filters);
+      const result = await requestService.getUserRequests(req.user.userId, filters);
 
       res.json(successResponse(result));
     } catch (error) {
@@ -145,7 +145,7 @@ class RequestController {
       const request = await requestService.updateStatus(
         id,
         status,
-        req.user.id,
+        req.user.userId,
         notes
       );
 
@@ -172,7 +172,7 @@ class RequestController {
 
       const request = await requestService.approveRequest(
         id,
-        req.user.id,
+        req.user.userId,
         notes || "Request approved"
       );
 
@@ -201,7 +201,7 @@ class RequestController {
         return res.status(400).json(errorResponse("Reason is required"));
       }
 
-      const request = await requestService.denyRequest(id, req.user.id, reason);
+      const request = await requestService.denyRequest(id, req.user.userId, reason);
 
       res.json(
         successResponse(
@@ -228,7 +228,7 @@ class RequestController {
         return res.status(400).json(errorResponse("Note is required"));
       }
 
-      await requestService.addNote(id, req.user.id, note);
+      await requestService.addNote(id, req.user.userId, note);
 
       res.json(successResponse({}, "Note added successfully"));
     } catch (error) {
