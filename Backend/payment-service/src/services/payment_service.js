@@ -27,7 +27,7 @@ class PaymentService {
     type,
     provider,
     paymentMethodId = null,
-    clientIp = "127.0.0.1"
+    clientIp = "127.0.0.1",
   ) {
     const client = await pool.connect();
 
@@ -36,7 +36,7 @@ class PaymentService {
 
       // ✅ CRITICAL FIX: Check for existing pending/processing payment intent
       console.log(
-        `\n🔍 Checking for existing ${type} payment for booking: ${bookingId}`
+        `\n🔍 Checking for existing ${type} payment for booking: ${bookingId}`,
       );
 
       const existingTx = await client.query(
@@ -47,7 +47,7 @@ class PaymentService {
          AND status IN ('pending', 'processing', 'succeeded')
          ORDER BY created_at DESC
          LIMIT 1`,
-        [bookingId, type]
+        [bookingId, type],
       );
 
       if (existingTx.rows.length > 0) {
@@ -56,7 +56,7 @@ class PaymentService {
         // If there's a succeeded payment, don't create another
         if (existing.status === "succeeded") {
           console.log(
-            `⚠️  ${type} payment already succeeded for booking ${bookingId}`
+            `⚠️  ${type} payment already succeeded for booking ${bookingId}`,
           );
           await client.query("ROLLBACK");
           throw new Error(`${type} payment already completed for this booking`);
@@ -68,8 +68,8 @@ class PaymentService {
         if (ageMinutes < 5) {
           console.log(
             `⚠️  Recent ${type} payment intent exists (${ageMinutes.toFixed(
-              1
-            )}min old)`
+              1,
+            )}min old)`,
           );
           console.log(`   Transaction ID: ${existing.transaction_id}`);
           console.log(`   Intent ID: ${existing.intent_id}`);
@@ -78,7 +78,7 @@ class PaymentService {
           // Get full transaction details to return
           const fullTx = await client.query(
             `SELECT * FROM transactions WHERE transaction_id = $1`,
-            [existing.transaction_id]
+            [existing.transaction_id],
           );
 
           await client.query("COMMIT");
@@ -95,20 +95,20 @@ class PaymentService {
           // Old pending payment - mark as cancelled and create new one
           console.log(
             `🔄 Cancelling old ${type} payment (${ageMinutes.toFixed(
-              1
-            )}min old)`
+              1,
+            )}min old)`,
           );
           await client.query(
             `UPDATE transactions 
              SET status = 'cancelled', updated_at = NOW()
              WHERE transaction_id = $1`,
-            [existing.transaction_id]
+            [existing.transaction_id],
           );
         }
       }
 
       console.log(
-        `✅ No duplicate found - creating new ${type} payment intent`
+        `✅ No duplicate found - creating new ${type} payment intent`,
       );
 
       // Create new payment intent
@@ -127,14 +127,14 @@ class PaymentService {
               await mockPaymentService.createStripePaymentIntent(
                 amount,
                 "VND",
-                metadata
+                metadata,
               );
             break;
           case "paypal":
             providerResponse = await mockPaymentService.createPayPalOrder(
               amount,
               "VND",
-              metadata
+              metadata,
             );
             break;
           case "vnpay":
@@ -145,7 +145,7 @@ class PaymentService {
               amount,
               `Wiz Booking ${type} - ${bookingId}`,
               clientIp,
-              mockReturnUrl
+              mockReturnUrl,
             );
             break;
           default:
@@ -159,7 +159,7 @@ class PaymentService {
               amount,
               "VND",
               metadata,
-              paymentMethodId
+              paymentMethodId,
             );
             console.log(`✅ Stripe intent: ${providerResponse.intentId}`);
             break;
@@ -176,7 +176,7 @@ class PaymentService {
               amount,
               `Wiz Booking ${type} - ${bookingId}`,
               clientIp,
-              process.env.VNPAY_RETURN_URL
+              process.env.VNPAY_RETURN_URL,
             );
             break;
 
@@ -219,14 +219,17 @@ class PaymentService {
           JSON.stringify({
             amountUsd: providerResponse.amountUsd,
             originalCurrency: "VND",
+
+            ownerId: metadata.ownerId,
+            vehicleId: metadata.vehicleId,
           }),
-        ]
+        ],
       );
 
       await client.query("COMMIT");
 
       console.log(
-        `✅ Payment intent created: ${transactionId} (${provider})\n`
+        `✅ Payment intent created: ${transactionId} (${provider})\n`,
       );
 
       return {
@@ -260,7 +263,7 @@ class PaymentService {
     const rentalPrice = dailyRate * days;
     const insuranceFee = this.calculateInsuranceFee(
       rentalPrice,
-      insuranceCoverage
+      insuranceCoverage,
     );
     const total = rentalPrice + insuranceFee;
     const deposit = Math.round(total * 0.3);
@@ -287,7 +290,7 @@ class PaymentService {
              completed_at = NOW(),
              updated_at = NOW()
          WHERE transaction_id = $2`,
-        [providerTransactionId, transactionId]
+        [providerTransactionId, transactionId],
       );
       await client.query("COMMIT");
       console.log(`✅ Payment confirmed: ${transactionId}`);
@@ -312,7 +315,7 @@ class PaymentService {
          AND status = 'succeeded'
          ORDER BY created_at DESC
          LIMIT 1`,
-        [bookingId]
+        [bookingId],
       );
 
       if (transactionResult.rows.length === 0) {
@@ -326,21 +329,21 @@ class PaymentService {
         providerRefund = await mockPaymentService.mockRefund(
           transaction.provider_transaction_id,
           amount,
-          transaction.provider
+          transaction.provider,
         );
       } else {
         switch (transaction.provider) {
           case "stripe":
             providerRefund = await stripeService.createRefund(
               transaction.provider_transaction_id,
-              amount
+              amount,
             );
             break;
           case "paypal":
             providerRefund = await paypalService.createRefund(
               transaction.provider_transaction_id,
               amount,
-              "VND"
+              "VND",
             );
             break;
           case "vnpay":
@@ -376,7 +379,7 @@ class PaymentService {
           providerRefund.refundId,
           notes,
           estimatedArrival,
-        ]
+        ],
       );
 
       await client.query("COMMIT");

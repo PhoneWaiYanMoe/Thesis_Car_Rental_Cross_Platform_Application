@@ -23,6 +23,7 @@ const refundRoutes = require("./routes/refund_routes");
 const transactionRoutes = require("./routes/transaction_routes");
 const webhookRoutes = require("./routes/webhook_routes");
 const mockPaymentRoutes = require("./routes/mock_payment_routes");
+const analyticsRoutes = require("./routes/payment_analytics_routes");
 
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -83,6 +84,8 @@ app.use("/payment/transactions", transactionRoutes);
 // Other webhook routes (VNPay, PayPal)
 app.use("/payment/webhook/vnpay", webhookRoutes);
 app.use("/payment/webhook/paypal", webhookRoutes);
+
+app.use("/analytics", analyticsRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
