@@ -9,14 +9,14 @@ class OwnerAnalyticsService {
   /**
    * Get owner dashboard overview
    */
-  async getOwnerDashboard(ownerId, timeRange = "30d") {
+  async getOwnerDashboard(ownerId, timeRange = "30d", token) {
     try {
       const [vehicleStats, bookingStats, revenueStats, reviewStats] =
         await Promise.all([
-          this.getOwnerVehicleStats(ownerId, timeRange),
-          this.getOwnerBookingStats(ownerId, timeRange),
-          this.getOwnerRevenueStats(ownerId, timeRange),
-          this.getOwnerReviewStats(ownerId, timeRange),
+          this.getOwnerVehicleStats(ownerId, timeRange, token),
+          this.getOwnerBookingStats(ownerId, timeRange, token),
+          this.getOwnerRevenueStats(ownerId, timeRange, token),
+          this.getOwnerReviewStats(ownerId, timeRange, token),
         ]);
 
       return {
@@ -35,13 +35,14 @@ class OwnerAnalyticsService {
   /**
    * Get owner vehicle statistics
    */
-  async getOwnerVehicleStats(ownerId, timeRange) {
+  async getOwnerVehicleStats(ownerId, timeRange, token) {
     try {
       // This will call: GET /analytics/vehicles/owner/:ownerId/stats
       const stats = await vehicleService.get(
         `/analytics/vehicles/owner/${ownerId}/stats`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -65,13 +66,14 @@ class OwnerAnalyticsService {
   /**
    * Get owner booking statistics
    */
-  async getOwnerBookingStats(ownerId, timeRange) {
+  async getOwnerBookingStats(ownerId, timeRange, token) {
     try {
       // This will call: GET /analytics/bookings/owner/:ownerId/stats
       const stats = await bookingService.get(
         `/analytics/bookings/owner/${ownerId}/stats`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -94,13 +96,14 @@ class OwnerAnalyticsService {
   /**
    * Get owner revenue statistics
    */
-  async getOwnerRevenueStats(ownerId, timeRange) {
+  async getOwnerRevenueStats(ownerId, timeRange, token) {
     try {
       // This will call: GET /analytics/payments/owner/:ownerId/revenue
       const stats = await paymentService.get(
         `/analytics/payments/owner/${ownerId}/revenue`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -123,13 +126,14 @@ class OwnerAnalyticsService {
   /**
    * Get owner review statistics
    */
-  async getOwnerReviewStats(ownerId, timeRange) {
+  async getOwnerReviewStats(ownerId, timeRange, token) {
     try {
       // This will call: GET /analytics/reviews/owner/:ownerId/stats
       const stats = await reviewService.get(
         `/analytics/reviews/owner/${ownerId}/stats`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -151,14 +155,14 @@ class OwnerAnalyticsService {
   /**
    * Get analytics for a specific vehicle
    */
-  async getVehicleAnalytics(vehicleId, ownerId, timeRange = "30d") {
+  async getVehicleAnalytics(vehicleId, ownerId, timeRange = "30d", token) {
     try {
       const [vehicleInfo, bookingStats, revenueStats, reviewStats] =
         await Promise.all([
-          this.getVehicleInfo(vehicleId),
-          this.getVehicleBookingStats(vehicleId, timeRange),
-          this.getVehicleRevenueStats(vehicleId, timeRange),
-          this.getVehicleReviewStats(vehicleId, timeRange),
+          this.getVehicleInfo(vehicleId, token),
+          this.getVehicleBookingStats(vehicleId, timeRange, token),
+          this.getVehicleRevenueStats(vehicleId, timeRange, token),
+          this.getVehicleReviewStats(vehicleId, timeRange, token),
         ]);
 
       // Verify ownership
@@ -182,10 +186,12 @@ class OwnerAnalyticsService {
   /**
    * Get vehicle information
    */
-  async getVehicleInfo(vehicleId) {
+  async getVehicleInfo(vehicleId, token) {
     try {
       // This will call: GET /vehicles/:vehicleId
-      const vehicle = await vehicleService.get(`/vehicles/${vehicleId}`);
+      const vehicle = await vehicleService.get(`/vehicles/${vehicleId}`, {
+        token,
+      });
       return vehicle;
     } catch (error) {
       console.error("Error getting vehicle info:", error);
@@ -196,13 +202,14 @@ class OwnerAnalyticsService {
   /**
    * Get vehicle booking statistics
    */
-  async getVehicleBookingStats(vehicleId, timeRange) {
+  async getVehicleBookingStats(vehicleId, timeRange, token) {
     try {
       // This will call: GET /analytics/bookings/vehicle/:vehicleId/stats
       const stats = await bookingService.get(
         `/analytics/bookings/vehicle/${vehicleId}/stats`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -224,13 +231,14 @@ class OwnerAnalyticsService {
   /**
    * Get vehicle revenue statistics
    */
-  async getVehicleRevenueStats(vehicleId, timeRange) {
+  async getVehicleRevenueStats(vehicleId, timeRange, token) {
     try {
       // This will call: GET /analytics/payments/vehicle/:vehicleId/revenue
       const stats = await paymentService.get(
         `/analytics/payments/vehicle/${vehicleId}/revenue`,
         {
           params: { timeRange },
+          token,
         },
       );
 
@@ -248,11 +256,12 @@ class OwnerAnalyticsService {
   /**
    * Get vehicle review statistics
    */
-  async getVehicleReviewStats(vehicleId, timeRange) {
+  async getVehicleReviewStats(vehicleId, timeRange, token) {
     try {
       // This will call: GET /reviews/vehicle/:vehicleId (existing endpoint)
       const reviews = await reviewService.get(`/reviews/vehicle/${vehicleId}`, {
-        limit: 100,
+        params: { limit: 100 },
+        token,
       });
 
       return {
@@ -270,18 +279,20 @@ class OwnerAnalyticsService {
   /**
    * Get performance comparison across owner's vehicles
    */
-  async getVehicleComparison(ownerId, timeRange = "30d") {
+  async getVehicleComparison(ownerId, timeRange = "30d", token) {
     try {
       // Get all owner's vehicles
-      const vehicles = await vehicleService.get(`/vehicles/owner/${ownerId}`);
+      const vehicles = await vehicleService.get(`/vehicles/owner/${ownerId}`, {
+        token,
+      });
 
       // Get stats for each vehicle
       const comparisons = await Promise.all(
         vehicles.map(async (vehicle) => {
           const [bookingStats, revenueStats, reviewStats] = await Promise.all([
-            this.getVehicleBookingStats(vehicle.id, timeRange),
-            this.getVehicleRevenueStats(vehicle.id, timeRange),
-            this.getVehicleReviewStats(vehicle.id, timeRange),
+            this.getVehicleBookingStats(vehicle.id, timeRange, token),
+            this.getVehicleRevenueStats(vehicle.id, timeRange, token),
+            this.getVehicleReviewStats(vehicle.id, timeRange, token),
           ]);
 
           return {

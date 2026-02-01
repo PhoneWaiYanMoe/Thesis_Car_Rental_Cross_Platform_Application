@@ -11,7 +11,7 @@ class AdminAnalyticsService {
   /**
    * Get dashboard overview statistics
    */
-  async getDashboardStats(timeRange = "30d") {
+  async getDashboardStats(timeRange = "30d", token) {
     try {
       const [
         bookingStats,
@@ -20,11 +20,11 @@ class AdminAnalyticsService {
         revenueStats,
         requestStats,
       ] = await Promise.all([
-        this.getBookingStats(timeRange),
-        this.getUserStats(timeRange),
-        this.getVehicleStats(timeRange),
-        this.getRevenueStats(timeRange),
-        this.getRequestStats(timeRange),
+        this.getBookingStats(timeRange, token),
+        this.getUserStats(timeRange, token),
+        this.getVehicleStats(timeRange, token),
+        this.getRevenueStats(timeRange, token),
+        this.getRequestStats(timeRange, token),
       ]);
 
       return {
@@ -44,11 +44,12 @@ class AdminAnalyticsService {
   /**
    * Get booking statistics
    */
-  async getBookingStats(timeRange) {
+  async getBookingStats(timeRange, token) {
     try {
       // This will call the new endpoint we need: GET /analytics/bookings/stats
       const stats = await bookingService.get("/analytics/bookings/stats", {
         params: { timeRange },
+        token,
       });
 
       return {
@@ -70,11 +71,12 @@ class AdminAnalyticsService {
   /**
    * Get user statistics
    */
-  async getUserStats(timeRange) {
+  async getUserStats(timeRange, token) {
     try {
       // This will call: GET /analytics/users/stats
       const stats = await userService.get("/analytics/users/stats", {
         params: { timeRange },
+        token,
       });
 
       return {
@@ -96,11 +98,12 @@ class AdminAnalyticsService {
   /**
    * Get vehicle statistics
    */
-  async getVehicleStats(timeRange) {
+  async getVehicleStats(timeRange, token) {
     try {
       // This will call: GET /analytics/vehicles/stats
       const stats = await vehicleService.get("/analytics/vehicles/stats", {
         params: { timeRange },
+        token,
       });
 
       return {
@@ -122,11 +125,12 @@ class AdminAnalyticsService {
   /**
    * Get revenue statistics
    */
-  async getRevenueStats(timeRange) {
+  async getRevenueStats(timeRange, token) {
     try {
       // This will call: GET /analytics/payments/revenue
       const stats = await paymentService.get("/analytics/payments/revenue", {
         params: { timeRange },
+        token,
       });
 
       return {
@@ -148,11 +152,12 @@ class AdminAnalyticsService {
   /**
    * Get support request statistics
    */
-  async getRequestStats(timeRange) {
+  async getRequestStats(timeRange, token) {
     try {
       // This will call: GET /analytics/requests/stats
       const stats = await requestService.get("/analytics/requests/stats", {
         params: { timeRange },
+        token,
       });
 
       return {
@@ -173,11 +178,14 @@ class AdminAnalyticsService {
   /**
    * Get detailed booking analytics
    */
-  async getBookingAnalytics(filters = {}) {
+  async getBookingAnalytics(filters = {}, token) {
     try {
       const analytics = await bookingService.get(
         "/analytics/bookings/detailed",
-        filters,
+        {
+          params: { ...filters },
+          token,
+        },
       );
 
       return {
@@ -197,11 +205,14 @@ class AdminAnalyticsService {
   /**
    * Get revenue analytics
    */
-  async getRevenueAnalytics(filters = {}) {
+  async getRevenueAnalytics(filters = {}, token) {
     try {
       const analytics = await paymentService.get(
         "/analytics/payments/detailed",
-        filters,
+        {
+          params: { ...filters },
+          token,
+        },
       );
 
       return {
@@ -220,11 +231,14 @@ class AdminAnalyticsService {
   /**
    * Get user growth analytics
    */
-  async getUserGrowthAnalytics(filters = {}) {
+  async getUserGrowthAnalytics(filters = {}, token) {
     try {
       const analytics = await userService.get(
         "/analytics/users/growth",
-        filters,
+        {
+          params: { ...filters },
+          token,
+        },
       );
 
       return {
@@ -243,11 +257,14 @@ class AdminAnalyticsService {
   /**
    * Get staff performance analytics
    */
-  async getStaffPerformance(filters = {}) {
+  async getStaffPerformance(filters = {}, token) {
     try {
       const performance = await requestService.get(
         "/analytics/staff/performance",
-        filters,
+        {
+          params: { ...filters },
+          token,
+        },
       );
 
       return {

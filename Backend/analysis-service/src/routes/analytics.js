@@ -25,7 +25,7 @@ router.get(
         });
       }
 
-      const stats = await adminAnalytics.getDashboardStats(timeRange);
+      const stats = await adminAnalytics.getDashboardStats(timeRange, req.headers.authorization);
 
       // Cache for 5 minutes
       setCached(cacheKey, stats, 300);
@@ -52,7 +52,7 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getBookingAnalytics(filters);
+      const analytics = await adminAnalytics.getBookingAnalytics(filters, req.headers.authorization);
 
       res.json({
         success: true,
@@ -76,7 +76,7 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getRevenueAnalytics(filters);
+      const analytics = await adminAnalytics.getRevenueAnalytics(filters, req.headers.authorization);
 
       res.json({
         success: true,
@@ -100,7 +100,7 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getUserGrowthAnalytics(filters);
+      const analytics = await adminAnalytics.getUserGrowthAnalytics(filters, req.headers.authorization);
 
       res.json({
         success: true,
@@ -124,7 +124,7 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const performance = await adminAnalytics.getStaffPerformance(filters);
+      const performance = await adminAnalytics.getStaffPerformance(filters, req.headers.authorization);
 
       res.json({
         success: true,
@@ -148,7 +148,7 @@ router.get(
   requireRole("owner"),
   async (req, res) => {
     try {
-      const ownerId = req.user.id;
+      const ownerId = req.user.userId;
       const { timeRange = "30d" } = req.query;
 
       const cacheKey = getCacheKey("owner:dashboard", { ownerId, timeRange });
@@ -163,7 +163,7 @@ router.get(
         });
       }
 
-      const stats = await ownerAnalytics.getOwnerDashboard(ownerId, timeRange);
+      const stats = await ownerAnalytics.getOwnerDashboard(ownerId, timeRange, req.headers.authorization);
 
       // Cache for 5 minutes
       setCached(cacheKey, stats, 300);
@@ -189,7 +189,7 @@ router.get(
   requireRole("owner"),
   async (req, res) => {
     try {
-      const ownerId = req.user.id;
+      const ownerId = req.user.userId;
       const { vehicleId } = req.params;
       const { timeRange = "30d" } = req.query;
 
@@ -197,6 +197,7 @@ router.get(
         vehicleId,
         ownerId,
         timeRange,
+        req.headers.authorization
       );
 
       res.json({
@@ -228,12 +229,13 @@ router.get(
   requireRole("owner"),
   async (req, res) => {
     try {
-      const ownerId = req.user.id;
+      const ownerId = req.user.userId;
       const { timeRange = "30d" } = req.query;
 
       const comparison = await ownerAnalytics.getVehicleComparison(
         ownerId,
         timeRange,
+        req.headers.authorization
       );
 
       res.json({
