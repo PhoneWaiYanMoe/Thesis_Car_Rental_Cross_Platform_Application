@@ -14,6 +14,7 @@ const Request = require("./models/Request");
 const RequestAction = require("./models/RequestAction");
 const RequestAttachment = require('./models/RequestAttachment');
 const requestRoutes = require("./routes/request.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
 const { errorHandler, notFoundHandler } = require("./middleware/error-handler.middleware");
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use("/requests/", requestRoutes);
+app.use("/analytics", analyticsRoutes);
 
 // health check
 app.get("/health", (req, res) => {

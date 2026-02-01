@@ -16,8 +16,8 @@ const authenticate = (req, res, next) => {
       const decoded = JWTUtils.verifyToken(token);
 
       req.user = {
-        id: decoded.userId || decoded.id,
-        type: decoded.userType || decoded.type,
+        userId: decoded.userId || decoded.id,
+        role: decoded.userRole || decoded.role,
         email: decoded.email,
       };
 
@@ -38,7 +38,7 @@ const requireRole = (...allowedRoles) => {
       return res.status(401).json(errorResponse("Unauthorized"));
     }
 
-    if (!allowedRoles.includes(req.user.type)) {
+    if (!allowedRoles.includes(req.user.role)) {
       return res
         .status(403)
         .json(errorResponse("Forbidden - Insufficient permissions"));
