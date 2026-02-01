@@ -20,6 +20,8 @@ const authRoutes = require("./routes/auth_routes");
 const locationRoutes = require("./routes/location_routes");
 const favoritesRoutes = require("./routes/favorites_routes"); // ✅ NEW
 
+const analyticsRoutes = require("./routes/analytics_routes");
+
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
 const UserGrpcServer = require("./grpc/user_grpc_server");
@@ -56,6 +58,8 @@ try {
 app.use("/auth", authRoutes);
 app.use("/location", locationRoutes);
 app.use("/favorites", favoritesRoutes); // ✅ NEW
+
+app.use("/analytics", analyticsRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
