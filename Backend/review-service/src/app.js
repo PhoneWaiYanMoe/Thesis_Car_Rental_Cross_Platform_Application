@@ -14,6 +14,7 @@ const path = require("path");
 
 const database = require("./config/database");
 const reviewRoutes = require("./routes/review_routes");
+const analyticsRoutes = require("./routes/analytics_routes");
 const errorHandler = require("./middleware/errorHandler");
 const ReviewGrpcServer = require("./grpc/review_grpc_server");
 
@@ -49,6 +50,7 @@ try {
 
 // Routes
 app.use("/reviews", reviewRoutes);
+app.use("/analytics", analyticsRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
