@@ -3,6 +3,56 @@ const { v4: uuidv4 } = require("uuid");
 
 class OwnerVehicleController {
   /**
+   * GET /vehicles/owner/:ownerId
+   * Get all vehicles belonging to an owner
+   */
+  async getVehiclesByOwnerId(req, res, next) {
+    try {
+      const { ownerId } = req.params;
+
+      // Verify ownership if not admin
+      if (req.user.role !== "admin" && req.user.userId !== ownerId) {
+        return res.status(403).json({
+          error: "Access denied. You can only view your own vehicles.",
+        });
+      }
+
+      const result = await pool.query(
+        `SELECT 
+        v.*,
+        (SELECT photo_url FROM vehicle_photos 
+         WHERE vehicle_id = v.vehicle_id AND is_primary = true 
+         LIMIT 1) as primary_photo
+       FROM vehicles v
+       WHERE v.owner_id = $1
+       ORDER BY v.created_at DESC`,
+        [ownerId],
+      );
+
+      res.json({
+        vehicles: result.rows.map((v) => ({
+          id: v.vehicle_id,
+          name: v.name,
+          ownerId: v.owner_id,
+          vehicleType: v.vehicle_type,
+          status: v.status,
+          transmission: v.transmission,
+          fuelType: v.fuel_type,
+          seats: v.seats,
+          year: v.year,
+          pricePerDay: v.price_per_day,
+          rating: parseFloat(v.average_rating),
+          totalRentals: v.total_rentals,
+          primaryPhoto: v.primary_photo,
+          createdAt: v.created_at,
+        })),
+      });
+    } catch (error) {
+      console.error("❌ Get vehicles by owner error:", error);
+      next(error);
+    }
+  }
+  /**
    * Create new vehicle listing
    */
   async createVehicle(req, res, next) {
@@ -78,7 +128,7 @@ class OwnerVehicleController {
           "pending",
           "pending",
           nextVerificationDue,
-        ]
+        ],
       );
 
       // Insert photos if provided
@@ -87,7 +137,7 @@ class OwnerVehicleController {
           await client.query(
             `INSERT INTO vehicle_photos (vehicle_id, photo_url, is_primary, display_order)
              VALUES ($1, $2, $3, $4)`,
-            [vehicleId, photoIds[i], i === 0, i + 1]
+            [vehicleId, photoIds[i], i === 0, i + 1],
           );
         }
       }
@@ -103,13 +153,13 @@ class OwnerVehicleController {
       });
     } catch (error) {
       await client.query("ROLLBACK");
-      
+
       if (error.code === "23505") {
         return res.status(400).json({
           error: "License plate already exists",
         });
       }
-      
+
       console.error("Create vehicle error:", error);
       next(error);
     } finally {
@@ -195,7 +245,7 @@ class OwnerVehicleController {
            WHERE vehicle_id = v.vehicle_id) as photos
          FROM vehicles v
          WHERE v.vehicle_id = $1 AND v.owner_id = $2`,
-        [id, userId]
+        [id, userId],
       );
 
       if (result.rows.length === 0) {
@@ -267,7 +317,7 @@ class OwnerVehicleController {
 
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -292,7 +342,7 @@ class OwnerVehicleController {
           features ? JSON.stringify(features) : null,
           rules ? JSON.stringify(rules) : null,
           id,
-        ]
+        ],
       );
 
       await client.query("COMMIT");
@@ -324,7 +374,7 @@ class OwnerVehicleController {
 
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -335,7 +385,7 @@ class OwnerVehicleController {
 
       await client.query(
         "UPDATE vehicles SET status = 'stopped', updated_at = NOW() WHERE vehicle_id = $1",
-        [id]
+        [id],
       );
 
       await client.query("COMMIT");
@@ -373,7 +423,7 @@ class OwnerVehicleController {
 
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -385,7 +435,7 @@ class OwnerVehicleController {
       // Get current max display order
       const orderResult = await client.query(
         "SELECT COALESCE(MAX(display_order), 0) as max_order FROM vehicle_photos WHERE vehicle_id = $1",
-        [id]
+        [id],
       );
 
       let nextOrder = orderResult.rows[0].max_order + 1;
@@ -393,7 +443,7 @@ class OwnerVehicleController {
       for (const photoUrl of photoUrls) {
         await client.query(
           "INSERT INTO vehicle_photos (vehicle_id, photo_url, display_order) VALUES ($1, $2, $3)",
-          [id, photoUrl, nextOrder]
+          [id, photoUrl, nextOrder],
         );
         nextOrder++;
       }
@@ -412,7 +462,7 @@ class OwnerVehicleController {
       client.release();
     }
   }
-   async submitVerificationPhotos(req, res, next) {
+  async submitVerificationPhotos(req, res, next) {
     const client = await pool.connect();
 
     try {
@@ -431,7 +481,7 @@ class OwnerVehicleController {
       // Verify ownership
       const vehicleResult = await client.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -460,7 +510,7 @@ class OwnerVehicleController {
         `INSERT INTO vehicle_verification_photos 
          (verification_id, vehicle_id, photo_urls, verification_status)
          VALUES ($1, $2, $3, 'pending')`,
-        [verificationId, id, JSON.stringify(photoUrls)]
+        [verificationId, id, JSON.stringify(photoUrls)],
       );
 
       // Update vehicle verification status
@@ -469,13 +519,13 @@ class OwnerVehicleController {
          SET verification_status = 'pending',
              updated_at = NOW()
          WHERE vehicle_id = $1`,
-        [id]
+        [id],
       );
 
       await client.query("COMMIT");
 
       console.log(
-        `✅ Owner ${userId} submitted verification photos for vehicle: ${id}`
+        `✅ Owner ${userId} submitted verification photos for vehicle: ${id}`,
       );
 
       res.status(201).json({
@@ -492,14 +542,14 @@ class OwnerVehicleController {
       client.release();
     }
   }
-    async getVerificationStatus(req, res, next) {
+  async getVerificationStatus(req, res, next) {
     try {
       const userId = req.user.userId;
       const { id } = req.params;
 
       const vehicleResult = await pool.query(
         "SELECT * FROM vehicles WHERE vehicle_id = $1 AND owner_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -519,7 +569,7 @@ class OwnerVehicleController {
          WHERE vehicle_id = $1 
          ORDER BY submitted_at DESC 
          LIMIT 1`,
-        [id]
+        [id],
       );
 
       res.json({
@@ -546,7 +596,6 @@ class OwnerVehicleController {
       next(error);
     }
   }
-
 }
 
 module.exports = new OwnerVehicleController();

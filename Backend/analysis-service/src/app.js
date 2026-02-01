@@ -1,85 +1,101 @@
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const { testConnection, syncDatabase } = require("./config/database");
+const rateLimit = require("express-rate-limit");
+const sequelize = require("./config/database");
+const analyticsRoutes = require("./routes/analytics");
 
 const app = express();
+const PORT = process.env.PORT || 3010;
 
-// Middleware
+// Security middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: "Too many requests from this IP, please try again later.",
+});
+app.use(limiter);
+
+// Health check
 app.get("/health", (req, res) => {
   res.json({
-    status: "OK",
-    service: "analytics-service",
-    uptime: process.uptime(),
-    timestamp: new Date(),
+    success: true,
+    service: "Analysis Service",
+    status: "healthy",
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Basic route
-app.get("/", (req, res) => {
-  res.json({
-    message: "Analytics Service API",
-    version: "1.0.0",
-    endpoints: {
-      health: "/health",
-      analytics: "/api/analytics"
-    }
-  });
-});
+// Routes
+app.use("/analytics", analyticsRoutes);
 
-// Analytics routes (to be implemented)
-app.get("/api/analytics", (req, res) => {
-  res.json({
-    message: "Analytics endpoints will be implemented here"
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    message: "Internal server error",
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 3009;
-
+// Database connection and server start
 const startServer = async () => {
   try {
     // Test database connection
-    const dbConnected = await testConnection();
-    if (!dbConnected) {
-      console.error('❌ Failed to connect to database. Exiting...');
-      process.exit(1);
-    }
+    await sequelize.authenticate();
+    console.log("✓ Database connection established");
 
-    // Sync database
-    await syncDatabase();
+    // Sync database models
+    await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
+    console.log("✓ Database models synchronized");
 
-    // Start listening
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✅ Analytics Service running on http://0.0.0.0:${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🗄️  Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`✓ Analysis Service running on port ${PORT}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`✓ Health check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 };
+
+// Handle shutdown gracefully
+process.on("SIGINT", async () => {
+  console.log("\nShutting down gracefully...");
+  await sequelize.close();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("\nShutting down gracefully...");
+  await sequelize.close();
+  process.exit(0);
+});
 
 startServer();
 

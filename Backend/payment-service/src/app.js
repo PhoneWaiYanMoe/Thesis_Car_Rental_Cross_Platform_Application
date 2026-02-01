@@ -1,7 +1,14 @@
 // Backend/payment-service/src/app.js
 // ✅ FIXED: Initialize gRPC client AFTER routes are set up
 
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
+
 const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");

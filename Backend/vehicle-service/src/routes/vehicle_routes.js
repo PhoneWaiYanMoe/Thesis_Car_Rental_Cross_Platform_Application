@@ -4,6 +4,7 @@ const router = express.Router();
 const vehicleController = require("../controllers/vehicle_controller");
 const ownerVehicleController = require("../controllers/owner_vehicle_controller");
 const adminVehicleController = require("../controllers/admin_vehicle_controller");
+const analyticsVehicleController = require("../controllers/analytics_vehicle_controller");
 const {
   authenticate,
   requireOwner,
@@ -15,6 +16,12 @@ router.get("/search", vehicleController.searchVehicles);
 router.get("/:id/availability", vehicleController.checkAvailability);
 
 // ==================== OWNER ROUTES ====================
+router.get(
+  "/owner/:ownerId/vehicles",
+  authenticate,
+  ownerVehicleController.getVehiclesByOwnerId
+);
+
 router.get(
   "/owner/my-vehicles",
   authenticate,
@@ -120,5 +127,22 @@ router.post(
 
 // ==================== PUBLIC DETAIL ROUTE ====================
 router.get("/:id", vehicleController.getVehicleById);
+
+// ==================== ANALYTICS ROUTES ====================
+// Platform-wide analytics (Admin only)
+router.get(
+  "/analytics/vehicles/stats",
+  authenticate,
+  requireAdmin,
+  analyticsVehicleController.getVehicleStats
+);
+
+// Owner-specific analytics (Owner or Admin)
+router.get(
+  "/analytics/vehicles/owner/:ownerId/stats",
+  authenticate,
+  analyticsVehicleController.getOwnerVehicleStats
+);
+
 
 module.exports = router;

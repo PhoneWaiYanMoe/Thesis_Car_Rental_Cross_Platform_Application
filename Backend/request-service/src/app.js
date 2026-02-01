@@ -1,6 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
 
 const pool = require("./config/database");
 const rabbitmqConnection = require("./config/rabbitmq");
@@ -8,6 +14,7 @@ const Request = require("./models/Request");
 const RequestAction = require("./models/RequestAction");
 const RequestAttachment = require('./models/RequestAttachment');
 const requestRoutes = require("./routes/request.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
 const { errorHandler, notFoundHandler } = require("./middleware/error-handler.middleware");
 
 const app = express();
@@ -19,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use("/requests/", requestRoutes);
+app.use("/analytics", analyticsRoutes);
 
 // health check
 app.get("/health", (req, res) => {

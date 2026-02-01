@@ -1,5 +1,12 @@
 // Backend/user-service/src/app.js
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
+
 const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
@@ -12,6 +19,8 @@ const { connectRabbitMQ } = require("./config/rabbitmq");
 const authRoutes = require("./routes/auth_routes");
 const locationRoutes = require("./routes/location_routes");
 const favoritesRoutes = require("./routes/favorites_routes"); // ✅ NEW
+
+const analyticsRoutes = require("./routes/analytics_routes");
 
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -49,6 +58,8 @@ try {
 app.use("/auth", authRoutes);
 app.use("/location", locationRoutes);
 app.use("/favorites", favoritesRoutes); // ✅ NEW
+
+app.use("/analytics", analyticsRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

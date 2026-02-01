@@ -2,7 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+const env = process.env.NODE_ENV || "local";
+
+dotenv.config({
+  path: `.env.${env}`,
+});
 
 const { connectRabbitMQ } = require("./config/rabbitmq");
 const { initializeFirebase } = require("./config/firebase");

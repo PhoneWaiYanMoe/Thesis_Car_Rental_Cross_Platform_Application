@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "dev": "NODE_ENV=local nodemon src/app.js",
     "start:prod": "node src/app.js",
     "cleanup:unavailability": "node src/utils/cleanup_unavailability.js",
     "cleanup:booking": "node src/utils/cleanup_unavailability.js"
