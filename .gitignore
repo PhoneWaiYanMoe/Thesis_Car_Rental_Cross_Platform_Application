@@ -7,3 +7,8 @@ dist/
 
 # ingore public files in user-service
 Backend/user-service/src/public/*
+Backend/booking-service/package-lock.json
+Backend/payment-service/package-lock.json
+Backend/user-service/package-lock.json
+Backend/tests/package-lock.json
+Frontend/package-lock.json
