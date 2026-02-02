@@ -39,12 +39,42 @@ filebeat.inputs:
               - contains:
                   container.name: "kibana"
 
-# CRITICAL FIX: Output directly to Elasticsearch (no Logstash)
-# Use service name 'elk_elasticsearch' not 'elasticsearch'
+      # Parse common log patterns
+      - dissect:
+          when:
+            has_fields: ['message']
+          tokenizer: "%{timestamp} %{+timestamp} [%{log.level}] %{message}"
+          field: "message"
+          target_prefix: "dissect"
+          ignore_failure: true
+
+# Output directly to Elasticsearch (no Logstash needed)
 output.elasticsearch:
   hosts: ["elk_elasticsearch:9200"]
   index: "wiz-logs-%{+yyyy.MM.dd}"
   
+  # Index lifecycle settings
+  ilm.enabled: false
+  
+  # Connection settings
+  timeout: 90
+  max_retries: 3
+  backoff.init: 1s
+  backoff.max: 60s
+
+# Setup index template
+setup.template.name: "wiz-logs"
+setup.template.pattern: "wiz-logs-*"
+setup.template.enabled: true
+setup.template.overwrite: false
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0
+
+# Kibana endpoint for dashboards
+setup.kibana:
+  host: "elk_kibana:5601"
+
 # Logging
 logging.level: info
 logging.to_files: true
@@ -54,5 +84,5 @@ logging.files:
   keepfiles: 7
   permissions: 0644
 
-# Filebeat monitoring
+# Disable monitoring
 monitoring.enabled: false

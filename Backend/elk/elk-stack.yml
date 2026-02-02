@@ -1,8 +1,9 @@
 version: "3.8"
 
 # =====================================================================
-# WORKING ELK STACK for Docker Swarm - FIXED VERSION
-# Deploy with: docker stack deploy -c elk-stack.yml elk
+# PRODUCTION-READY ELK STACK for Docker Swarm
+# This version fixes all the configuration issues
+# Deploy with: docker stack deploy -c elk-stack-fixed.yml elk
 # =====================================================================
 
 services:
@@ -11,11 +12,14 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
-      - cluster.name=wiz-elk
+      - cluster.name=wiz-elk-cluster
       - network.host=0.0.0.0
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - bootstrap.memory_lock=true
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -26,7 +30,49 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      # NO placement constraints - let Docker decide
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ==================== KIBANA ====================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elk_elasticsearch:9200
+      - ELASTICSEARCH_URL=http://elk_elasticsearch:9200
+      - SERVER_NAME=wiz-kibana
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5601
+      - LOGGING_VERBOSE=true
+      - XPACK_SECURITY_ENABLED=false
+      - XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false
+    networks:
+      - wiz-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       resources:
         limits:
           cpus: '1.0'
@@ -36,45 +82,7 @@ services:
           memory: 512M
       restart_policy:
         condition: on-failure
-        delay: 10s
-        max_attempts: 3
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
-  # ==================== KIBANA ====================
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    ports:
-      - "5601:5601"
-    environment:
-      # CRITICAL: Use Docker Swarm service name
-      - ELASTICSEARCH_HOSTS=http://elk_elasticsearch:9200
-      - ELASTICSEARCH_URL=http://elk_elasticsearch:9200
-      - SERVER_NAME=kibana
-      - SERVER_HOST=0.0.0.0
-      - LOGGING_VERBOSE=true
-    networks:
-      - wiz-network
-    depends_on:
-      - elasticsearch
-    deploy:
-      mode: replicated
-      replicas: 1
-      # NO placement constraints
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 15s
+        delay: 30s
         max_attempts: 5
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
@@ -92,23 +100,28 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - filebeat_data:/usr/share/filebeat/data
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    configs:
+      - source: filebeat_config
+        target: /usr/share/filebeat/filebeat.yml
     networks:
       - wiz-network
-    depends_on:
-      - elasticsearch
     deploy:
       mode: global  # Deploy on ALL nodes
       resources:
         limits:
-          cpus: '0.2'
-          memory: 256M
+          cpus: '0.5'
+          memory: 512M
         reservations:
-          cpus: '0.1'
-          memory: 128M
+          cpus: '0.25'
+          memory: 256M
       restart_policy:
         condition: on-failure
         delay: 10s
+        max_attempts: 5
+
+configs:
+  filebeat_config:
+    file: ./filebeat/filebeat.yml
 
 volumes:
   elasticsearch_data:
