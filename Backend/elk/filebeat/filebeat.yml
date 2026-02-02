@@ -26,26 +26,24 @@ filebeat.inputs:
             environment: production
             cluster: wiz-car-rental
 
-      # Drop logs from monitoring/elk services to avoid circular logging
+      # Drop logs from ELK services to avoid circular logging
       - drop_event:
           when:
             or:
-              - contains:
-                  container.name: "monitoring_"
               - contains:
                   container.name: "elk_"
               - contains:
                   container.name: "filebeat"
               - contains:
-                  container.name: "logstash"
-              - contains:
                   container.name: "elasticsearch"
               - contains:
                   container.name: "kibana"
 
-# Output to Logstash
-output.logstash:
-  hosts: ["logstash:5044"]
+# CRITICAL FIX: Output directly to Elasticsearch (no Logstash)
+# Use service name 'elk_elasticsearch' not 'elasticsearch'
+output.elasticsearch:
+  hosts: ["elk_elasticsearch:9200"]
+  index: "wiz-logs-%{+yyyy.MM.dd}"
   
 # Logging
 logging.level: info
