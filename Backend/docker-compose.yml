@@ -291,6 +291,7 @@ services:
       - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - VEHICLE_SERVICE_URL=http://vehicle-service:3002
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=wiz-payment-service:50056
       - MEDIA_SERVICE_URL=http://wiz-media-service:3008
@@ -443,7 +444,7 @@ services:
 
   analytics-service:
     build: ./analysis-service
-    container_name: wiz-analytics-service
+    container_name: wiz-analysis-service
     restart: unless-stopped
     ports:
       - "3009:3009"
@@ -454,7 +455,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_analytics
       - PORT=3009
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3009
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 // creates a fake support token for testing
 const supportUser = {
-  iuserId: '123e4567-e89b-12d3-a456-426614174001',
+  userId: '123e4567-e89b-12d3-a456-426614174001',
   email: 'maungmyatthiri@gmail.com',
   role: 'support'
 };

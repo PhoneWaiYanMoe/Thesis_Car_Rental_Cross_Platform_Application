@@ -11,13 +11,12 @@ class ServiceClient {
     });
   }
 
-  setAuthToken(token) {
-    this.client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
-
-  async get(endpoint, params = {}) {
+  async get(endpoint, { params = {}, token } = {}) {
     try {
-      const response = await this.client.get(endpoint, { params });
+      const response = await this.client.get(endpoint, {
+        params,
+        headers: token ? { Authorization: token } : {},
+      });
       return response.data;
     } catch (error) {
       console.error(`Error calling ${endpoint}:`, error.message);
@@ -25,9 +24,11 @@ class ServiceClient {
     }
   }
 
-  async post(endpoint, data = {}) {
+  async post(endpoint, data = {}, token) {
     try {
-      const response = await this.client.post(endpoint, data);
+      const response = await this.client.post(endpoint, data, {
+        headers: token ? { Authorization: token } : {},
+      });
       return response.data;
     } catch (error) {
       console.error(`Error calling ${endpoint}:`, error.message);

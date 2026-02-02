@@ -99,6 +99,14 @@ try {
   console.log("⚠️  Owner booking routes not found, skipping...");
 }
 
+try {
+  const analyticsRoutes = require("./routes/analytics_routes");
+  app.use("/analytics", analyticsRoutes);
+  console.log("✅ Analytics routes registered at /analytics");
+} catch (error) {
+  console.log("⚠️  Analytics routes not found, skipping...");
+}
+
 /* ================================
    📹 HEALTH CHECK
 ================================ */
@@ -150,6 +158,10 @@ const startServer = async () => {
 
     console.log("\n📄 Initializing Booking Service...");
 
+    const { runMigrations } = require("./utils/migrationRunner");
+    await runMigrations();
+    console.log("Database migrations completed");
+
     // RabbitMQ
     await connectRabbitMQ();
     console.log("✅ RabbitMQ connected");
@@ -174,7 +186,10 @@ const startServer = async () => {
       console.log("   - GET  /bookings/owner/bookings ⭐");
       console.log("   - POST /bookings/owner/:id/accept");
       console.log("   - POST /bookings/owner/:id/reject");
-      console.log("   - POST /bookings/owner/:id/confirm-return\n");
+      console.log("   - POST /bookings/owner/:id/confirm-return");
+      console.log("   - GET  /analytics/bookings/stats");
+      console.log("   - GET  /analytics/bookings/owner/:ownerId/stats");
+      console.log("   - GET  /analytics/bookings/vehicle/:vehicleId/stats\n");
     });
   } catch (error) {
     console.error("❌ Failed to start Booking Service:", error);
