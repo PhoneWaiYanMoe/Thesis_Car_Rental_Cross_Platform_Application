@@ -1,15 +1,8 @@
 version: "3.8"
 
 # =====================================================================
-# FIXED ELK STACK for Docker Swarm
+# WORKING ELK STACK for Docker Swarm - FIXED VERSION
 # Deploy with: docker stack deploy -c elk-stack.yml elk
-# 
-# Key Fixes:
-# 1. Proper service DNS names (elk_elasticsearch not elasticsearch)
-# 2. Services run on worker nodes to save manager space
-# 3. Increased timeouts for Kibana startup
-# 4. Simplified Filebeat config with direct Elasticsearch output
-# 5. Removed Logstash (optional, add back later if needed)
 # =====================================================================
 
 services:
@@ -33,9 +26,7 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      placement:
-        constraints:
-          - node.role == worker  # Run on worker to save manager space
+      # NO placement constraints - let Docker decide
       resources:
         limits:
           cpus: '1.0'
@@ -60,7 +51,7 @@ services:
     ports:
       - "5601:5601"
     environment:
-      # CRITICAL FIX: Use service name 'elk_elasticsearch' not 'elasticsearch'
+      # CRITICAL: Use Docker Swarm service name
       - ELASTICSEARCH_HOSTS=http://elk_elasticsearch:9200
       - ELASTICSEARCH_URL=http://elk_elasticsearch:9200
       - SERVER_NAME=kibana
@@ -73,9 +64,7 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      placement:
-        constraints:
-          - node.role == worker  # Run on worker to save manager space
+      # NO placement constraints
       resources:
         limits:
           cpus: '0.5'
@@ -91,8 +80,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 10  # Increased retries
-      start_period: 180s  # Give Kibana 3 minutes to start
+      retries: 10
+      start_period: 180s
 
   # ==================== FILEBEAT ====================
   filebeat:
@@ -103,14 +92,13 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - filebeat_data:/usr/share/filebeat/data
-      # Mount config from host (you'll need to create this)
-      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
     networks:
       - wiz-network
     depends_on:
       - elasticsearch
     deploy:
-      mode: global  # Deploy on ALL nodes to collect logs from all containers
+      mode: global  # Deploy on ALL nodes
       resources:
         limits:
           cpus: '0.2'
