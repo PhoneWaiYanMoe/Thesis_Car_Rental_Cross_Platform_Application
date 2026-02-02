@@ -55,7 +55,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==================== RABBITMQ ====================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
@@ -72,17 +71,21 @@ services:
           - node.role == manager
       restart_policy:
         condition: on-failure
-        delay: 5s
-        max_attempts: 3
+        delay: 10s              
+        max_attempts: 5         
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.75'          
+          memory: 1024M       
+        reservations:         
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s            
+      timeout: 10s          
       retries: 5
+      start_period: 60s       
 
   # ==================== USER SERVICE ====================
   user-service:
@@ -347,12 +350,6 @@ services:
         limits:
           cpus: '0.3'
           memory: 256M
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3007/health"]
-      interval: 30s
-      timeout: 15s
-      retries: 3
-      start_period: 90s
 
   # ==================== MEDIA SERVICE ====================
   media-service:
