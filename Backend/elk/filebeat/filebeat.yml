@@ -1,0 +1,60 @@
+filebeat.inputs:
+  - type: container
+    enabled: true
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    
+    # Parse Docker JSON logs
+    json.keys_under_root: true
+    json.add_error_key: true
+    json.message_key: log
+    
+    # Processors to enrich data
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      
+      - decode_json_fields:
+          fields: ["message"]
+          target: "json"
+          overwrite_keys: true
+          add_error_key: true
+      
+      - add_fields:
+          target: ''
+          fields:
+            environment: production
+            cluster: wiz-car-rental
+
+      # Drop logs from monitoring/elk services to avoid circular logging
+      - drop_event:
+          when:
+            or:
+              - contains:
+                  container.name: "monitoring_"
+              - contains:
+                  container.name: "elk_"
+              - contains:
+                  container.name: "filebeat"
+              - contains:
+                  container.name: "logstash"
+              - contains:
+                  container.name: "elasticsearch"
+              - contains:
+                  container.name: "kibana"
+
+# Output to Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
+  
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /usr/share/filebeat/logs
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# Filebeat monitoring
+monitoring.enabled: false
