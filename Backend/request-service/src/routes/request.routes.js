@@ -3,51 +3,73 @@ const router = express.Router();
 const requestController = require("../controllers/request.controller");
 const { authenticate, requireRole } = require("../middleware/auth.middleware");
 
-// public routes with authentication
+// Metadata routes (public with authentication)
+router.get(
+  "/metadata/categories",
+  authenticate,
+  requestController.getCategories,
+);
+router.get("/metadata/statuses", authenticate, requestController.getStatuses);
+
+// Public routes with authentication
 router.post("/", authenticate, requestController.createRequest);
 router.get("/my-requests", authenticate, requestController.getMyRequests);
 
-// support/Admin routes
+// Support/Admin routes
 router.get(
   "/",
   authenticate,
   requireRole("support", "admin"),
-  requestController.getRequests
+  requestController.getRequests,
 );
 
 router.get(
   "/:id",
   authenticate,
   requireRole("support", "admin"),
-  requestController.getRequestById
+  requestController.getRequestById,
 );
 
 router.patch(
   "/:id/status",
   authenticate,
   requireRole("support", "admin"),
-  requestController.updateStatus
+  requestController.updateStatus,
 );
 
 router.post(
   "/:id/approve",
   authenticate,
   requireRole("support", "admin"),
-  requestController.approveRequest
+  requestController.approveRequest,
 );
 
 router.post(
   "/:id/deny",
   authenticate,
   requireRole("support", "admin"),
-  requestController.denyRequest
+  requestController.denyRequest,
 );
 
 router.post(
-  "/:id/add-note",
+  "/:id/pause",
   authenticate,
   requireRole("support", "admin"),
-  requestController.addNote
+  requestController.pauseRequest,
+);
+
+router.post(
+  "/:id/resume",
+  authenticate,
+  requireRole("support", "admin"),
+  requestController.resumeRequest,
+);
+
+router.post(
+  "/:id/notes",
+  authenticate,
+  requireRole("support", "admin"),
+  requestController.addNote,
 );
 
 module.exports = router;
