@@ -14,15 +14,18 @@ const YAML = require("yamljs");
 const path = require("path");
 const passport = require("./config/passport");
 const { connectRabbitMQ } = require("./config/rabbitmq");
+const eventConsumer = require("./services/event_consumer");
 const seedAdmin = require("./seed/admin_seed");
-// const seedSupport = require("./seed/support_seed");
 
 // Routes
 const authRoutes = require("./routes/auth_routes");
+const userRoutes = require("./routes/user_routes");
 const locationRoutes = require("./routes/location_routes");
-const favoritesRoutes = require("./routes/favorites_routes"); // ✅ NEW
-
+const favoritesRoutes = require("./routes/favorites_routes");
+const deviceRoutes = require("./routes/device_routes");
+const paymentRoutes = require("./routes/payment_routes");
 const analyticsRoutes = require("./routes/analytics_routes");
+const publicDeviceRoutes = require("./routes/public_device_routes");
 
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
@@ -30,7 +33,6 @@ const UserGrpcServer = require("./grpc/user_grpc_server");
 
 const app = express();
 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -52,20 +54,30 @@ try {
     { url: process.env.BASE_URL || "http://localhost:3001" },
   ];
 } catch (error) {
-  console.warn("wiz-auth.yaml not found — Swagger UI disabled");
-  swaggerDocument = { info: { title: "API Docs Unavailable" } };
+  console.warn("wiz-auth.yaml not found – Swagger UI disabled");
+  swaggerDocument = {
+    openapi: "3.0.0",
+    info: {
+      title: "User Service API",
+      version: "1.0.0",
+      description:
+        "User management, authentication, devices, and payment methods",
+    },
+  };
 }
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/api/users", publicDeviceRoutes); // For notification service
 app.use("/location", locationRoutes);
-app.use("/favorites", favoritesRoutes); // ✅ NEW
-
+app.use("/favorites", favoritesRoutes);
+app.use("/devices", deviceRoutes);
+app.use("/payments", paymentRoutes);
 app.use("/analytics", analyticsRoutes);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use("/", (req, res) => res.redirect("/api-docs"));
 
 // Error handler
 app.use(errorHandler);
@@ -76,18 +88,19 @@ let grpcServer = null;
 // START SERVER WITH MIGRATIONS AND GRPC
 async function startServer() {
   try {
-    console.log("🔄 Running database migrations...");
+    console.log("📄 Running database migrations...");
     await runMigrations();
 
-    console.log("🔄 Seeding admin user...");
+    console.log("📄 Seeding admin user...");
     await seedAdmin();
 
-    // console.log("🔄 Seeding support user...");
-    // await seedSupport();
-
-    // ✅ Connect to RabbitMQ
-    console.log("🔄 Connecting to RabbitMQ...");
+    // Connect to RabbitMQ
+    console.log("📄 Connecting to RabbitMQ...");
     await connectRabbitMQ();
+
+    // Start event consumer
+    console.log("📄 Starting event consumer...");
+    await eventConsumer.startConsuming();
 
     // Start HTTP server
     const PORT = process.env.PORT || 3001;
