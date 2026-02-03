@@ -77,9 +77,6 @@ services:
         limits:
           cpus: '0.75'          
           memory: 1024M       
-        reservations:         
-          cpus: '0.25'
-          memory: 256M
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 15s            
@@ -127,6 +124,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       update_config:
         parallelism: 1
         delay: 10s
@@ -166,6 +166,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -196,6 +199,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -240,6 +246,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -281,6 +290,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -309,6 +321,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -342,6 +357,9 @@ services:
       - wiz-network
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
         delay: 10s
@@ -377,6 +395,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -417,6 +438,9 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
@@ -454,6 +478,9 @@ services:
       - wiz-network
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
       resources:
