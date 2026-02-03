@@ -21,8 +21,12 @@ services:
       - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
-      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      # REMOVED bind mounts — replaced with configs below
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+      - source: prometheus_alerts
+        target: /etc/prometheus/alerts.yml
     networks:
       - wiz-network
     deploy:
@@ -60,7 +64,10 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      # REMOVED bind mount for provisioning — replaced with configs below
+    configs:
+      - source: grafana_datasource_prometheus
+        target: /etc/grafana/provisioning/datasources/prometheus.yml
     networks:
       - wiz-network
     deploy:
@@ -146,7 +153,10 @@ services:
       - "9093:9093"
     volumes:
       - alertmanager_data:/alertmanager
-      - /root/Thesis_Car_Rental_Cross_Platform_Application/Backend/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      # REMOVED bind mount — replaced with config below
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/config.yml
     networks:
       - wiz-network
     deploy:
@@ -166,6 +176,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+# =====================================================================
+# CONFIGS — Swarm distributes these to any node automatically.
+# File paths are relative to where you run the deploy command.
+# =====================================================================
+configs:
+  prometheus_config:
+    file: ./monitoring/prometheus/prometheus.yml
+  prometheus_alerts:
+    file: ./monitoring/prometheus/alerts.yml
+  alertmanager_config:
+    file: ./monitoring/alertmanager/config.yml
+  grafana_datasource_prometheus:
+    file: ./monitoring/grafana/provisioning/datasources/prometheus.yml
 
 volumes:
   prometheus_data:
