@@ -14,135 +14,183 @@ const {
 // ==================== PUBLIC ROUTES ====================
 router.get("/search", vehicleController.searchVehicles);
 router.get("/:id/availability", vehicleController.checkAvailability);
+router.get("/:id", vehicleController.getVehicleById);
 
 // ==================== OWNER ROUTES ====================
 router.get(
   "/owner/:ownerId/vehicles",
   authenticate,
-  ownerVehicleController.getVehiclesByOwnerId
+  ownerVehicleController.getVehiclesByOwnerId,
 );
 
 router.get(
   "/owner/my-vehicles",
   authenticate,
   requireOwner,
-  ownerVehicleController.getMyVehicles
+  ownerVehicleController.getMyVehicles,
 );
+
 router.post(
   "/owner",
   authenticate,
   requireOwner,
-  ownerVehicleController.createVehicle
+  ownerVehicleController.createVehicle,
 );
+
 router.get(
   "/owner/:id",
   authenticate,
   requireOwner,
-  ownerVehicleController.getMyVehicleById
+  ownerVehicleController.getMyVehicleById,
 );
+
 router.put(
   "/owner/:id",
   authenticate,
   requireOwner,
-  ownerVehicleController.updateVehicle
+  ownerVehicleController.updateVehicle,
 );
+
 router.delete(
   "/owner/:id",
   authenticate,
   requireOwner,
-  ownerVehicleController.deleteVehicle
+  ownerVehicleController.deleteVehicle,
 );
+
 router.post(
   "/owner/:id/photos",
   authenticate,
   requireOwner,
-  ownerVehicleController.uploadPhotos
+  ownerVehicleController.uploadPhotos,
 );
 
-// ✅ NEW: Periodic verification routes for owners
+// Periodic verification routes for owners
 router.post(
   "/owner/:id/verification",
   authenticate,
   requireOwner,
-  ownerVehicleController.submitVerificationPhotos
+  ownerVehicleController.submitVerificationPhotos,
 );
+
 router.get(
   "/owner/:id/verification-status",
   authenticate,
   requireOwner,
-  ownerVehicleController.getVerificationStatus
+  ownerVehicleController.getVerificationStatus,
 );
 
 // ==================== ADMIN ROUTES ====================
+
+// ✅ NEW: Comprehensive admin routes with filters, sorting, and pagination
+
+// Get all vehicles with comprehensive filtering
 router.get(
   "/admin/vehicles",
   authenticate,
   requireAdmin,
-  adminVehicleController.getAllVehicles
-);
-router.patch(
-  "/admin/:id/status",
-  authenticate,
-  requireAdmin,
-  adminVehicleController.updateVehicleStatus
-);
-router.post(
-  "/admin/:id/approve",
-  authenticate,
-  requireAdmin,
-  adminVehicleController.approveVehicle
-);
-router.post(
-  "/admin/:id/reject",
-  authenticate,
-  requireAdmin,
-  adminVehicleController.rejectVehicle
+  adminVehicleController.getAllVehicles,
 );
 
-// ✅ NEW: Periodic verification routes for admins
+// Get approved vehicles only
 router.get(
-  "/admin/verifications/due",
+  "/admin/vehicles/approved",
   authenticate,
   requireAdmin,
-  adminVehicleController.getVehiclesDueForVerification
+  adminVehicleController.getApprovedVehicles,
 );
+
+// Get vehicles by specific status
+router.get(
+  "/admin/vehicles/by-status/:status",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getVehiclesByStatus,
+);
+
+// Get top rated vehicles
+router.get(
+  "/admin/vehicles/top-rated",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getTopRatedVehicles,
+);
+
+// Filter vehicles by type
+router.get(
+  "/admin/vehicles/by-type/:vehicleType",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getVehiclesByType,
+);
+
+// Get vehicles due for verification
+router.get(
+  "/admin/vehicles/due-verification",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.getVehiclesDueForVerification,
+);
+
+// Periodic verification management
 router.get(
   "/admin/verifications/pending",
   authenticate,
   requireAdmin,
-  adminVehicleController.getPendingVerifications
+  adminVehicleController.getPendingVerifications,
 );
+
 router.post(
   "/admin/verifications/:id/approve",
   authenticate,
   requireAdmin,
-  adminVehicleController.approveVerification
+  adminVehicleController.approveVerification,
 );
+
 router.post(
   "/admin/verifications/:id/reject",
   authenticate,
   requireAdmin,
-  adminVehicleController.rejectVerification
+  adminVehicleController.rejectVerification,
 );
 
-// ==================== PUBLIC DETAIL ROUTE ====================
-router.get("/:id", vehicleController.getVehicleById);
+// Vehicle status management
+router.patch(
+  "/admin/:id/status",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.updateVehicleStatus,
+);
+
+router.post(
+  "/admin/:id/approve",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.approveVehicle,
+);
+
+router.post(
+  "/admin/:id/reject",
+  authenticate,
+  requireAdmin,
+  adminVehicleController.rejectVehicle,
+);
 
 // ==================== ANALYTICS ROUTES ====================
+
 // Platform-wide analytics (Admin only)
 router.get(
   "/analytics/vehicles/stats",
   authenticate,
   requireAdmin,
-  analyticsVehicleController.getVehicleStats
+  analyticsVehicleController.getVehicleStats,
 );
 
 // Owner-specific analytics (Owner or Admin)
 router.get(
   "/analytics/vehicles/owner/:ownerId/stats",
   authenticate,
-  analyticsVehicleController.getOwnerVehicleStats
+  analyticsVehicleController.getOwnerVehicleStats,
 );
-
 
 module.exports = router;

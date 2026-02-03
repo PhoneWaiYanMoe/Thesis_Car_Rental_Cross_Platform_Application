@@ -1,3 +1,4 @@
+// Backend/vehicle-service/src/app.js
 const dotenv = require("dotenv");
 
 const env = process.env.NODE_ENV || "local";
@@ -16,6 +17,8 @@ const vehicleRoutes = require("./routes/vehicle_routes");
 const errorHandler = require("./middleware/errorHandler");
 const { runMigrations } = require("./utils/migrationRunner");
 const VehicleGrpcServer = require("./grpc/vehicle_grpc_server");
+const eventEmitter = require("./utils/eventEmitter");
+const eventHandlers = require("./handlers/eventHandlers");
 
 const app = express();
 
@@ -41,7 +44,7 @@ try {
     { url: process.env.BASE_URL || "http://localhost:3002" },
   ];
 } catch (error) {
-  console.warn("wiz-vehicle.yaml not found — Swagger UI disabled");
+  console.warn("⚠️ wiz-vehicle.yaml not found – Swagger UI disabled");
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
 
@@ -61,8 +64,29 @@ let grpcServer = null;
 async function startServer() {
   try {
     // Run migrations first
-    console.log("🔄 Running database migrations...");
+    console.log("📄 Running database migrations...");
     await runMigrations();
+
+    // ✅ Connect to RabbitMQ event bus
+    console.log("🔌 Connecting to event bus...");
+    await eventEmitter.connect();
+
+    // ✅ Subscribe to events from other services
+    const eventsToSubscribe = [
+      "request.vehicle_deactivation_approved",
+      "request.vehicle_deactivation_denied",
+      "request.vehicle_reactivation_approved",
+      "request.vehicle_reactivation_denied",
+      "request.vehicle_verification_approved",
+      "request.vehicle_verification_denied",
+      "request.vehicle_banned",
+      "request.vehicle_unbanned",
+      "booking.completed",
+    ];
+
+    await eventEmitter.subscribe(eventsToSubscribe, (event) => {
+      eventHandlers.handleEvent(event);
+    });
 
     // Start HTTP server
     const PORT = process.env.PORT || 3002;
@@ -84,18 +108,26 @@ async function startServer() {
 startServer();
 
 // Graceful shutdown
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
+
   if (grpcServer) {
     grpcServer.stop();
   }
+
+  await eventEmitter.close();
+
   process.exit(0);
 });
 
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   console.log("SIGINT received, shutting down gracefully...");
+
   if (grpcServer) {
     grpcServer.stop();
   }
+
+  await eventEmitter.close();
+
   process.exit(0);
 });
