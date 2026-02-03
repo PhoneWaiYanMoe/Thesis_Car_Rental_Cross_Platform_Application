@@ -19,7 +19,6 @@ services:
       - http.host=0.0.0.0
       - transport.host=127.0.0.1
       - bootstrap.memory_lock=true
-      - indices.lifecycle.enabled=true
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -98,15 +97,19 @@ services:
     environment:
       - XPACK_MONITORING_ENABLED=false
       - LS_JAVA_OPTS=-Xms256m -Xmx256m
+      - LOG_LEVEL=info
+      - HTTP_HOST=0.0.0.0
+      - HTTP_PORT=9600
+      - QUEUE_TYPE=memory
+      - QUEUE_MAX_BYTES=256mb
     ports:
       - "5044:5044"
+      - "9600:9600"
     volumes:
       - logstash_data:/usr/share/logstash/data
     configs:
       - source: logstash_pipeline
         target: /usr/share/logstash/pipeline/logstash.conf
-      - source: logstash_config
-        target: /usr/share/logstash/config/logstash.yml
     networks:
       - wiz-network
     deploy:
@@ -166,8 +169,6 @@ configs:
     file: ./filebeat/filebeat.yml
   logstash_pipeline:
     file: ./logstash/pipeline/logstash.conf
-  logstash_config:
-    file: ./logstash/logstash.yml
 
 volumes:
   elasticsearch_data:
