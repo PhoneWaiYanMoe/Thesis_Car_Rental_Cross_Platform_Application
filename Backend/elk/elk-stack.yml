@@ -2,8 +2,7 @@ version: "3.8"
 
 # =====================================================================
 # PRODUCTION-READY ELK STACK for Docker Swarm
-# This version fixes all the configuration issues
-# Deploy with: docker stack deploy -c elk-stack-fixed.yml elk
+# Deploy with: docker stack deploy -c elk-stack.yml elk
 # =====================================================================
 
 services:
@@ -12,7 +11,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
       - cluster.name=wiz-elk-cluster
@@ -20,6 +19,7 @@ services:
       - http.host=0.0.0.0
       - transport.host=127.0.0.1
       - bootstrap.memory_lock=true
+      - indices.lifecycle.enabled=true
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -35,11 +35,11 @@ services:
           - node.role == manager
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
+          cpus: '1.5'
           memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 600M
       restart_policy:
         condition: on-failure
         delay: 30s
@@ -65,6 +65,7 @@ services:
       - LOGGING_VERBOSE=true
       - XPACK_SECURITY_ENABLED=false
       - XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false
+      - NODE_OPTIONS=--max-old-space-size=400
     networks:
       - wiz-network
     deploy:
@@ -75,11 +76,11 @@ services:
           - node.role == manager
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
+          cpus: '0.75'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
       restart_policy:
         condition: on-failure
         delay: 30s
@@ -90,6 +91,47 @@ services:
       timeout: 10s
       retries: 10
       start_period: 180s
+
+  # ==================== LOGSTASH ====================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    environment:
+      - XPACK_MONITORING_ENABLED=false
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "5044:5044"
+    volumes:
+      - logstash_data:/usr/share/logstash/data
+    configs:
+      - source: logstash_pipeline
+        target: /usr/share/logstash/pipeline/logstash.conf
+      - source: logstash_config
+        target: /usr/share/logstash/config/logstash.yml
+    networks:
+      - wiz-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 5
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # ==================== FILEBEAT ====================
   filebeat:
@@ -106,14 +148,14 @@ services:
     networks:
       - wiz-network
     deploy:
-      mode: global  # Deploy on ALL nodes
+      mode: global
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 128M
       restart_policy:
         condition: on-failure
         delay: 10s
@@ -122,11 +164,17 @@ services:
 configs:
   filebeat_config:
     file: ./filebeat/filebeat.yml
+  logstash_pipeline:
+    file: ./logstash/pipeline/logstash.conf
+  logstash_config:
+    file: ./logstash/logstash.yml
 
 volumes:
   elasticsearch_data:
     driver: local
   filebeat_data:
+    driver: local
+  logstash_data:
     driver: local
 
 networks:

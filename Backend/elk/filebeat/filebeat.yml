@@ -38,6 +38,8 @@ filebeat.inputs:
                   container.name: "elasticsearch"
               - contains:
                   container.name: "kibana"
+              - contains:
+                  container.name: "logstash"
 
       # Parse common log patterns
       - dissect:
@@ -48,16 +50,10 @@ filebeat.inputs:
           target_prefix: "dissect"
           ignore_failure: true
 
-# Output directly to Elasticsearch (no Logstash needed)
-output.elasticsearch:
-  hosts: ["elk_elasticsearch:9200"]
-  index: "wiz-logs-%{+yyyy.MM.dd}"
-  
-  # Index lifecycle settings
-  ilm.enabled: false
-  
-  # Connection settings
-  timeout: 90
+# Output to Logstash
+output.logstash:
+  hosts: ["elk_logstash:5044"]
+  timeout: 30
   max_retries: 3
   backoff.init: 1s
   backoff.max: 60s

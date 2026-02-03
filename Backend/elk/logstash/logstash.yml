@@ -1,3 +1,8 @@
+---
 http.host: "0.0.0.0"
+http.port: 9600
 xpack.monitoring.enabled: false
-xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+log.level: info
+path.logs: /usr/share/logstash/logs
+queue.type: memory
+queue.max_bytes: 256mb
