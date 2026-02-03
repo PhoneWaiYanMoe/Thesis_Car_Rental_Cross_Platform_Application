@@ -1,0 +1,730 @@
+{
+	"id": "c2b180c9-65e1-42d0-bbb8-81c33dc079f1",
+	"name": "Wiz User Service API",
+	"timestamp": "2026-02-02T20:22:40.577Z",
+	"collection_id": "42883958-75154aa1-9d41-43c4-96d5-2a47d2ce6710",
+	"folder_id": 0,
+	"environment_id": "42883958-661448fa-6b39-4c3c-ba9b-9479c451a61c",
+	"totalPass": 0,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-02-02T20:22:38.938Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "cf08e7ae-fed7-4456-9c96-f29bc6f09e72",
+			"name": "Register User",
+			"url": "http://localhost:3001/auth/register",
+			"time": 11,
+			"responseCode": {
+				"message": "OTP sent to email",
+				"userId": "7a595807-d154-4422-8395-16ad1281737f"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				11
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "392d754a-62fe-4a27-bcef-aacdadc14cb0",
+			"name": "Verify Email OTP",
+			"url": "http://localhost:3001/auth/verify-email-otp",
+			"time": 3,
+			"responseCode": {
+				"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YTU5NTgwNy1kMTU0LTQ0MjItODM5NS0xNmFkMTI4MTczN2YiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGV4YW1wbGUuY29tIiwicm9sZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzcwMDYyNzUyLCJleHAiOjE3NzA2Njc1NTJ9.vlGXo-NolwUU3EbX_YeFTawkqLmOvWXUrRUoMf-qwj4",
+				"refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YTU5NTgwNy1kMTU0LTQ0MjItODM5NS0xNmFkMTI4MTczN2YiLCJpYXQiOjE3NzAwNjI3NTIsImV4cCI6MTc3MjY1NDc1Mn0.RYDBTHixjBdU-tDxPdDQD5oLg7Ktp0FAkqlF4kk6tvo",
+				"user": {
+					"id": "7a595807-d154-4422-8395-16ad1281737f",
+					"email": "test@example.com",
+					"fullName": "Test User",
+					"phone": null,
+					"avatarUrl": null,
+					"role": "customer"
+				}
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "56ee0b8a-4471-4b85-9e1b-21afc62e53a9",
+			"name": "Login",
+			"url": "http://localhost:3001/auth/login",
+			"time": 2,
+			"responseCode": {
+				"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YTU5NTgwNy1kMTU0LTQ0MjItODM5NS0xNmFkMTI4MTczN2YiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGV4YW1wbGUuY29tIiwicm9sZSI6ImN1c3RvbWVyIiwiaWF0IjoxNzcwMDYyNzk4LCJleHAiOjE3NzA2Njc1OTh9.6ojK8H3weczvuH-eIAqJbNGiOVqAfmejC5AhHO1WmAs",
+				"refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YTU5NTgwNy1kMTU0LTQ0MjItODM5NS0xNmFkMTI4MTczN2YiLCJpYXQiOjE3NzAwNjI3OTgsImV4cCI6MTc3MjY1NDc5OH0.0m7we9s6IWKHflqLWW-xLGxbDKfascjLzax7MkmXBS4",
+				"user": {
+					"id": "7a595807-d154-4422-8395-16ad1281737f",
+					"email": "test@example.com",
+					"fullName": "Test User",
+					"phone": null,
+					"avatarUrl": null,
+					"role": "customer"
+				}
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1cbcf535-044f-4c80-8ae4-330c8dad859f",
+			"name": "Refresh Token",
+			"url": "http://localhost:3001/auth/refresh-token",
+			"time": 4,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				4
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "72f8cf7d-036d-4d6b-98a8-fd282b85cc00",
+			"name": "Forgot Password",
+			"url": "http://localhost:3001/auth/forgot-password",
+			"time": 4,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				4
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "11c2692d-788a-496f-b5fb-a0a02a505c9a",
+			"name": "Logout",
+			"url": "http://localhost:3001/auth/logout",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "3231ec29-79bf-4657-a40b-7248fdd86d75",
+			"name": "Get All Users",
+			"url": "http://localhost:3001/users?page=1&limit=20&search=&role=&status=&sortBy=created_at&sortOrder=DESC",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				7
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "691d7f27-34fd-4333-a8dd-a8b975c46763",
+			"name": "Get Support Users",
+			"url": "http://localhost:3001/users/support",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "9a67ca34-e494-441e-ad8f-85c6ef770096",
+			"name": "Get Owner Users",
+			"url": "http://localhost:3001/users/owners",
+			"time": 4,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				4
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "3444c163-b96a-476c-a34c-8da727e496fc",
+			"name": "Get Customer Users",
+			"url": "http://localhost:3001/users/customers",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "fceb687d-291e-461b-9bd0-5b9b7ec58859",
+			"name": "Get User by ID",
+			"url": "http://localhost:3001/users/7a595807-d154-4422-8395-16ad1281737f",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "2873300c-b74a-4daf-9818-b7f195fde904",
+			"name": "Change User Role",
+			"url": "http://localhost:3001/users/7a595807-d154-4422-8395-16ad1281737f/role",
+			"time": 2,
+			"responseCode": {
+				"message": "Role updated successfully",
+				"user": {
+					"user_id": "7a595807-d154-4422-8395-16ad1281737f",
+					"email": "test@example.com",
+					"role": "owner",
+					"owner_status": "unverified"
+				}
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1e7f059e-ad1f-4da9-aaf9-278ad6afc39a",
+			"name": "Update User Status",
+			"url": "http://localhost:3001/users/7a595807-d154-4422-8395-16ad1281737f/status",
+			"time": 3,
+			"responseCode": {
+				"message": "User status updated",
+				"user": {
+					"user_id": "7a595807-d154-4422-8395-16ad1281737f",
+					"email": "test@example.com",
+					"status": "suspended",
+					"role": "owner"
+				}
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "8c12f157-d73d-49f7-83fd-df92f504d7d1",
+			"name": "Get License Status",
+			"url": "http://localhost:3001/users/7a595807-d154-4422-8395-16ad1281737f/license-status",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "b2f001b4-d808-4f97-9a8f-0e5caff2d612",
+			"name": "Upload License",
+			"url": "http://localhost:3001/users/7a595807-d154-4422-8395-16ad1281737f/upload-license",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "aad05b2b-0b01-4cb3-82b2-b3f87b2d518a",
+			"name": "Register Device",
+			"url": "http://localhost:3001/devices",
+			"time": 6,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				6
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "9e3690d9-a92f-420a-8119-6ea54061e601",
+			"name": "Get My Devices",
+			"url": "http://localhost:3001/devices",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "6f6c64fe-8f71-408f-b57a-7b83a473af73",
+			"name": "Get User Devices (Public API)",
+			"url": "http://localhost:3001/api/users/7a595807-d154-4422-8395-16ad1281737f/devices",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "32ad7ecf-c729-4914-802e-0df5b3589a31",
+			"name": "Delete Device",
+			"url": "http://localhost:3001/devices/4a12196b-ece5-4df6-be71-166012eb9704",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1d337ac9-ac4b-48ca-90f9-2c03e85d6b84",
+			"name": "Get Payment Methods",
+			"url": "http://localhost:3001/payments/methods",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1f2775f4-79a7-4689-9d7a-4a3351da832c",
+			"name": "Add Payment Method",
+			"url": "http://localhost:3001/payments/methods",
+			"time": 5,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "108ceec5-b38c-4c20-acb7-7badd99b9e80",
+			"name": "Get Payment Method by ID",
+			"url": "http://localhost:3001/payments/methods/f5a24146-9482-47f2-ae1e-96f22da3682e",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "2e9caade-44e1-4df1-8548-3234e28081ba",
+			"name": "Update Payment Method",
+			"url": "http://localhost:3001/payments/methods/f5a24146-9482-47f2-ae1e-96f22da3682e",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "e2a3f0b5-a444-455d-b046-0bf3f7924a9a",
+			"name": "Set Default Payment Method",
+			"url": "http://localhost:3001/payments/methods/f5a24146-9482-47f2-ae1e-96f22da3682e/set-default",
+			"time": 4,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				4
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "837273ca-e6ba-4f27-aa51-a212530884e6",
+			"name": "Delete Payment Method",
+			"url": "http://localhost:3001/payments/methods/f5a24146-9482-47f2-ae1e-96f22da3682e",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "6e65b504-9c4f-42db-a23f-cfb4e0ecd2b7",
+			"name": "Get Favorites",
+			"url": "http://localhost:3001/favorites?page=1&limit=20",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "e5b63531-deb6-4f12-9ef3-a1d321ac43fc",
+			"name": "Add to Favorites",
+			"url": "http://localhost:3001/favorites",
+			"time": 4,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				4
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "b1592f73-08c2-471b-a15a-51d80c933a62",
+			"name": "Remove from Favorites",
+			"url": "http://localhost:3001/favorites/550e8400-e29b-41d4-a716-446655440000",
+			"time": 3,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				3
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "58297d01-5648-422e-ab55-49e850516316",
+			"name": "Get User Stats",
+			"url": "http://localhost:3001/analytics/users/stats?timeRange=30d",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				5
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "31ad23ea-4576-4883-859d-fd89e03eaa16",
+			"name": "Get User Growth",
+			"url": "http://localhost:3001/analytics/users/growth?startDate=2024-01-01&endDate=2024-12-31",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				7
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "0d8d592e-2634-466d-95a9-c4538d153366",
+			"name": "Health Check",
+			"url": "http://localhost:3001/health",
+			"time": 1,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				1
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 122,
+	"collection": {
+		"requests": [
+			{
+				"id": "cf08e7ae-fed7-4456-9c96-f29bc6f09e72",
+				"method": "POST"
+			},
+			{
+				"id": "392d754a-62fe-4a27-bcef-aacdadc14cb0",
+				"method": "POST"
+			},
+			{
+				"id": "56ee0b8a-4471-4b85-9e1b-21afc62e53a9",
+				"method": "POST"
+			},
+			{
+				"id": "1cbcf535-044f-4c80-8ae4-330c8dad859f",
+				"method": "POST"
+			},
+			{
+				"id": "72f8cf7d-036d-4d6b-98a8-fd282b85cc00",
+				"method": "POST"
+			},
+			{
+				"id": "11c2692d-788a-496f-b5fb-a0a02a505c9a",
+				"method": "POST"
+			},
+			{
+				"id": "3231ec29-79bf-4657-a40b-7248fdd86d75",
+				"method": "GET"
+			},
+			{
+				"id": "691d7f27-34fd-4333-a8dd-a8b975c46763",
+				"method": "GET"
+			},
+			{
+				"id": "9a67ca34-e494-441e-ad8f-85c6ef770096",
+				"method": "GET"
+			},
+			{
+				"id": "3444c163-b96a-476c-a34c-8da727e496fc",
+				"method": "GET"
+			},
+			{
+				"id": "fceb687d-291e-461b-9bd0-5b9b7ec58859",
+				"method": "GET"
+			},
+			{
+				"id": "2873300c-b74a-4daf-9818-b7f195fde904",
+				"method": "PUT"
+			},
+			{
+				"id": "1e7f059e-ad1f-4da9-aaf9-278ad6afc39a",
+				"method": "PUT"
+			},
+			{
+				"id": "8c12f157-d73d-49f7-83fd-df92f504d7d1",
+				"method": "GET"
+			},
+			{
+				"id": "b2f001b4-d808-4f97-9a8f-0e5caff2d612",
+				"method": "POST"
+			},
+			{
+				"id": "aad05b2b-0b01-4cb3-82b2-b3f87b2d518a",
+				"method": "POST"
+			},
+			{
+				"id": "9e3690d9-a92f-420a-8119-6ea54061e601",
+				"method": "GET"
+			},
+			{
+				"id": "6f6c64fe-8f71-408f-b57a-7b83a473af73",
+				"method": "GET"
+			},
+			{
+				"id": "32ad7ecf-c729-4914-802e-0df5b3589a31",
+				"method": "DELETE"
+			},
+			{
+				"id": "1d337ac9-ac4b-48ca-90f9-2c03e85d6b84",
+				"method": "GET"
+			},
+			{
+				"id": "1f2775f4-79a7-4689-9d7a-4a3351da832c",
+				"method": "POST"
+			},
+			{
+				"id": "108ceec5-b38c-4c20-acb7-7badd99b9e80",
+				"method": "GET"
+			},
+			{
+				"id": "2e9caade-44e1-4df1-8548-3234e28081ba",
+				"method": "PUT"
+			},
+			{
+				"id": "e2a3f0b5-a444-455d-b046-0bf3f7924a9a",
+				"method": "PUT"
+			},
+			{
+				"id": "837273ca-e6ba-4f27-aa51-a212530884e6",
+				"method": "DELETE"
+			},
+			{
+				"id": "6e65b504-9c4f-42db-a23f-cfb4e0ecd2b7",
+				"method": "GET"
+			},
+			{
+				"id": "e5b63531-deb6-4f12-9ef3-a1d321ac43fc",
+				"method": "POST"
+			},
+			{
+				"id": "b1592f73-08c2-471b-a15a-51d80c933a62",
+				"method": "DELETE"
+			},
+			{
+				"id": "58297d01-5648-422e-ab55-49e850516316",
+				"method": "GET"
+			},
+			{
+				"id": "31ad23ea-4576-4883-859d-fd89e03eaa16",
+				"method": "GET"
+			},
+			{
+				"id": "0d8d592e-2634-466d-95a9-c4538d153366",
+				"method": "GET"
+			}
+		]
+	}
+}

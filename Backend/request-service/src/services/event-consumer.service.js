@@ -1,0 +1,169 @@
+const rabbitmqConnection = require("../config/rabbitmq");
+const requestService = require("./request.service");
+
+class EventConsumer {
+  async startConsuming() {
+    try {
+      const channel = rabbitmqConnection.getChannel();
+
+      if (!channel) {
+        console.error("❌ RabbitMQ channel not available for consuming");
+        return;
+      }
+
+      const exchangeName = "wiz.events";
+      const queueName = "request-service-queue";
+
+      // assert queue
+      await channel.assertQueue(queueName, { durable: true });
+
+      // bind queue to exchange with routing keys
+      const routingKeys = [
+        "vehicle.updated",
+        "vehicle.status_changed",
+        "contract.signed",
+        "review.created",
+        "review.owner_reviewed",
+        "review.response_posted",
+        "vehicle.created",
+        "chat.message_received",
+      ];
+
+      for (const key of routingKeys) {
+        await channel.bindQueue(queueName, exchangeName, key);
+      }
+
+      console.log(
+        `✓ Request service listening for events: ${routingKeys.join(", ")}`,
+      );
+
+      // consume messages
+      channel.consume(
+        queueName,
+        async (msg) => {
+          if (msg) {
+            try {
+              const event = JSON.parse(msg.content.toString());
+              console.log(`📨 Received event: ${event.eventType}`, {
+                eventId: event.eventId,
+              });
+
+              await this.handleEvent(event);
+
+              // acknowledge message
+              channel.ack(msg);
+            } catch (error) {
+              console.error("❌ Error processing event:", error);
+              // reject and requeue if there's an error
+              channel.nack(msg, false, true);
+            }
+          }
+        },
+        { noAck: false },
+      );
+    } catch (error) {
+      console.error("❌ Error starting event consumer:", error);
+    }
+  }
+
+  async handleEvent(event) {
+    const { eventType, data } = event;
+
+    try {
+      switch (eventType) {
+        case "vehicle.updated":
+          await this.handleVehicleUpdated(data);
+          break;
+
+        case "vehicle.status_changed":
+          await this.handleVehicleStatusChanged(data);
+          break;
+
+        case "contract.signed":
+          await this.handleContractSigned(data);
+          break;
+
+        // Add more event handlers as needed
+        default:
+          console.log(`ℹ️ No handler for event type: ${eventType}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error handling event ${eventType}:`, error);
+      throw error;
+    }
+  }
+
+  async handleVehicleUpdated(data) {
+    // Check if this is a yearly confirmation or regular update
+    if (data.isYearlyConfirmation) {
+      await requestService.createYearlyVehicleConfirmationRequest({
+        vehicleId: data.vehicleId,
+        ownerId: data.ownerId,
+        userId: data.userId || data.ownerId,
+        userEmail: data.userEmail,
+        description: data.description || "Annual vehicle confirmation required",
+      });
+      console.log(
+        `✓ Created yearly vehicle confirmation request for vehicle: ${data.vehicleId}`,
+      );
+    } else {
+      await requestService.createVehicleUpdateRequest({
+        vehicleId: data.vehicleId,
+        ownerId: data.ownerId,
+        userId: data.userId || data.ownerId,
+        userEmail: data.userEmail,
+        updateType: data.updateType || "general",
+        description: data.description,
+      });
+      console.log(
+        `✓ Created vehicle update request for vehicle: ${data.vehicleId}`,
+      );
+    }
+  }
+
+  async handleVehicleStatusChanged(data) {
+    // Create appropriate request based on status change
+    let category = "vehicle_listing";
+    let title = `Vehicle Status Changed - Vehicle #${data.vehicleId}`;
+
+    if (data.newStatus === "deactivated" || data.action === "deactivate") {
+      category = "vehicle_deactivation";
+      title = `Vehicle Deactivation Request - Vehicle #${data.vehicleId}`;
+    } else if (data.newStatus === "active" || data.action === "reactivate") {
+      category = "vehicle_reactivation";
+      title = `Vehicle Reactivation Request - Vehicle #${data.vehicleId}`;
+    }
+
+    await requestService.createRequest(data.userId || data.ownerId, {
+      userEmail: data.userEmail,
+      ownerId: data.ownerId,
+      vehicleId: data.vehicleId,
+      category,
+      title,
+      description: data.reason || `Vehicle status change to: ${data.newStatus}`,
+      priority: "medium",
+    });
+
+    console.log(
+      `✓ Created vehicle status change request for vehicle: ${data.vehicleId}`,
+    );
+  }
+
+  async handleContractSigned(data) {
+    // Create booking confirmation request when contract is signed
+    await requestService.createBookingConfirmationRequest({
+      bookingId: data.bookingId,
+      vehicleId: data.vehicleId,
+      customerId: data.customerId,
+      ownerId: data.ownerId,
+      userId: data.customerId,
+      userEmail: data.customerEmail,
+    });
+
+    console.log(
+      `✓ Created booking confirmation request for booking: ${data.bookingId}`,
+    );
+  }
+}
+
+module.exports = new EventConsumer();

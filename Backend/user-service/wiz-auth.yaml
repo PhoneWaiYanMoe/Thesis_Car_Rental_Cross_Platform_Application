@@ -1,145 +1,358 @@
 openapi: 3.0.0
 info:
-  title: Wiz API
-  description: Mock APIs for Wiz app including authentication and favorites.
-  version: 1.0.0
+  title: Wiz User Service API
+  description: |
+    Comprehensive user management service for the Wiz car rental platform.
+    
+    ## Features
+    - User authentication (email/password, OAuth with Google/Facebook)
+    - User management (filtering, searching, sorting)
+    - Device management for push notifications
+    - Payment methods CRUD
+    - Analytics and statistics
+    - License verification
+    - Owner verification workflow
+    
+  version: 2.0.0
+  contact:
+    name: Wiz Development Team
+    
 servers:
   - url: http://localhost:3001
-    description: Real server
+    description: Local development server
+  - url: https://api.wiz.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and OAuth
+  - name: Users
+    description: User management and profiles
+  - name: Devices
+    description: Device management for push notifications
+  - name: Payments
+    description: Payment methods management
+  - name: Favorites
+    description: User favorite vehicles
+  - name: Location
+    description: Location services
+  - name: Analytics
+    description: User statistics and analytics
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login or OAuth
+      
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [customer, owner, admin, support]
+        status:
+          type: string
+          enum: [normal, active, suspended, banned, deleted]
+        license_status:
+          type: string
+          enum: [unverified, pending, verified, rejected]
+        owner_status:
+          type: string
+          enum: [unverified, verified, rejected]
+          nullable: true
+        is_verified:
+          type: boolean
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          
+    UserWithStats:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            total_bookings_as_customer:
+              type: integer
+            completed_bookings_as_customer:
+              type: integer
+            total_rentals_as_owner:
+              type: integer
+            average_rating_as_customer:
+              type: number
+              format: float
+            average_rating_as_owner:
+              type: number
+              format: float
+            total_spent:
+              type: number
+              format: decimal
+            total_earned:
+              type: number
+              format: decimal
+              
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fcmToken:
+          type: string
+        platform:
+          type: string
+          enum: [android, ios, web]
+        deviceName:
+          type: string
+        lastUsed:
+          type: string
+          format: date-time
+          
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [credit_card, debit_card, paypal, bank_account, wallet]
+        provider:
+          type: string
+        card_last_four:
+          type: string
+        card_brand:
+          type: string
+        card_exp_month:
+          type: integer
+        card_exp_year:
+          type: integer
+        holder_name:
+          type: string
+        is_default:
+          type: boolean
+        is_verified:
+          type: boolean
+        status:
+          type: string
+          enum: [active, expired, invalid, deleted]
+        created_at:
+          type: string
+          format: date-time
+          
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        field:
+          type: string
+          
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
 paths:
+  # ==================== AUTHENTICATION ====================
   /auth/register:
     post:
-      summary: Register new user + send OTP
+      tags:
+        - Authentication
+      summary: Register new user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - fullName
+                - password
+                - confirmPassword
               properties:
-                email: { type: string, format: email, example: "user@wiz.com" }
-                fullName: { type: string, example: "Nhuyen Van A" }
-                password: { type: string, format: password, example: "SecurePass123!" }
-                confirmPassword: { type: string, format: password, example: "SecurePass123!" }
+                email:
+                  type: string
+                  format: email
+                fullName:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                confirmPassword:
+                  type: string
+                  format: password
       responses:
         '201':
-          description: User created, OTP sent
+          description: User registered successfully, OTP sent
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message: { type: string, example: "OTP sent to email" }
-                  userId: { type: string, example: "uuid-123" }
+                  message:
+                    type: string
+                  userId:
+                    type: string
+                  otp:
+                    type: string
+                    description: Only in development mode
+        '400':
+          description: Validation error or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
   /auth/verify-email-otp:
     post:
-      summary: Verify signup OTP
+      tags:
+        - Authentication
+      summary: Verify email with OTP
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - code
               properties:
-                email: { type: string, format: email, example: "user@wiz.com" }
-                code: { type: string, pattern: '^\d{6}$', example: "123456" }
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
       responses:
         '200':
-          description: Email verified
+          description: Email verified, user logged in
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
-                  user: { $ref: '#/components/schemas/User' }
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid or expired OTP
+          
   /auth/login:
     post:
-      summary: Email/password login
+      tags:
+        - Authentication
+      summary: Login with email and password
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
-                email: { type: string, format: email }
-                password: { type: string, format: password }
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
       responses:
         '200':
-          description: Login success
+          description: Login successful
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
-                  user: { $ref: '#/components/schemas/User' }
-  /auth/forgot-password:
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Email not verified
+          
+  /auth/google:
+    get:
+      tags:
+        - Authentication
+      summary: Initiate Google OAuth login
+      description: Redirects user to Google login page
+      responses:
+        '302':
+          description: Redirect to Google
+          
+  /auth/google/callback:
+    get:
+      tags:
+        - Authentication
+      summary: Google OAuth callback
+      description: Handles Google OAuth callback and redirects to frontend
+      responses:
+        '302':
+          description: Redirect to frontend with tokens
+          
+  /auth/facebook:
+    get:
+      tags:
+        - Authentication
+      summary: Initiate Facebook OAuth login
+      responses:
+        '302':
+          description: Redirect to Facebook
+          
+  /auth/logout:
     post:
-      summary: Send reset OTP
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string, format: email }
+      tags:
+        - Authentication
+      summary: Logout user
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: OTP sent
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Reset code sent" }
-  /auth/verify-reset-otp:
-    post:
-      summary: Verify reset OTP
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string, format: email }
-                code: { type: string, pattern: '^\d{6}$', example: "654321" }
-      responses:
-        '200':
-          description: OTP verified
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Verified - proceed to reset" }
-  /auth/reset-password:
-    post:
-      summary: Reset password after OTP
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                newPassword: { type: string, format: password, example: "NewSecurePass123!" }
-                confirmNewPassword: { type: string, format: password, example: "NewSecurePass123!" }
-
-      responses:
-        '200':
-          description: Password reset
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Password updated" }
+          description: Logged out successfully
+          
   /auth/refresh-token:
     post:
+      tags:
+        - Authentication
       summary: Refresh access token
       requestBody:
         required: true
@@ -147,220 +360,30 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - refreshToken
               properties:
-                refreshToken: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
+                refreshToken:
+                  type: string
       responses:
         '200':
-          description: Token refreshed
+          description: New token generated
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  newToken: { type: string, example: "eyJhbGciOiJIUzI1NiIs..." }
-  /auth/logout:
-    post:
-      summary: Logout (invalidate token)
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: Logged out
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Session ended" }
-
-  # ==================== DEPRECATED ENDPOINT ====================
-  /auth/social-login:
-    post:
-      summary: Social login (DEPRECATED)
-      deprecated: true
-      description: This endpoint is deprecated. Use /auth/google or /auth/facebook instead.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                provider: { type: string, enum: [google, facebook], example: "google" }
-                idToken: { type: string, example: "google-id-token" }
-      responses:
-        '410':
-          description: Endpoint deprecated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string, example: "This endpoint is deprecated" }
-
-  # ==================== GOOGLE OAUTH ENDPOINTS ====================
-  /auth/google:
+                  newToken:
+                    type: string
+                    
+  # ==================== USER MANAGEMENT ====================
+  /users:
     get:
-      summary: Initiate Google OAuth login
-      description: Redirects user to Google authorization page
-      responses:
-        '302':
-          description: Redirects to Google OAuth
-  
-  /auth/google/callback:
-    get:
-      summary: Google OAuth callback
-      description: Handles Google OAuth callback and returns JWT tokens
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Authorization code from Google
-      responses:
-        '302':
-          description: Redirects to frontend with tokens
-          headers:
-            Location:
-              schema:
-                type: string
-                example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
-  
-  # ==================== FACEBOOK OAUTH ENDPOINTS ====================
-  /auth/facebook:
-    get:
-      summary: Initiate Facebook OAuth login
-      description: Redirects user to Facebook authorization page
-      responses:
-        '302':
-          description: Redirects to Facebook OAuth
-  
-  /auth/facebook/callback:
-    get:
-      summary: Facebook OAuth callback
-      description: Handles Facebook OAuth callback and returns JWT tokens
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Authorization code from Facebook
-      responses:
-        '302':
-          description: Redirects to frontend with tokens
-          headers:
-            Location:
-              schema:
-                type: string
-                example: "http://localhost:3000/auth/callback?token=xxx&refreshToken=yyy"
-  
-  # ==================== LINK OAUTH ACCOUNTS (PROTECTED) ====================
-  /auth/link/google:
-    get:
-      summary: Link Google account to logged-in user
-      description: Requires authentication. Links Google account to existing user account.
-      security: [{ bearerAuth: [] }]
-      responses:
-        '302':
-          description: Redirects to Google OAuth, then back to settings page
-  
-  /auth/link/facebook:
-    get:
-      summary: Link Facebook account to logged-in user
-      description: Requires authentication. Links Facebook account to existing user account.
-      security: [{ bearerAuth: [] }]
-      responses:
-        '302':
-          description: Redirects to Facebook OAuth, then back to settings page
-  
-  /auth/linked-accounts:
-    get:
-      summary: Get list of linked OAuth accounts
-      description: Returns list of OAuth providers linked to current user
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: List of linked accounts
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  linkedAccounts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        provider:
-                          type: string
-                          enum: [google, facebook]
-                          example: "google"
-                        linkedAt:
-                          type: string
-                          format: date-time
-                          example: "2024-01-15T10:30:00Z"
-  
-  /auth/unlink/{provider}:
-    delete:
-      summary: Unlink OAuth account
-      description: Removes OAuth provider link from user account
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [google, facebook]
-          description: OAuth provider to unlink
-      responses:
-        '200':
-          description: Account unlinked successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: true }
-                  message: { type: string, example: "google account unlinked successfully" }
-        '400':
-          description: Cannot unlink only login method
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string, example: "Cannot unlink the only login method" }
-  
-  /auth/me:
-    get:
-      summary: Get current user profile
-      description: Returns current user info and linked accounts
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: User profile with linked accounts
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user: { $ref: '#/components/schemas/User' }
-                  linkedAccounts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        provider: { type: string }
-                        linkedAt: { type: string, format: date-time }
-
-  # ==================== FAVORITES ENDPOINTS (NEW) ====================
-  /favorites:
-    get:
-      summary: Get user's favorite vehicles
-      description: Returns paginated list of user's favorite vehicles with full details
-      security: [{ bearerAuth: [] }]
+      tags:
+        - Users
+      summary: Get all users with filtering and sorting
+      security:
+        - BearerAuth: []
       parameters:
         - name: page
           in: query
@@ -372,24 +395,566 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: search
+          in: query
+          description: Search by name, email, or ID
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [customer, owner]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [normal, active, suspended, banned]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [full_name, created_at, email, role, status]
+            default: created_at
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+        - name: includeAdmin
+          in: query
+          schema:
+            type: string
+            enum: ['true', 'false']
+            default: 'false'
+        - name: includeSupport
+          in: query
+          schema:
+            type: string
+            enum: ['true', 'false']
+            default: 'false'
       responses:
         '200':
-          description: List of favorite vehicles
+          description: List of users
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  favorites:
+                  users:
                     type: array
                     items:
-                      $ref: '#/components/schemas/FavoriteVehicle'
+                      $ref: '#/components/schemas/UserWithStats'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+                    
+  /users/support:
+    get:
+      tags:
+        - Users
+      summary: Get all support users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of support users
+          
+  /users/owners:
+    get:
+      tags:
+        - Users
+      summary: Get all owner users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of owner users
+          
+  /users/customers:
+    get:
+      tags:
+        - Users
+      summary: Get all customer users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of customer users
+          
+  /users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserWithStats'
+        '404':
+          description: User not found
+          
+  /users/{userId}/role:
+    put:
+      tags:
+        - Users
+      summary: Change user role (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newRole
+              properties:
+                newRole:
+                  type: string
+                  enum: [customer, owner]
+      responses:
+        '200':
+          description: Role updated
+        '403':
+          description: Admin access required
+          
+  /users/{userId}/status:
+    put:
+      tags:
+        - Users
+      summary: Update user status (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [normal, active, suspended, banned]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+          
+  /users/{userId}/license-status:
+    get:
+      tags:
+        - Users
+      summary: Get user license verification status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: License status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  email:
+                    type: string
+                  licenseStatus:
+                    type: string
+                    enum: [unverified, pending, verified, rejected]
+                  hasLicense:
+                    type: boolean
+                    
+  /users/{userId}/upload-license:
     post:
+      tags:
+        - Users
+      summary: Upload driver's license
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - licenseUrl
+              properties:
+                licenseUrl:
+                  type: string
+                  description: URL to uploaded license image
+      responses:
+        '200':
+          description: License uploaded
+          
+  # ==================== DEVICES ====================
+  /devices:
+    post:
+      tags:
+        - Devices
+      summary: Register device for push notifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fcmToken
+                - platform
+              properties:
+                fcmToken:
+                  type: string
+                platform:
+                  type: string
+                  enum: [android, ios, web]
+                deviceName:
+                  type: string
+                appVersion:
+                  type: string
+                osVersion:
+                  type: string
+      responses:
+        '201':
+          description: Device registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '409':
+          description: Device already registered
+          
+    get:
+      tags:
+        - Devices
+      summary: Get current user's devices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                      
+  /devices/{deviceId}:
+    delete:
+      tags:
+        - Devices
+      summary: Delete device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Device deleted
+          
+  /api/users/{userId}/devices:
+    get:
+      tags:
+        - Devices
+      summary: Get user devices (for notification service)
+      description: Public API for internal microservice communication
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                      
+  # ==================== PAYMENT METHODS ====================
+  /payments/methods:
+    get:
+      tags:
+        - Payments
+      summary: Get all payment methods for current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentMethods:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentMethod'
+                      
+    post:
+      tags:
+        - Payments
+      summary: Add new payment method
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [credit_card, debit_card, paypal, bank_account, wallet]
+                provider:
+                  type: string
+                providerPaymentMethodId:
+                  type: string
+                cardLastFour:
+                  type: string
+                cardBrand:
+                  type: string
+                cardExpMonth:
+                  type: integer
+                cardExpYear:
+                  type: integer
+                holderName:
+                  type: string
+                billingAddress:
+                  type: object
+                isDefault:
+                  type: boolean
+      responses:
+        '201':
+          description: Payment method added
+          
+  /payments/methods/{methodId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment method by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment method details
+          
+    put:
+      tags:
+        - Payments
+      summary: Update payment method
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardExpMonth:
+                  type: integer
+                cardExpYear:
+                  type: integer
+                holderName:
+                  type: string
+                billingAddress:
+                  type: object
+                isDefault:
+                  type: boolean
+      responses:
+        '200':
+          description: Payment method updated
+          
+    delete:
+      tags:
+        - Payments
+      summary: Delete payment method
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment method deleted
+          
+  /payments/methods/{methodId}/set-default:
+    put:
+      tags:
+        - Payments
+      summary: Set payment method as default
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Default payment method updated
+          
+  # ==================== FAVORITES ====================
+  /favorites:
+    get:
+      tags:
+        - Favorites
+      summary: Get user's favorite vehicles
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of favorites
+          
+    post:
+      tags:
+        - Favorites
       summary: Add vehicle to favorites
-      description: Add a vehicle to user's favorites list
-      security: [{ bearerAuth: [] }]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -402,27 +967,17 @@ paths:
                 vehicleId:
                   type: string
                   format: uuid
-                  example: "550e8400-e29b-41d4-a716-446655440001"
       responses:
         '201':
           description: Vehicle added to favorites
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Vehicle added to favorites" }
-                  vehicleId: { type: string, format: uuid }
-        '400':
-          description: Cannot favorite inactive vehicle
-        '404':
-          description: Vehicle not found
-
+          
   /favorites/{vehicleId}:
     delete:
+      tags:
+        - Favorites
       summary: Remove vehicle from favorites
-      description: Remove a vehicle from user's favorites list
-      security: [{ bearerAuth: [] }]
+      security:
+        - BearerAuth: []
       parameters:
         - name: vehicleId
           in: path
@@ -433,93 +988,43 @@ paths:
       responses:
         '200':
           description: Vehicle removed from favorites
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Vehicle removed from favorites" }
-                  vehicleId: { type: string, format: uuid }
-        '404':
-          description: Vehicle not in favorites
-
-  /favorites/check/{vehicleId}:
+          
+  # ==================== ANALYTICS ====================
+  /analytics/users/stats:
     get:
-      summary: Check if vehicle is favorited
-      description: Check if a specific vehicle is in user's favorites
-      security: [{ bearerAuth: [] }]
+      tags:
+        - Analytics
+      summary: Get user statistics
+      security:
+        - BearerAuth: []
       parameters:
-        - name: vehicleId
-          in: path
-          required: true
+        - name: timeRange
+          in: query
           schema:
             type: string
-            format: uuid
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
       responses:
         '200':
-          description: Favorite status
+          description: User statistics
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  vehicleId: { type: string, format: uuid }
-                  isFavorited: { type: boolean, example: true }
-
-  /favorites/count:
-    get:
-      summary: Get favorite count
-      description: Get total number of favorited vehicles
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: Favorite count
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count: { type: integer, example: 5 }
-
-components:
-  schemas:
-    User:
-      type: object
-      properties:
-        id: { type: string, example: "uuid-123" }
-        email: { type: string, format: email, example: "user@wiz.com" }
-        fullName: { type: string, example: "John Doe" }
-    
-    FavoriteVehicle:
-      type: object
-      properties:
-        vehicleId:
-          type: string
-          format: uuid
-        addedAt:
-          type: string
-          format: date-time
-        vehicleDetails:
-          type: object
-          properties:
-            vehicle_id: { type: string, format: uuid }
-            owner_id: { type: string, format: uuid }
-            name: { type: string, example: "BMW X1 2020" }
-            vehicle_type: { type: string, example: "suv" }
-            price_per_day: { type: integer, example: 390000 }
-            status: { type: string, example: "active" }
-            average_rating: { type: number, example: 4.8 }
-            total_rentals: { type: integer, example: 45 }
-    
-    Pagination:
-      type: object
-      properties:
-        total: { type: integer }
-        page: { type: integer }
-        limit: { type: integer }
-  
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+                  total:
+                    type: integer
+                  active:
+                    type: integer
+                  newUsers:
+                    type: integer
+                  renters:
+                    type: integer
+                  owners:
+                    type: integer
+                  growth:
+                    type: number
+                  byType:
+                    type: object
+                  byStatus:
+                    type: object

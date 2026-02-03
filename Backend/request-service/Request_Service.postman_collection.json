@@ -1,0 +1,575 @@
+{
+  "info": {
+    "name": "Request Service API",
+    "description": "Complete API collection for Request Service v2.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3010",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Metadata",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/metadata/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "metadata", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Statuses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/metadata/statuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "metadata", "statuses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Request Management",
+      "item": [
+        {
+          "name": "Create Request - Basic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Issue with booking cancellation\",\n  \"category\": \"booking_issue\",\n  \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n  \"priority\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"]
+            }
+          }
+        },
+        {
+          "name": "Create Request - With All IDs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Booking confirmation required\",\n  \"category\": \"booking_confirmation\",\n  \"description\": \"Please confirm my booking\",\n  \"priority\": \"high\",\n  \"customerId\": \"customer-123\",\n  \"ownerId\": \"owner-456\",\n  \"vehicleId\": \"vehicle-789\",\n  \"bookingId\": \"booking-101\",\n  \"attachmentIds\": [\"media-1\", \"media-2\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"]
+            }
+          }
+        },
+        {
+          "name": "Get All Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?page=1&limit=20&sortBy=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "booking_issue",
+                  "disabled": true
+                },
+                {
+                  "key": "handledBy",
+                  "value": "me",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "vehicle-123",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/my-requests?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "my-requests"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "booking_issue",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Request Actions",
+      "item": [
+        {
+          "name": "Update Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\",\n  \"notes\": \"Started working on this request\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Request approved after verification\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Deny Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Insufficient documentation provided\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/deny",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "deny"]
+            }
+          }
+        },
+        {
+          "name": "Pause Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Waiting for additional information from user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "pause"]
+            }
+          }
+        },
+        {
+          "name": "Resume Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Information received, continuing processing\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "resume"]
+            }
+          }
+        },
+        {
+          "name": "Add Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Customer contacted via email for clarification\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "{{requestId}}", "notes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Request Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/requests/stats?timeRange=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "requests", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Staff Performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/staff/performance?timeRange=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "staff", "performance"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Advanced Filtering Examples",
+      "item": [
+        {
+          "name": "Get Unassigned Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?handledBy=unassigned&sortBy=priority",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "handledBy",
+                  "value": "unassigned"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "priority"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search by Vehicle ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?search=vehicle-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "vehicle-123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Processing Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?status=processing&handledBy=me",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "processing"
+                },
+                {
+                  "key": "handledBy",
+                  "value": "me"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Paused Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?status=paused",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "paused"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Deactivation Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests?category=vehicle_deactivation&status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "vehicle_deactivation"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
