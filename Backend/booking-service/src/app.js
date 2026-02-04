@@ -1,3 +1,6 @@
+// Backend/booking-service/src/app.js
+// Updated to include event listener and admin routes
+
 const dotenv = require("dotenv");
 
 const env = process.env.NODE_ENV || "local";
@@ -14,11 +17,12 @@ const YAML = require("yamljs");
 const path = require("path");
 
 const { connectRabbitMQ } = require("./config/rabbitmq");
+const eventListener = require("./utils/eventListener"); // ✅ NEW
 
 const app = express();
 
 /* ================================
-   📹 SWAGGER SETUP
+   📘 SWAGGER SETUP
 ================================ */
 
 let swaggerDocument;
@@ -28,7 +32,7 @@ try {
   swaggerDocument = YAML.load(yamlPath);
   console.log("📘 Swagger YAML loaded successfully");
 } catch (error) {
-  console.warn("⚠️  wiz-booking.yaml not found – Swagger disabled");
+  console.warn("⚠️  wiz-booking.yaml not found — Swagger disabled");
   swaggerDocument = {
     openapi: "3.0.0",
     info: {
@@ -40,7 +44,7 @@ try {
 }
 
 /* ================================
-   📹 MIDDLEWARE
+   📘 MIDDLEWARE
 ================================ */
 
 app.use(
@@ -54,7 +58,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ================================
-   🔍 REQUEST LOGGER (DEBUG)
+   📋 REQUEST LOGGER (DEBUG)
 ================================ */
 
 app.use((req, res, next) => {
@@ -71,7 +75,7 @@ app.use((req, res, next) => {
 });
 
 /* ================================
-   📹 SWAGGER UI
+   📘 SWAGGER UI
 ================================ */
 
 app.use(
@@ -85,20 +89,23 @@ app.use(
 );
 
 /* ================================
-   📹 ROUTES
+   📘 ROUTES
 ================================ */
 
+// Customer booking routes
 const bookingRoutes = require("./routes/booking_routes");
 app.use("/bookings", bookingRoutes);
 
+// Owner booking routes
 try {
   const ownerBookingRoutes = require("./routes/owner_booking_routes");
-  app.use("/bookings/owner", ownerBookingRoutes); // ✅ FIXED: Now matches Swagger
+  app.use("/bookings/owner", ownerBookingRoutes);
   console.log("✅ Owner booking routes registered at /bookings/owner");
 } catch (error) {
   console.log("⚠️  Owner booking routes not found, skipping...");
 }
 
+// Analytics routes
 try {
   const analyticsRoutes = require("./routes/analytics_routes");
   app.use("/analytics", analyticsRoutes);
@@ -107,8 +114,17 @@ try {
   console.log("⚠️  Analytics routes not found, skipping...");
 }
 
+// ✅ NEW: Admin booking routes
+try {
+  const adminBookingRoutes = require("./routes/admin_booking_routes");
+  app.use("/admin", adminBookingRoutes);
+  console.log("✅ Admin booking routes registered at /admin");
+} catch (error) {
+  console.log("⚠️  Admin booking routes not found, skipping...");
+}
+
 /* ================================
-   📹 HEALTH CHECK
+   📘 HEALTH CHECK
 ================================ */
 
 app.get("/health", (req, res) => {
@@ -121,7 +137,7 @@ app.get("/health", (req, res) => {
 });
 
 /* ================================
-   📹 404 HANDLER
+   📘 404 HANDLER
 ================================ */
 
 app.use((req, res) => {
@@ -135,7 +151,7 @@ app.use((req, res) => {
 });
 
 /* ================================
-   📹 ERROR HANDLER
+   📘 ERROR HANDLER
 ================================ */
 
 app.use((err, req, res, next) => {
@@ -148,7 +164,7 @@ app.use((err, req, res, next) => {
 });
 
 /* ================================
-   📹 SERVER START
+   📘 SERVER START
 ================================ */
 
 const startServer = async () => {
@@ -156,22 +172,27 @@ const startServer = async () => {
     const PORT = process.env.PORT || 3004;
     const GRPC_PORT = process.env.GRPC_PORT || 50052;
 
-    console.log("\n📄 Initializing Booking Service...");
+    console.log("\n🔄 Initializing Booking Service...");
 
+    // Run database migrations
     const { runMigrations } = require("./utils/migrationRunner");
     await runMigrations();
-    console.log("Database migrations completed");
+    console.log("✅ Database migrations completed");
 
-    // RabbitMQ
+    // Connect to RabbitMQ
     await connectRabbitMQ();
     console.log("✅ RabbitMQ connected");
 
-    // gRPC Server
+    // ✅ NEW: Start event listener
+    await eventListener.startListening();
+    console.log("✅ Event listener started");
+
+    // Start gRPC Server
     const BookingGrpcServer = require("./grpc/booking_grpc_server");
     const grpcServer = new BookingGrpcServer();
     grpcServer.start(GRPC_PORT);
 
-    // HTTP Server
+    // Start HTTP Server
     app.listen(PORT, () => {
       console.log("\n✅ Booking Service started");
       console.log(`📡 HTTP: http://localhost:${PORT}`);
@@ -179,17 +200,32 @@ const startServer = async () => {
       console.log(`📚 Swagger: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health: http://localhost:${PORT}/health`);
       console.log("\n📋 Available routes:");
+      console.log("   Customer Routes:");
       console.log("   - GET  /bookings/verification/me");
       console.log("   - POST /bookings/verification");
       console.log("   - POST /bookings");
       console.log("   - GET  /bookings/my-bookings");
-      console.log("   - GET  /bookings/owner/bookings ⭐");
+      console.log("   - POST /bookings/:id/sign-contract");
+      console.log("   - POST /bookings/:id/pay-final");
+      console.log("   - POST /bookings/:id/confirm-pickup");
+      console.log("   - POST /bookings/:id/confirm-return");
+      console.log("   - POST /bookings/:id/cancel");
+      console.log("   - GET  /bookings/:id");
+      console.log("\n   Owner Routes:");
+      console.log("   - GET  /bookings/owner/bookings");
       console.log("   - POST /bookings/owner/:id/accept");
       console.log("   - POST /bookings/owner/:id/reject");
       console.log("   - POST /bookings/owner/:id/confirm-return");
+      console.log("\n   Analytics Routes:");
       console.log("   - GET  /analytics/bookings/stats");
       console.log("   - GET  /analytics/bookings/owner/:ownerId/stats");
-      console.log("   - GET  /analytics/bookings/vehicle/:vehicleId/stats\n");
+      console.log("   - GET  /analytics/bookings/vehicle/:vehicleId/stats");
+      console.log("\n   ✨ Admin Routes (NEW):");
+      console.log("   - GET  /admin/bookings (with pagination & filters)");
+      console.log("   - GET  /admin/bookings/by-status");
+      console.log("   - GET  /admin/bookings/search");
+      console.log("   - GET  /admin/bookings/stats");
+      console.log("   - GET  /admin/bookings/:id\n");
     });
   } catch (error) {
     console.error("❌ Failed to start Booking Service:", error);
@@ -198,7 +234,7 @@ const startServer = async () => {
 };
 
 /* ================================
-   📹 GRACEFUL SHUTDOWN
+   📘 GRACEFUL SHUTDOWN
 ================================ */
 
 process.on("SIGINT", () => {
@@ -212,5 +248,5 @@ process.on("SIGTERM", () => {
 });
 
 startServer();
-//change app from App
+
 module.exports = app;
