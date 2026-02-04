@@ -17,6 +17,7 @@ const reviewRoutes = require("./routes/review_routes");
 const analyticsRoutes = require("./routes/analytics_routes");
 const errorHandler = require("./middleware/errorHandler");
 const ReviewGrpcServer = require("./grpc/review_grpc_server");
+const eventEmitter = require("./events/eventEmitter");
 
 const app = express();
 
@@ -27,10 +28,13 @@ app.use(express.urlencoded({ extended: true }));
 // Health check
 app.get("/health", async (req, res) => {
   const dbHealthy = await database.healthCheck();
+  const rabbitmqHealthy = eventEmitter.connected;
+
   res.json({
-    status: dbHealthy ? "ok" : "degraded",
+    status: dbHealthy && rabbitmqHealthy ? "ok" : "degraded",
     service: "review-service",
     database: dbHealthy ? "connected" : "disconnected",
+    eventBus: rabbitmqHealthy ? "connected" : "disconnected",
     timestamp: new Date().toISOString(),
   });
 });
@@ -44,7 +48,7 @@ try {
     { url: process.env.BASE_URL || "http://localhost:3005" },
   ];
 } catch (error) {
-  console.warn("wiz-review.yaml not found — Swagger UI disabled");
+  console.warn("wiz-review.yaml not found – Swagger UI disabled");
   swaggerDocument = { info: { title: "API Docs Unavailable" } };
 }
 
@@ -82,6 +86,15 @@ async function startServer() {
       }
     }
 
+    // Connect to RabbitMQ for event emission
+    console.log("🔄 Connecting to RabbitMQ...");
+    try {
+      await eventEmitter.connect();
+    } catch (error) {
+      console.error("❌ Failed to connect to RabbitMQ:", error.message);
+      console.warn("⚠️  Service will continue without event emission");
+    }
+
     // Start HTTP server
     const PORT = process.env.PORT || 3005;
     app.listen(PORT, () => {
@@ -109,6 +122,7 @@ async function shutdown() {
     grpcServer.stop();
   }
 
+  await eventEmitter.close();
   await database.disconnect();
   process.exit(0);
 }
