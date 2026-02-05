@@ -90,7 +90,7 @@ class AuthController {
       const user = result.rows[0];
 
       const token = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role },
+        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url},
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
@@ -178,7 +178,7 @@ class AuthController {
       }
 
       const token = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role },
+        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url},
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
@@ -346,7 +346,7 @@ class AuthController {
       const user = result.rows[0];
 
       const newToken = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role },
+        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url},
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
