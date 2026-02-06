@@ -970,10 +970,10 @@ class BookingController {
         });
       }
 
-      if (!booking.deposit_paid || !booking.final_payment_paid) {
+      if (!booking.deposit_paid) {
         return res.status(400).json({
           error:
-            "Both deposit and final payment must be completed before pickup",
+            "Deposit must be paid before pickup",
         });
       }
 

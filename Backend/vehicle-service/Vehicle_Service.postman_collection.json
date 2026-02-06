@@ -1,36 +1,11 @@
 {
   "info": {
-    "name": "Vehicle Service API - Complete Collection",
+    "_postman_id": "cb2076ac-8472-48ff-8f45-c8fd636f778b",
+    "name": "Wiz Vehicle Service API",
     "description": "Comprehensive API collection for Vehicle Service with all new features",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "42883958"
   },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3002",
-      "type": "string"
-    },
-    {
-      "key": "owner_token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "admin_token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "vehicle_id",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "owner_id",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "Public APIs",
@@ -42,17 +17,117 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/vehicles/search?vehicleType=suv&city=Ho Chi Minh&page=1&limit=20&sortBy=price",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "search"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "search"
+              ],
               "query": [
-                { "key": "vehicleType", "value": "suv" },
-                { "key": "city", "value": "Ho Chi Minh" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "sortBy", "value": "price" }
+                {
+                  "key": "vehicleType",
+                  "value": "suv"
+                },
+                {
+                  "key": "city",
+                  "value": "Ho Chi Minh"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "price"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Search Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/search?vehicleType=suv&city=Ho Chi Minh&page=1&limit=20&sortBy=price",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "vehicleType",
+                      "value": "suv"
+                    },
+                    {
+                      "key": "city",
+                      "value": "Ho Chi Minh"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "price"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1268"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4f4-pHJLYlcAMiBl/zTnT/fIE/urupo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:16:19 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"year\": 2021,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"location\": {\n                \"city\": \"Ho Chi Minh City\",\n                \"address\": \"789 Nguyen Van Linh, District 7\",\n                \"district\": \"District 7\",\n                \"coordinates\": {\n                    \"lat\": 10.7295,\n                    \"lng\": 106.7019\n                }\n            },\n            \"instantBooking\": false,\n            \"driverSupported\": false,\n            \"deliveryAvailable\": false,\n            \"isAvailable\": true,\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"ownerName\": \"Vehicle Owner\",\n            \"ownerAvatar\": \"assets/images/article_2.png\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"year\": 2020,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"location\": {\n                \"city\": \"Ho Chi Minh City\",\n                \"address\": \"123 Le Duan, District 1\",\n                \"district\": \"District 1\",\n                \"coordinates\": {\n                    \"lat\": 10.7769,\n                    \"lng\": 106.7009\n                }\n            },\n            \"instantBooking\": false,\n            \"driverSupported\": false,\n            \"deliveryAvailable\": false,\n            \"isAvailable\": true,\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"ownerName\": \"Rumbling\",\n            \"ownerAvatar\": \"assets/images/Car_2.png\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Vehicle by ID",
@@ -61,10 +136,73 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/vehicles/{{vehicle_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "{{vehicle_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicle_id}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicle by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/{{vehicle_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "{{vehicle_id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "940"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3ac-QOc8kTTeqNBC4BN0hv6++MKza1Q\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:16:52 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicle\": {\n        \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n        \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"name\": \"Honda Civic 2023\",\n        \"description\": \"Modern sedan with excellent fuel efficiency\",\n        \"specifications\": {\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"year\": 2023,\n            \"mileage\": 5000,\n            \"licensePlate\": \"59C-99997\"\n        },\n        \"photos\": [\n            {\n                \"url\": \"assets/images/Car.png\",\n                \"isPrimary\": true,\n                \"order\": 1\n            }\n        ],\n        \"features\": [\n            \"AC\",\n            \"GPS\",\n            \"Bluetooth\"\n        ],\n        \"pricing\": {\n            \"pricePerDay\": 400000\n        },\n        \"location\": {\n            \"city\": \"Ho Chi Minh City\",\n            \"address\": \"123 Main St\",\n            \"district\": \"District 1\",\n            \"coordinates\": {\n                \"lat\": 10.7769,\n                \"lng\": 106.7009\n            }\n        },\n        \"availability\": {\n            \"driverSupported\": false,\n            \"instantBooking\": true,\n            \"deliveryAvailable\": false,\n            \"unavailablePeriods\": []\n        },\n        \"performance\": {\n            \"totalRentals\": 0,\n            \"rating\": 0,\n            \"reviewCount\": 0\n        },\n        \"rules\": {\n            \"noPets\": false,\n            \"noSmoking\": true\n        },\n        \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n        \"ownerName\": \"Myat Thiri\",\n        \"ownerAvatar\": \"assets/images/article_2.png\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Check Availability",
@@ -73,14 +211,95 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/vehicles/{{vehicle_id}}/availability?startDate=2026-02-10&endDate=2026-02-15",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "{{vehicle_id}}", "availability"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicle_id}}",
+                "availability"
+              ],
               "query": [
-                { "key": "startDate", "value": "2026-02-10" },
-                { "key": "endDate", "value": "2026-02-15" }
+                {
+                  "key": "startDate",
+                  "value": "2026-02-10"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-02-15"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Check Availability",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/{{vehicle_id}}/availability?startDate=2026-02-10&endDate=2026-02-15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "{{vehicle_id}}",
+                    "availability"
+                  ],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2026-02-10"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2026-02-15"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "147"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"93-d+PvMkgzzJ450CfnbbnyrVtz1YI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:17:02 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n    \"isAvailable\": true,\n    \"message\": \"Vehicle is available for selected dates\",\n    \"unavailablePeriods\": []\n}"
+            }
+          ]
         }
       ]
     },
@@ -100,16 +319,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/owner/my-vehicles?status=all&page=1&limit=20&sortBy=revenue",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "my-vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "my-vehicles"
+              ],
               "query": [
-                { "key": "status", "value": "all" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "sortBy", "value": "revenue" }
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "revenue"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get My Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/my-vehicles?status=all&page=1&limit=20&sortBy=revenue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "my-vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "all"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "revenue"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "436"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1b4-fffutDePDxg5v/YPAbGTDfaR3zk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:17:17 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Vehicles by Owner ID",
@@ -124,18 +444,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{owner_id}}/vehicles?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{owner_id}}", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{owner_id}}",
+                "vehicles"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicles by Owner ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{owner_id}}/vehicles?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{owner_id}}",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "553"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"229-gJOv6Ce44sv6I7PCtGJwj2LYVJw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:17:31 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"vehicleType\": \"sedan\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"year\": 2023,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Create Vehicle",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{owner_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -151,14 +570,92 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Honda Civic 2023\",\n  \"description\": \"Modern sedan with excellent fuel efficiency\",\n  \"vehicleType\": \"sedan\",\n  \"transmission\": \"automatic\",\n  \"fuelType\": \"gasoline\",\n  \"seats\": 5,\n  \"year\": 2023,\n  \"mileage\": 5000,\n  \"licensePlate\": \"59C-99999\",\n  \"pricePerDay\": 400000,\n  \"location\": {\n    \"address\": \"123 Main St\",\n    \"city\": \"Ho Chi Minh City\",\n    \"district\": \"District 1\",\n    \"coordinates\": {\n      \"lat\": 10.7769,\n      \"lng\": 106.7009\n    }\n  },\n  \"features\": [\"AC\", \"GPS\", \"Bluetooth\"],\n  \"rules\": {\n    \"noSmoking\": true,\n    \"noPets\": false\n  },\n  \"driverSupported\": false,\n  \"instantBooking\": true,\n  \"deliveryAvailable\": false,\n  \"photoIds\": [\"assets/images/Car.png\"]\n}"
+              "raw": "{\n  \"name\": \"Honda Civic 2023\",\n  \"description\": \"Modern sedan with excellent fuel efficiency\",\n  \"vehicleType\": \"sedan\",\n  \"transmission\": \"automatic\",\n  \"fuelType\": \"gasoline\",\n  \"seats\": 5,\n  \"year\": 2023,\n  \"mileage\": 5000,\n  \"licensePlate\": \"59C-99998\",\n  \"pricePerDay\": 400000,\n  \"location\": {\n    \"address\": \"123 Main St\",\n    \"city\": \"Ho Chi Minh City\",\n    \"district\": \"District 1\",\n    \"coordinates\": {\n      \"lat\": 10.7769,\n      \"lng\": 106.7009\n    }\n  },\n  \"features\": [\"AC\", \"GPS\", \"Bluetooth\"],\n  \"rules\": {\n    \"noSmoking\": true,\n    \"noPets\": false\n  },\n  \"driverSupported\": false,\n  \"instantBooking\": true,\n  \"deliveryAvailable\": false,\n  \"photoIds\": [\"assets/images/Car.png\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/vehicles/owner",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Create Vehicle",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Honda Civic 2023\",\n  \"description\": \"Modern sedan with excellent fuel efficiency\",\n  \"vehicleType\": \"sedan\",\n  \"transmission\": \"automatic\",\n  \"fuelType\": \"gasoline\",\n  \"seats\": 5,\n  \"year\": 2023,\n  \"mileage\": 5000,\n  \"licensePlate\": \"59C-99997\",\n  \"pricePerDay\": 400000,\n  \"location\": {\n    \"address\": \"123 Main St\",\n    \"city\": \"Ho Chi Minh City\",\n    \"district\": \"District 1\",\n    \"coordinates\": {\n      \"lat\": 10.7769,\n      \"lng\": 106.7009\n    }\n  },\n  \"features\": [\"AC\", \"GPS\", \"Bluetooth\"],\n  \"rules\": {\n    \"noSmoking\": true,\n    \"noPets\": false\n  },\n  \"driverSupported\": false,\n  \"instantBooking\": true,\n  \"deliveryAvailable\": false,\n  \"photoIds\": [\"assets/images/Car.png\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "145"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"91-9AUWLb+N+RvBLuyikSy+jDtomnU\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:11:53 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle created successfully\",\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n    \"status\": \"active\",\n    \"verificationStatus\": \"unverified\"\n}"
+            }
+          ]
         },
         {
           "name": "Get My Vehicle by ID",
@@ -173,10 +670,81 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get My Vehicle by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1116"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"45c-n0bzr500rCEEIzQogYCp4dqGOA4\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:17:47 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicle\": {\n        \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n        \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"name\": \"Honda Civic 2023\",\n        \"description\": \"Modern sedan with excellent fuel efficiency\",\n        \"specifications\": {\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"year\": 2023,\n            \"mileage\": 5000,\n            \"licensePlate\": \"59C-99997\"\n        },\n        \"photos\": [\n            {\n                \"url\": \"assets/images/Car.png\",\n                \"isPrimary\": true,\n                \"order\": 1\n            }\n        ],\n        \"features\": [\n            \"AC\",\n            \"GPS\",\n            \"Bluetooth\"\n        ],\n        \"pricing\": {\n            \"pricePerDay\": 400000\n        },\n        \"location\": {\n            \"city\": \"Ho Chi Minh City\",\n            \"address\": \"123 Main St\",\n            \"district\": \"District 1\",\n            \"coordinates\": {\n                \"lat\": 10.7769,\n                \"lng\": 106.7009\n            }\n        },\n        \"availability\": {\n            \"driverSupported\": false,\n            \"instantBooking\": true,\n            \"deliveryAvailable\": false,\n            \"unavailablePeriods\": []\n        },\n        \"performance\": {\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"rating\": 0,\n            \"reviewCount\": 0\n        },\n        \"status\": \"active\",\n        \"verificationStatus\": \"unverified\",\n        \"verificationNotes\": null,\n        \"lastVerified\": null,\n        \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n        \"rules\": {\n            \"noPets\": false,\n            \"noSmoking\": true\n        },\n        \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n        \"updatedAt\": \"2026-02-05T09:11:53.691Z\",\n        \"bannedReason\": null,\n        \"rejectionReason\": null\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Update Vehicle",
@@ -200,10 +768,90 @@
             },
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Update Vehicle",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pricePerDay\": 450000,\n  \"mileage\": 6000,\n  \"description\": \"Updated description\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "142"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"8e-3y0ennBe8lfSjg6y//47jtYOHCY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:17:58 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle updated successfully\",\n    \"vehicle\": {\n        \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n        \"name\": \"Honda Civic 2023\",\n        \"status\": \"active\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Delete Vehicle",
@@ -218,10 +866,81 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Delete Vehicle",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "42"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2a-EnYuQ8eDElQywKVDaBqGD0lmla0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:30:53 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Upload Photos",
@@ -245,10 +964,92 @@
             },
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/photos",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}", "photos"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}",
+                "photos"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Upload Photos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"photoUrls\": [\n    \"assets/images/Car.png\",\n    \"assets/images/Car_2.png\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/photos",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}",
+                    "photos"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "57"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"39-J8JWnP1F9rVezcLy9fAV9dj6XGE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:18:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Photos uploaded successfully\",\n    \"photoCount\": 2\n}"
+            }
+          ]
         },
         {
           "name": "Submit Verification Photos",
@@ -272,10 +1073,92 @@
             },
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}", "verification"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}",
+                "verification"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Submit Verification Photos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"photoUrls\": [\n    \"assets/verification/front.jpg\",\n    \"assets/verification/back.jpg\",\n    \"assets/verification/interior.jpg\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}",
+                    "verification"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "68"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"44-Qsbz0VIuTCdTf3DxXlbP//hHXNU\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:18:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Verification photos submitted. Pending admin approval.\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Verification Status",
@@ -290,10 +1173,83 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification-status",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "owner", "{{vehicle_id}}", "verification-status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "owner",
+                "{{vehicle_id}}",
+                "verification-status"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Verification Status",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification-status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "owner",
+                    "{{vehicle_id}}",
+                    "verification-status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "128"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"80-uo1VZSPj1G7PJwzi2zscEVmBi3A\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:18:59 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"verificationStatus\": \"pending\",\n    \"notes\": null,\n    \"lastVerified\": null,\n    \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n    \"isDue\": false\n}"
+            }
+          ]
         }
       ]
     },
@@ -313,18 +1269,133 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?status=all&verificationStatus=unverified&sortBy=created_at&sortOrder=DESC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "status", "value": "all" },
-                { "key": "verificationStatus", "value": "unverified" },
-                { "key": "sortBy", "value": "created_at" },
-                { "key": "sortOrder", "value": "DESC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "verificationStatus",
+                  "value": "unverified"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "created_at"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get All Vehicles (Comprehensive)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?status=all&verificationStatus=unverified&sortBy=created_at&sortOrder=DESC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "all"
+                    },
+                    {
+                      "key": "verificationStatus",
+                      "value": "unverified"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "created_at"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "DESC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1098"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"44a-HDTLmhaLsHUm0zBbtH9HyU89V9Y\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:25:31 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Search Vehicle by ID",
@@ -339,13 +1410,93 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?vehicleId={{vehicle_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "vehicleId", "value": "{{vehicle_id}}" }
+                {
+                  "key": "vehicleId",
+                  "value": "{{vehicle_id}}"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Search Vehicle by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?vehicleId={{vehicle_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "vehicleId",
+                      "value": "{{vehicle_id}}"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "583"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"247-SdY5QD0lOxKTQwcN4D1RwdqTgJE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:25:16 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Search Vehicle by Owner ID",
@@ -360,13 +1511,93 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?ownerId={{owner_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "ownerId", "value": "{{owner_id}}" }
+                {
+                  "key": "ownerId",
+                  "value": "{{owner_id}}"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Search Vehicle by Owner ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?ownerId={{owner_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "ownerId",
+                      "value": "{{owner_id}}"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "583"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"247-SdY5QD0lOxKTQwcN4D1RwdqTgJE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:25:02 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Search Vehicle by Name",
@@ -381,13 +1612,93 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?search=Honda",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "search", "value": "Honda" }
+                {
+                  "key": "search",
+                  "value": "Honda"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Search Vehicle by Name",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?search=Honda",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "Honda"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "2683"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"a7b-/guG4FjTZkGGe8unkSn24JKK2Xc\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:24:45 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 5,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Approved Vehicles",
@@ -402,16 +1713,119 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/approved?page=1&limit=20&sortBy=rating&sortOrder=DESC",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "approved"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "approved"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "sortBy", "value": "rating" },
-                { "key": "sortOrder", "value": "DESC" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "rating"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Approved Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/approved?page=1&limit=20&sortBy=rating&sortOrder=DESC",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "approved"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "rating"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "DESC"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1027"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"403-4bWvGu0R6lnrYkxRcZv2UPUkedg\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:24:24 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 3,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Active Vehicles",
@@ -426,14 +1840,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/active?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-status", "active"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-status",
+                "active"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Active Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/active?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-status",
+                    "active"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "2212"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"8a4-LLNouYDsdl1362R0188ImxzupJU\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:24:05 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 6,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Deactivated Vehicles",
@@ -448,14 +1953,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/deactivated?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-status", "deactivated"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-status",
+                "deactivated"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Deactivated Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/deactivated?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-status",
+                    "deactivated"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:23:50 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Banned Vehicles",
@@ -470,14 +2066,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/banned?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-status", "banned"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-status",
+                "banned"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Banned Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/banned?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-status",
+                    "banned"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:23:35 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Top Rated Vehicles",
@@ -492,15 +2179,111 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/top-rated?minRating=4.0&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "top-rated"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "top-rated"
+              ],
               "query": [
-                { "key": "minRating", "value": "4.0" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "minRating",
+                  "value": "4.0"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Top Rated Vehicles",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/top-rated?minRating=4.0&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "top-rated"
+                  ],
+                  "query": [
+                    {
+                      "key": "minRating",
+                      "value": "4.0"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:23:21 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Sort by Number of Rentals",
@@ -515,16 +2298,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=rentals&sortOrder=DESC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "sortBy", "value": "rentals" },
-                { "key": "sortOrder", "value": "DESC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "sortBy",
+                  "value": "rentals"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Sort by Number of Rentals",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=rentals&sortOrder=DESC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "rentals"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "DESC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3699"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e73-UaM3YTbOP6wuUe1lTDKG9OxoLxo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:23:07 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 7,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Sort by Price",
@@ -539,16 +2423,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=price&sortOrder=ASC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "sortBy", "value": "price" },
-                { "key": "sortOrder", "value": "ASC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "sortBy",
+                  "value": "price"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "ASC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Sort by Price",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=price&sortOrder=ASC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "price"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "ASC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3699"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e73-gP9e5FgQWidU0giceYE5QFKpdAI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:22:51 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 7,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Sort by Name",
@@ -563,16 +2548,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=name&sortOrder=ASC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "sortBy", "value": "name" },
-                { "key": "sortOrder", "value": "ASC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "sortBy",
+                  "value": "name"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "ASC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Sort by Name",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=name&sortOrder=ASC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "name"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "ASC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3699"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e73-ecwzAsHeo0VQEf1ymjmx9osTFYs\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:22:36 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 7,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Sort by Revenue",
@@ -587,16 +2673,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=revenue&sortOrder=DESC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "sortBy", "value": "revenue" },
-                { "key": "sortOrder", "value": "DESC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "sortBy",
+                  "value": "revenue"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Sort by Revenue",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=revenue&sortOrder=DESC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "revenue"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "DESC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3699"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e73-UaM3YTbOP6wuUe1lTDKG9OxoLxo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:22:25 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 7,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Sort by Next Verification Due",
@@ -611,16 +2798,117 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=next_verification_due&sortOrder=ASC&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles"
+              ],
               "query": [
-                { "key": "sortBy", "value": "next_verification_due" },
-                { "key": "sortOrder", "value": "ASC" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "sortBy",
+                  "value": "next_verification_due"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "ASC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Sort by Next Verification Due",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=next_verification_due&sortOrder=ASC&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "next_verification_due"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "ASC"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3699"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e73-T/UkbWWMsc66VIBbj25dHMLbxWg\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:22:12 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:11:31.965Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"unverified\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-03T15:20:16.322Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"verificationStatus\": \"rejected\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\",\n            \"lastVerified\": \"2026-02-03T15:24:44.609Z\",\n            \"nextVerificationDue\": \"2026-04-03T15:24:44.609Z\",\n            \"verificationNotes\": \"Vehicle does not meet safety standards\",\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"pending\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\",\n            \"lastVerified\": null,\n            \"nextVerificationDue\": \"2026-04-05T09:11:53.692Z\",\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"sedan\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 5,\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"verificationStatus\": \"approved\",\n            \"vehicleType\": \"suv\",\n            \"transmission\": \"automatic\",\n            \"fuelType\": \"gasoline\",\n            \"seats\": 7,\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"totalRevenue\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\",\n            \"lastVerified\": \"2026-02-03T15:07:03.895Z\",\n            \"nextVerificationDue\": null,\n            \"verificationNotes\": null,\n            \"bannedReason\": null\n        }\n    ],\n    \"pagination\": {\n        \"total\": 7,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Filter by SUV",
@@ -635,14 +2923,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/suv?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-type", "suv"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-type",
+                "suv"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Filter by SUV",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/suv?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-type",
+                    "suv"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "640"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"280-mn2epyuRlkqk4aHXhboL+PWObgw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:21:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 390000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440011\",\n            \"status\": \"active\",\n            \"vehicleType\": \"suv\",\n            \"pricePerDay\": 350000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Filter by Sedan",
@@ -657,14 +3036,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/sedan?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-type", "sedan"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-type",
+                "sedan"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Filter by Sedan",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/sedan?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-type",
+                    "sedan"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1518"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5ee-QCznJD24aTm6gPqumKgpuT5u9Cc\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:21:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [\n        {\n            \"id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"status\": \"active\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-05T09:11:53.691Z\"\n        },\n        {\n            \"id\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:20:16.321Z\"\n        },\n        {\n            \"id\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"active\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 400000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:11:31.965Z\"\n        },\n        {\n            \"id\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"name\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"status\": \"stopped\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 450000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\",\n            \"createdAt\": \"2026-02-03T15:09:53.625Z\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"ownerId\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"status\": \"active\",\n            \"vehicleType\": \"sedan\",\n            \"pricePerDay\": 375000,\n            \"rating\": 0,\n            \"totalRentals\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\",\n            \"createdAt\": \"2026-02-03T15:07:03.895Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 5,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Filter by Van",
@@ -679,14 +3149,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/van?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-type", "van"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-type",
+                "van"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Filter by Van",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/van?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-type",
+                    "van"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:21:21 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Filter by Hatchback",
@@ -701,14 +3262,105 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/hatchback?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "by-type", "hatchback"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "by-type",
+                "hatchback"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Filter by Hatchback",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/hatchback?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "by-type",
+                    "hatchback"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:21:06 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         }
       ]
     },
@@ -728,15 +3380,111 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/vehicles/due-verification?daysAhead=30&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "vehicles", "due-verification"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "vehicles",
+                "due-verification"
+              ],
               "query": [
-                { "key": "daysAhead", "value": "30" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "daysAhead",
+                  "value": "30"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicles Due for Verification",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/vehicles/due-verification?daysAhead=30&page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "vehicles",
+                    "due-verification"
+                  ],
+                  "query": [
+                    {
+                      "key": "daysAhead",
+                      "value": "30"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-HVNR5HXkWe/TTcr6ZawMbR7mjRk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:25:49 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"vehicles\": [],\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Pending Verifications",
@@ -751,14 +3499,103 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/verifications/pending?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "verifications", "pending"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "verifications",
+                "pending"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Pending Verifications",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/verifications/pending?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "verifications",
+                    "pending"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1204"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b4-bDCjnHg7ydmCiDMcpV40jlqE7Rw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:26:05 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"verifications\": [\n        {\n            \"id\": \"9421c3db-e672-4969-81bf-78ce94546542\",\n            \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"vehicleName\": \"Honda Civic 2023\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"licensePlate\": \"59C-99997\",\n            \"photos\": [\n                \"assets/verification/front.jpg\",\n                \"assets/verification/back.jpg\",\n                \"assets/verification/interior.jpg\"\n            ],\n            \"submittedAt\": \"2026-02-05T09:18:48.908Z\",\n            \"status\": \"pending\"\n        },\n        {\n            \"id\": \"0081d300-c7a7-4429-a82e-a7ceebb8b33f\",\n            \"vehicleId\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"vehicleName\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"licensePlate\": \"59C-99999\",\n            \"photos\": [\n                \"assets/verification/front.jpg\",\n                \"assets/verification/back.jpg\",\n                \"assets/verification/interior.jpg\"\n            ],\n            \"submittedAt\": \"2026-02-03T15:24:55.086Z\",\n            \"status\": \"pending\"\n        },\n        {\n            \"id\": \"ab1cd7dd-fafc-475c-add2-a32594e3c640\",\n            \"vehicleId\": \"6dcfaf98-b695-4495-82f3-164e5b77b399\",\n            \"vehicleName\": \"Honda Civic 2023\",\n            \"ownerId\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"licensePlate\": \"59C-99999\",\n            \"photos\": [\n                \"assets/verification/front.jpg\",\n                \"assets/verification/back.jpg\",\n                \"assets/verification/interior.jpg\"\n            ],\n            \"submittedAt\": \"2026-02-03T15:20:16.386Z\",\n            \"status\": \"pending\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 3,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Approve Verification",
@@ -772,11 +3609,86 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/vehicles/admin/verifications/:verificationId/approve",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "verifications", ":verificationId", "approve"]
+              "raw": "{{base_url}}/vehicles/admin/verifications/{{verification_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "verifications",
+                "{{verification_id}}",
+                "approve"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Approve Verification",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/verifications/{{verification_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "verifications",
+                    "{{verification_id}}",
+                    "approve"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "84"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"54-EY0fEQF3k10vSJ1CYNml7BVo1QA\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:28:04 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Verification approved\",\n    \"nextVerificationDue\": \"2026-04-06T09:28:04.349Z\"\n}"
+            }
+          ]
         },
         {
           "name": "Reject Verification",
@@ -799,11 +3711,95 @@
               "raw": "{\n  \"reason\": \"Photos are unclear. Please resubmit with better quality images.\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/vehicles/admin/verifications/:verificationId/reject",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "verifications", ":verificationId", "reject"]
+              "raw": "{{base_url}}/vehicles/admin/verifications/{{verification_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "verifications",
+                "{{verification_id}}",
+                "reject"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Reject Verification",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Photos are unclear. Please resubmit with better quality images.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/verifications/{{verification_id}}/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "verifications",
+                    "{{verification_id}}",
+                    "reject"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "60"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3c-aiAgCeoKV9ooNDY7Sj3rMyqD59k\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:28:18 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Verification rejected. Owner will be notified.\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -828,14 +3824,96 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"active\",\n  \"reason\": \"Vehicle meets all requirements\"\n}"
+              "raw": "{\n  \"status\": \"pending\",\n  \"reason\": \"Vehicle meets all requirements\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/status",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "{{vehicle_id}}", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "{{vehicle_id}}",
+                "status"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Update Vehicle Status",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"pending\",\n  \"reason\": \"Vehicle meets all requirements\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "{{vehicle_id}}",
+                    "status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "58"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3a-VW3nRXunz/o2rX6b6NwZQ8BmIPI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:30:00 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle status updated\",\n    \"newStatus\": \"pending\"\n}"
+            }
+          ]
         },
         {
           "name": "Approve Vehicle",
@@ -850,10 +3928,83 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/approve",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "{{vehicle_id}}", "approve"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "{{vehicle_id}}",
+                "approve"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Approve Vehicle",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "{{vehicle_id}}",
+                    "approve"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "96"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"60-xvzGdVUv2gCIAW5SGlhoQJwps8Y\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:30:15 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle approved and now active\",\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\"\n}"
+            }
+          ]
         },
         {
           "name": "Reject Vehicle",
@@ -877,10 +4028,92 @@
             },
             "url": {
               "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/reject",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "admin", "{{vehicle_id}}", "reject"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "admin",
+                "{{vehicle_id}}",
+                "reject"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Reject Vehicle",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Vehicle does not meet safety standards\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "admin",
+                    "{{vehicle_id}}",
+                    "reject"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "89"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"59-QGw65xQ6KBayII9DPqlV88dR2cM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:30:33 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle listing rejected\",\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -890,6 +4123,16 @@
         {
           "name": "Get Platform Vehicle Stats",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -900,13 +4143,95 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/analytics/vehicles/stats?timeRange=30d",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "analytics", "vehicles", "stats"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "analytics",
+                "vehicles",
+                "stats"
+              ],
               "query": [
-                { "key": "timeRange", "value": "30d" }
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Platform Vehicle Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/analytics/vehicles/stats?timeRange=30d",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "analytics",
+                    "vehicles",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1014"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3f6-IXKYQWRznqm7+JrG2uxGsODesFw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:19:41 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"total\": 7,\n    \"available\": 6,\n    \"rented\": 0,\n    \"maintenance\": 0,\n    \"growth\": 100,\n    \"byType\": {\n        \"suv\": 2,\n        \"sedan\": 5\n    },\n    \"byStatus\": {\n        \"active\": 6,\n        \"pending\": 0,\n        \"stopped\": 1,\n        \"banned\": 0\n    },\n    \"topPerforming\": [\n        {\n            \"vehicleId\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"BMW X1 2020\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        },\n        {\n            \"vehicleId\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Toyota Camry 2022\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car_2.png\"\n        },\n        {\n            \"vehicleId\": \"550e8400-e29b-41d4-a716-446655440003\",\n            \"name\": \"Honda HR-V 2021\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        },\n        {\n            \"vehicleId\": \"e2c54f05-0742-49d1-8b99-8ba5ec83bd6b\",\n            \"name\": \"Honda Civic 2023\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        },\n        {\n            \"vehicleId\": \"4ed3494b-2fda-4619-8dd5-9d1ea62c2662\",\n            \"name\": \"Honda Civic 2023\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        },\n        {\n            \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Get Owner Vehicle Stats",
@@ -921,15 +4246,151 @@
             ],
             "url": {
               "raw": "{{base_url}}/vehicles/analytics/vehicles/owner/{{owner_id}}/stats?timeRange=30d",
-              "host": ["{{base_url}}"],
-              "path": ["vehicles", "analytics", "vehicles", "owner", "{{owner_id}}", "stats"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehicles",
+                "analytics",
+                "vehicles",
+                "owner",
+                "{{owner_id}}",
+                "stats"
+              ],
               "query": [
-                { "key": "timeRange", "value": "30d" }
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Owner Vehicle Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/vehicles/analytics/vehicles/owner/{{owner_id}}/stats?timeRange=30d",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vehicles",
+                    "analytics",
+                    "vehicles",
+                    "owner",
+                    "{{owner_id}}",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "334"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"14e-RMmKRCbhn8yMqfYtkSmb26Gu7Hw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:19:55 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"totalVehicles\": 1,\n    \"activeVehicles\": 1,\n    \"rentedVehicles\": 0,\n    \"availableVehicles\": 1,\n    \"averageRating\": 0,\n    \"totalRentals\": 0,\n    \"utilizationRate\": 0,\n    \"topPerforming\": [\n        {\n            \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"name\": \"Honda Civic 2023\",\n            \"rentals\": 0,\n            \"rating\": 0,\n            \"utilizationRate\": 0,\n            \"primaryPhoto\": \"assets/images/Car.png\"\n        }\n    ],\n    \"byType\": {\n        \"sedan\": 1\n    }\n}"
+            }
+          ]
         }
       ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002"
+    },
+    {
+      "key": "owner_token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "vehicle_id",
+      "value": ""
+    },
+    {
+      "key": "owner_id",
+      "value": ""
+    },
+    {
+      "key": "verification_id",
+      "value": ""
     }
   ]
 }

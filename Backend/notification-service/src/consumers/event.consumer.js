@@ -44,12 +44,31 @@ class EventConsumer {
         "review.owner_reviewed",
         "review.response_posted",
         "vehicle.created",
+        "vehicle.updated",
         "vehicle.status_changed",
         "request.created",
         "request.approved",
         "request.denied",
         "contract.signed",
-        "staff.created",
+        "request.user_account_deletion_approved",
+        "request.user_account_deletion_denied",
+        "request.vehicle_deactivation_approved",
+        "request.vehicle_deactivation_denied",
+        "request.vehicle_reactivation_approved",
+        "request.vehicle_reactivation_denied",
+
+        "request.vehicle_verification_approved",
+        "request.vehicle_verification_denied",
+        "request.vehicle_banned", 
+        "request.vehicle_unbanned",
+
+
+        "request.owner_verification_approved",
+        "request.owner_verification_denied",
+        "request.user_license_verification_approved",
+        "request.user_license_verification_denied",
+
+        "chat.message_received",
       ];
 
       // Bind all routing keys

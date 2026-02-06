@@ -1,66 +1,12 @@
 {
   "info": {
-    "name": "Review Service v2.0 - Updated",
+    "_postman_id": "4448b527-c0ca-4f78-bf00-25a621ce4411",
+    "name": "Wiz Review Service API",
     "description": "Complete API collection for Wiz Car Rental Review Service with Event Emission and Pagination",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "12345678"
+    "_exporter_id": "42883958"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{jwt_token}}",
-        "type": "string"
-      }
-    ]
-  },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3005",
-      "type": "string"
-    },
-    {
-      "key": "jwt_token",
-      "value": "your-jwt-token-here",
-      "type": "string"
-    },
-    {
-      "key": "booking_id",
-      "value": "booking123",
-      "type": "string"
-    },
-    {
-      "key": "vehicle_id",
-      "value": "vehicle456",
-      "type": "string"
-    },
-    {
-      "key": "owner_id",
-      "value": "owner789",
-      "type": "string"
-    },
-    {
-      "key": "review_id",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
-    {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/health",
-          "host": ["{{base_url}}"],
-          "path": ["health"]
-        },
-        "description": "Check service health including database and RabbitMQ connection"
-      }
-    },
     {
       "name": "Reviews",
       "item": [
@@ -71,8 +17,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?page=1&limit=10&sortBy=newest",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -98,7 +49,88 @@
               ]
             },
             "description": "Get all reviews with pagination. Optionally filter by type."
-          }
+          },
+          "response": [
+            {
+              "name": "NEW - Get All Reviews",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?page=1&limit=10&sortBy=newest",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number (default: 1)"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Items per page (default: 10)"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "newest",
+                      "description": "Sort order: newest, highest, lowest"
+                    },
+                    {
+                      "key": "type",
+                      "value": "vehicle",
+                      "description": "Filter by type: vehicle, owner (optional)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "139"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"8b-Dw1s7JM7ZymzCAQlzTsqOrSc7OE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:42:17 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [],\n    \"summary\": {\n        \"totalReviews\": 0,\n        \"vehicleReviews\": 0,\n        \"ownerReviews\": 0\n    },\n    \"pagination\": {\n        \"total\": 0,\n        \"page\": 1,\n        \"limit\": 10,\n        \"totalPages\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Submit Vehicle Review",
@@ -151,11 +183,83 @@
             },
             "url": {
               "raw": "{{base_url}}/reviews/vehicle",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "vehicle"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "vehicle"
+              ]
             },
             "description": "Submit a vehicle review. Requires authentication. Emits 'review.created' event."
-          }
+          },
+          "response": [
+            {
+              "name": "Submit Vehicle Review",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"vehicleId\": \"{{vehicle_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n  \"photos\": [\n    \"file_id_1\",\n    \"file_id_2\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/reviews/vehicle",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "vehicle"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "405"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"195-Ks06m/Zl0PgBNwCAAoE//Mq6rdo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:42:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Review submitted successfully\",\n    \"review\": {\n        \"id\": \"6984c8886b7553038a4ec712\",\n        \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\",\n        \"userId\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n        \"rating\": 5,\n        \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n        \"photos\": [\n            \"file_id_1\",\n            \"file_id_2\"\n        ],\n        \"photoCount\": 2,\n        \"createdAt\": \"2026-02-05T16:42:48.036Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Submit Owner Review",
@@ -200,11 +304,83 @@
             },
             "url": {
               "raw": "{{base_url}}/reviews/owner",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "owner"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "owner"
+              ]
             },
             "description": "Submit an owner review. Requires authentication. Emits 'review.owner_reviewed' event."
-          }
+          },
+          "response": [
+            {
+              "name": "Submit Owner Review",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"ownerId\": \"{{owner_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Great host! Very professional and accommodating.\",\n  \"aspects\": {\n    \"communication\": 5,\n    \"reliability\": 5,\n    \"carCondition\": 5\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/reviews/owner",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "owner"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "363"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"16b-nvQpWfJTVBkHv4fVhPJxZ94FRhk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:43:12 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Owner review submitted successfully\",\n    \"review\": {\n        \"id\": \"6984c8a06b7553038a4ec719\",\n        \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"userId\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n        \"rating\": 5,\n        \"comment\": \"Great host! Very professional and accommodating.\",\n        \"aspects\": {\n            \"communication\": 5,\n            \"reliability\": 5,\n            \"carCondition\": 5\n        },\n        \"createdAt\": \"2026-02-05T16:43:12.901Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Vehicle Reviews (Paginated)",
@@ -212,9 +388,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/reviews/vehicle/{{vehicle_id}}?page=1&limit=10&sortBy=newest&minRating=4",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "vehicle", "{{vehicle_id}}"],
+              "raw": "{{base_url}}/reviews/vehicle/{{vehicle_id}}?page=1&limit=10&sortBy=newest",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "vehicle",
+                "{{vehicle_id}}"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -240,7 +422,89 @@
               ]
             },
             "description": "Get reviews for a specific vehicle with pagination support"
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicle Reviews (Paginated)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/vehicle/{{vehicle_id}}?page=1&limit=10&sortBy=newest",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "vehicle",
+                    "{{vehicle_id}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Items per page"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "newest",
+                      "description": "Sort: newest, highest, lowest, helpful"
+                    },
+                    {
+                      "key": "minRating",
+                      "value": "4",
+                      "description": "Minimum rating filter (1-5)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "571"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"23b-LyJrKRVG0zQ0jOZKCmwI8fNdciQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:43:00 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"photos\": [\n                \"file_id_1\",\n                \"file_id_2\"\n            ],\n            \"hasPhotos\": true,\n            \"photoCount\": 2,\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"helpful\": 0,\n            \"ownerResponse\": null\n        }\n    ],\n    \"summary\": {\n        \"averageRating\": 5,\n        \"totalReviews\": 1,\n        \"reviewsWithPhotos\": 1,\n        \"ratingDistribution\": {\n            \"1\": 0,\n            \"2\": 0,\n            \"3\": 0,\n            \"4\": 0,\n            \"5\": 1\n        }\n    },\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 10\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Owner Reviews (Paginated)",
@@ -249,8 +513,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/owner/{{owner_id}}?page=1&limit=10&sortBy=newest",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "owner", "{{owner_id}}"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "owner",
+                "{{owner_id}}"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -270,7 +540,83 @@
               ]
             },
             "description": "Get reviews for a specific owner with pagination support"
-          }
+          },
+          "response": [
+            {
+              "name": "Get Owner Reviews (Paginated)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/owner/{{owner_id}}?page=1&limit=10&sortBy=newest",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "owner",
+                    "{{owner_id}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Items per page"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "newest",
+                      "description": "Sort: newest, highest, lowest"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "400"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"190-bub1yG1KLO0kQkZsKphofnOxd8Y\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:43:41 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"aspects\": {\n                \"communication\": 5,\n                \"reliability\": 5,\n                \"carCondition\": 5\n            },\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\"\n        }\n    ],\n    \"summary\": {\n        \"averageRating\": 5,\n        \"totalReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 10\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Post Owner Response",
@@ -287,7 +633,9 @@
                   "    pm.expect(pm.response.text()).to.include('Response posted successfully');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -297,7 +645,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{jwt_token}}",
+                  "value": "{{owner_token}}",
                   "type": "string"
                 }
               ]
@@ -315,11 +663,85 @@
             },
             "url": {
               "raw": "{{base_url}}/reviews/{{review_id}}/response",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "{{review_id}}", "response"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}",
+                "response"
+              ]
             },
             "description": "Owner responds to a review. Requires authentication. Emits 'review.response_posted' event."
-          }
+          },
+          "response": [
+            {
+              "name": "Post Owner Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"response\": \"Thank you so much for your kind words! We're glad you enjoyed the experience and hope to host you again soon.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/reviews/{{review_id}}/response",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "{{review_id}}",
+                    "response"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "42"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2a-hmn/toOSgac3KMU9bkCfBOfXoOs\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:09:46 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Response posted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Mark Review as Helpful",
@@ -338,11 +760,76 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/{{review_id}}/helpful",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "{{review_id}}", "helpful"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}",
+                "helpful"
+              ]
             },
             "description": "Mark a review as helpful. Requires authentication."
-          }
+          },
+          "response": [
+            {
+              "name": "Mark Review as Helpful",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/{{review_id}}/helpful",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "{{review_id}}",
+                    "helpful"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "48"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"30-+ux3whU6Nr5gFkLd1pC9P43Z9+8\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:06:06 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Marked as helpful\",\n    \"helpfulCount\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Report Review",
@@ -370,11 +857,85 @@
             },
             "url": {
               "raw": "{{base_url}}/reviews/{{review_id}}/report",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "{{review_id}}", "report"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}",
+                "report"
+              ]
             },
             "description": "Report an inappropriate review. Requires authentication."
-          }
+          },
+          "response": [
+            {
+              "name": "Report Review",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"spam\",\n  \"details\": \"This review appears to be spam and not a genuine customer experience.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/reviews/{{review_id}}/report",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "{{review_id}}",
+                    "report"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "58"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3a-pfulqI7F+lovlm/awrvbjQi3ELM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:06:28 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Review reported, will be reviewed by support\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -389,7 +950,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{jwt_token}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -398,8 +959,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/analytics/reviews/owner/{{owner_id}}/stats?timeRange=30d",
-              "host": ["{{base_url}}"],
-              "path": ["analytics", "reviews", "owner", "{{owner_id}}", "stats"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "reviews",
+                "owner",
+                "{{owner_id}}",
+                "stats"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -409,7 +978,75 @@
               ]
             },
             "description": "Get review statistics for an owner. Requires authentication (owner or admin)."
-          }
+          },
+          "response": [
+            {
+              "name": "Get Owner Review Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/analytics/reviews/owner/{{owner_id}}/stats?timeRange=30d",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "reviews",
+                    "owner",
+                    "{{owner_id}}",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d",
+                      "description": "Time range: 7d, 30d, 90d, 1y"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "654"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"28e-4japs3JiB4D6GmTHJfqJMupR67o\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:44:44 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"averageRating\": 5,\n    \"totalReviews\": 2,\n    \"vehicleReviews\": 1,\n    \"ownerReviews\": 1,\n    \"ratingDistribution\": {\n        \"1\": 0,\n        \"2\": 0,\n        \"3\": 0,\n        \"4\": 0,\n        \"5\": 2\n    },\n    \"recentReviews\": [\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"type\": \"vehicle\",\n            \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\"\n        },\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\",\n            \"type\": \"owner\",\n            \"vehicleId\": null\n        }\n    ],\n    \"trend\": [\n        {\n            \"period\": \"2026-02-05\",\n            \"averageRating\": 5,\n            \"count\": 2\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Get Vehicle Review Stats",
@@ -428,8 +1065,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/analytics/reviews/vehicle/{{vehicle_id}}/stats?timeRange=30d",
-              "host": ["{{base_url}}"],
-              "path": ["analytics", "reviews", "vehicle", "{{vehicle_id}}", "stats"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "reviews",
+                "vehicle",
+                "{{vehicle_id}}",
+                "stats"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -439,7 +1084,75 @@
               ]
             },
             "description": "Get review statistics for a vehicle. Requires authentication."
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicle Review Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/analytics/reviews/vehicle/{{vehicle_id}}/stats?timeRange=30d",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "reviews",
+                    "vehicle",
+                    "{{vehicle_id}}",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d",
+                      "description": "Time range: 7d, 30d, 90d, 1y"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "475"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1db-ULqoZteR6v5tuFHQb8ER54DHgVE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:45:58 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"averageRating\": 5,\n    \"totalReviews\": 1,\n    \"ratingDistribution\": {\n        \"1\": 0,\n        \"2\": 0,\n        \"3\": 0,\n        \"4\": 0,\n        \"5\": 1\n    },\n    \"recentReviews\": [\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"customerId\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n            \"helpful\": 0,\n            \"hasResponse\": true\n        }\n    ],\n    \"trend\": [\n        {\n            \"period\": \"2026-02-05\",\n            \"averageRating\": 5,\n            \"count\": 1\n        }\n    ],\n    \"responseRate\": 100\n}"
+            }
+          ]
         },
         {
           "name": "Get Platform Review Stats (Admin)",
@@ -449,7 +1162,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{jwt_token}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -458,8 +1171,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/analytics/reviews/platform/stats?timeRange=30d",
-              "host": ["{{base_url}}"],
-              "path": ["analytics", "reviews", "platform", "stats"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "reviews",
+                "platform",
+                "stats"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -469,7 +1189,74 @@
               ]
             },
             "description": "Get platform-wide review statistics. Requires admin authentication."
-          }
+          },
+          "response": [
+            {
+              "name": "Get Platform Review Stats (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/analytics/reviews/platform/stats?timeRange=30d",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "reviews",
+                    "platform",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d",
+                      "description": "Time range: 7d, 30d, 90d, 1y"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "272"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"110-v/j/vTVT4t2aNH91rYZvTqGyoKA\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 16:46:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"totalReviews\": 2,\n    \"vehicleReviews\": 1,\n    \"ownerReviews\": 1,\n    \"averageRating\": 5,\n    \"vehicleAverageRating\": 5,\n    \"ownerAverageRating\": 5,\n    \"ratingDistribution\": {\n        \"1\": 0,\n        \"2\": 0,\n        \"3\": 0,\n        \"4\": 0,\n        \"5\": 2\n    },\n    \"reportedReviews\": 0,\n    \"responseRate\": 100,\n    \"trend\": [\n        {\n            \"date\": \"2026-02-05\",\n            \"count\": 2,\n            \"averageRating\": 5\n        }\n    ]\n}"
+            }
+          ]
         }
       ]
     },
@@ -483,8 +1270,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?page=1&limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -496,7 +1288,75 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "All Reviews - Page 1",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?page=1&limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1005"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3ed-ToAUYWC5G9wdMEJPhTUAMbXxzEY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:03:18 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"type\": \"owner\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"aspects\": {\n                \"communication\": 5,\n                \"reliability\": 5,\n                \"carCondition\": 5\n            }\n        },\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"type\": \"vehicle\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"photos\": [\n                \"file_id_1\",\n                \"file_id_2\"\n            ],\n            \"hasPhotos\": true,\n            \"photoCount\": 2,\n            \"helpful\": 0,\n            \"ownerResponse\": null\n        }\n    ],\n    \"summary\": {\n        \"totalReviews\": 2,\n        \"vehicleReviews\": 1,\n        \"ownerReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 10,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "All Reviews - Page 2",
@@ -505,8 +1365,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?page=2&limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -518,7 +1383,75 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "All Reviews - Page 2",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?page=2&limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "2"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "139"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"8b-yzPeisQB9Yxfvs8b7q5On85pfHA\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:03:35 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [],\n    \"summary\": {\n        \"totalReviews\": 2,\n        \"vehicleReviews\": 1,\n        \"ownerReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 2,\n        \"limit\": 10,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Vehicle Reviews Only",
@@ -527,8 +1460,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?type=vehicle&page=1&limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "type",
@@ -544,7 +1482,79 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Vehicle Reviews Only",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?type=vehicle&page=1&limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "vehicle"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "646"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"286-cEe6B2ilhsV3uyq7OCoO4Tj2NoM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:04:03 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"type\": \"vehicle\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"photos\": [\n                \"file_id_1\",\n                \"file_id_2\"\n            ],\n            \"hasPhotos\": true,\n            \"photoCount\": 2,\n            \"helpful\": 0,\n            \"ownerResponse\": null\n        }\n    ],\n    \"summary\": {\n        \"totalReviews\": 1,\n        \"vehicleReviews\": 1,\n        \"ownerReviews\": 0\n    },\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 10,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Owner Reviews Only",
@@ -553,8 +1563,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?type=owner&page=1&limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "type",
@@ -570,7 +1585,79 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Owner Reviews Only",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?type=owner&page=1&limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "owner"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "497"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1f1-himP0lBAZV+T/4GjIZYQBum2sVg\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:04:22 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"type\": \"owner\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"aspects\": {\n                \"communication\": 5,\n                \"reliability\": 5,\n                \"carCondition\": 5\n            }\n        }\n    ],\n    \"summary\": {\n        \"totalReviews\": 1,\n        \"vehicleReviews\": 0,\n        \"ownerReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 10,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Reviews - Sorted by Highest Rating",
@@ -579,8 +1666,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?sortBy=highest&page=1&limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "sortBy",
@@ -596,7 +1688,79 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Reviews - Sorted by Highest Rating",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?sortBy=highest&page=1&limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "highest"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1005"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3ed-ToAUYWC5G9wdMEJPhTUAMbXxzEY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:04:38 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"type\": \"owner\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"aspects\": {\n                \"communication\": 5,\n                \"reliability\": 5,\n                \"carCondition\": 5\n            }\n        },\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"type\": \"vehicle\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"photos\": [\n                \"file_id_1\",\n                \"file_id_2\"\n            ],\n            \"hasPhotos\": true,\n            \"photoCount\": 2,\n            \"helpful\": 0,\n            \"ownerResponse\": null\n        }\n    ],\n    \"summary\": {\n        \"totalReviews\": 2,\n        \"vehicleReviews\": 1,\n        \"ownerReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 10,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Reviews - Custom Limit (20 per page)",
@@ -605,8 +1769,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/reviews/all?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "all"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "all"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -618,9 +1787,219 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Reviews - Custom Limit (20 per page)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reviews/all?page=1&limit=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reviews",
+                    "all"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1005"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3ed-ggRq4AHGFsgC0epvEupTDWKpFxw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 17:04:56 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"reviews\": [\n        {\n            \"id\": \"6984c8a06b7553038a4ec719\",\n            \"type\": \"owner\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Great host! Very professional and accommodating.\",\n            \"createdAt\": \"2026-02-05T16:43:12.901Z\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"aspects\": {\n                \"communication\": 5,\n                \"reliability\": 5,\n                \"carCondition\": 5\n            }\n        },\n        {\n            \"id\": \"6984c8886b7553038a4ec712\",\n            \"type\": \"vehicle\",\n            \"user\": {\n                \"id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n                \"name\": \"Jass Myatt\",\n                \"avatar\": null\n            },\n            \"rating\": 5,\n            \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n            \"createdAt\": \"2026-02-05T16:42:48.036Z\",\n            \"vehicleId\": \"9144e93f-1cc8-4aa0-9486-4387e30e44d3\",\n            \"ownerId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"photos\": [\n                \"file_id_1\",\n                \"file_id_2\"\n            ],\n            \"hasPhotos\": true,\n            \"photoCount\": 2,\n            \"helpful\": 0,\n            \"ownerResponse\": null\n        }\n    ],\n    \"summary\": {\n        \"totalReviews\": 2,\n        \"vehicleReviews\": 1,\n        \"ownerReviews\": 1\n    },\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         }
       ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Check service health including database and RabbitMQ connection"
+      },
+      "response": [
+        {
+          "name": "Health Check",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "127"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"7f-kc315KkHvkUCjZjHyD3ZRKuB8uA\""
+            },
+            {
+              "key": "Date",
+              "value": "Thu, 05 Feb 2026 17:05:16 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"ok\",\n    \"service\": \"review-service\",\n    \"database\": \"connected\",\n    \"eventBus\": \"connected\",\n    \"timestamp\": \"2026-02-05T17:05:16.396Z\"\n}"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3005"
+    },
+    {
+      "key": "jwt_token",
+      "value": "your-jwt-token-here"
+    },
+    {
+      "key": "booking_id",
+      "value": "booking123"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "vehicle456"
+    },
+    {
+      "key": "owner_id",
+      "value": "owner789"
+    },
+    {
+      "key": "review_id",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "owner_token",
+      "value": ""
     }
   ]
 }

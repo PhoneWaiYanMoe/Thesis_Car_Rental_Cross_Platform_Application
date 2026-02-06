@@ -1,26 +1,11 @@
 {
   "info": {
-    "name": "Request Service API",
+    "_postman_id": "9e44c40b-763f-4616-bcab-9bb00f547458",
+    "name": "Wiz Request Service API",
     "description": "Complete API collection for Request Service v2.0",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "42883958"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3010",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "YOUR_JWT_TOKEN_HERE",
-      "type": "string"
-    },
-    {
-      "key": "requestId",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "Health & Metadata",
@@ -32,14 +17,85 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Health Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "102"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"66-R/OKHGGbWsTyQeFNisFJ+VtAQnI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:20:14 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"service\": \"Request Service\",\n    \"status\": \"healthy\",\n    \"timestamp\": \"2026-02-05T12:20:14.285Z\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Categories",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -49,14 +105,94 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests/metadata/categories",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "metadata", "categories"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "metadata",
+                "categories"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Categories",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests/metadata/categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "metadata",
+                    "categories"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1209"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b9-/dSv1NEtFsjFq37sc4uK8TKYYTI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:24:00 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"categories\": [\n        {\n            \"value\": \"booking_issue\",\n            \"label\": \"Booking Issue\"\n        },\n        {\n            \"value\": \"verification\",\n            \"label\": \"Verification\"\n        },\n        {\n            \"value\": \"account_issue\",\n            \"label\": \"Account Issue\"\n        },\n        {\n            \"value\": \"vehicle_listing\",\n            \"label\": \"Vehicle Listing\"\n        },\n        {\n            \"value\": \"payment_issue\",\n            \"label\": \"Payment Issue\"\n        },\n        {\n            \"value\": \"booking_change\",\n            \"label\": \"Booking Change\"\n        },\n        {\n            \"value\": \"report\",\n            \"label\": \"Report\"\n        },\n        {\n            \"value\": \"vehicle_update\",\n            \"label\": \"Vehicle Update\"\n        },\n        {\n            \"value\": \"yearly_vehicle_confirmation\",\n            \"label\": \"Yearly Vehicle Confirmation\"\n        },\n        {\n            \"value\": \"booking_confirmation\",\n            \"label\": \"Booking Confirmation\"\n        },\n        {\n            \"value\": \"refund_request\",\n            \"label\": \"Refund Request\"\n        },\n        {\n            \"value\": \"payment_dispute\",\n            \"label\": \"Payment Dispute\"\n        },\n        {\n            \"value\": \"user_license_verification\",\n            \"label\": \"User License Verification\"\n        },\n        {\n            \"value\": \"owner_verification\",\n            \"label\": \"Owner Verification\"\n        },\n        {\n            \"value\": \"vehicle_deactivation\",\n            \"label\": \"Vehicle Deactivation\"\n        },\n        {\n            \"value\": \"vehicle_reactivation\",\n            \"label\": \"Vehicle Reactivation\"\n        },\n        {\n            \"value\": \"user_account_deletion\",\n            \"label\": \"User Account Deletion\"\n        },\n        {\n            \"value\": \"contract_issue\",\n            \"label\": \"Contract Issue\"\n        },\n        {\n            \"value\": \"insurance_claim\",\n            \"label\": \"Insurance Claim\"\n        },\n        {\n            \"value\": \"damage_report\",\n            \"label\": \"Damage Report\"\n        },\n        {\n            \"value\": \"other\",\n            \"label\": \"Other\"\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Get Statuses",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -66,10 +202,80 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests/metadata/statuses",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "metadata", "statuses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "metadata",
+                "statuses"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Statuses",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests/metadata/statuses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "metadata",
+                    "statuses"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "243"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"f3-6BB3xgTwcvS10mUdKNOIHoR74fo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:24:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"statuses\": [\n        {\n            \"value\": \"pending\",\n            \"label\": \"Pending\"\n        },\n        {\n            \"value\": \"processing\",\n            \"label\": \"Processing\"\n        },\n        {\n            \"value\": \"approved\",\n            \"label\": \"Approved\"\n        },\n        {\n            \"value\": \"denied\",\n            \"label\": \"Denied\"\n        },\n        {\n            \"value\": \"paused\",\n            \"label\": \"Paused\"\n        }\n    ]\n}"
+            }
+          ]
         }
       ]
     },
@@ -79,6 +285,16 @@
         {
           "name": "Create Request - Basic",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -96,14 +312,98 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Create Request - Basic",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Issue with booking cancellation\",\n  \"category\": \"booking_issue\",\n  \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n  \"priority\": \"high\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "375"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"177-94RyIdGN92XWf7bkNKaO+jhdAbU\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:29:21 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request submitted successfully\",\n    \"request\": {\n        \"id\": \"b11fdc3b-d1b9-41d8-ba96-16823b682241\",\n        \"userId\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n        \"customerId\": null,\n        \"ownerId\": null,\n        \"vehicleId\": null,\n        \"bookingId\": null,\n        \"title\": \"Issue with booking cancellation\",\n        \"category\": \"booking_issue\",\n        \"status\": \"pending\",\n        \"priority\": \"high\",\n        \"createdAt\": \"2026-02-05T12:29:21.353Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Create Request - With All IDs",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -121,14 +421,98 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Create Request - With All IDs",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Booking confirmation required\",\n  \"category\": \"booking_confirmation\",\n  \"description\": \"Please confirm my booking\",\n  \"priority\": \"high\",\n  \"customerId\": \"customer-123\",\n  \"ownerId\": \"owner-456\",\n  \"vehicleId\": \"vehicle-789\",\n  \"bookingId\": \"booking-101\",\n  \"attachmentIds\": [\"media-1\", \"media-2\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "415"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"19f-E8whOe+Flakb8op1V8+J8P4Zx54\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:29:46 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request submitted successfully\",\n    \"request\": {\n        \"id\": \"64d4cb1c-35a1-471f-b3ed-b31e5260eaef\",\n        \"userId\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n        \"customerId\": \"customer-123\",\n        \"ownerId\": \"owner-456\",\n        \"vehicleId\": \"vehicle-789\",\n        \"bookingId\": \"booking-101\",\n        \"title\": \"Booking confirmation required\",\n        \"category\": \"booking_confirmation\",\n        \"status\": \"pending\",\n        \"priority\": \"high\",\n        \"createdAt\": \"2026-02-05T12:29:46.205Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get All Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -138,8 +522,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?page=1&limit=20&sortBy=newest",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -175,11 +563,117 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get All Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?page=1&limit=20&sortBy=newest",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "newest"
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "disabled": true
+                    },
+                    {
+                      "key": "category",
+                      "value": "booking_issue",
+                      "disabled": true
+                    },
+                    {
+                      "key": "handledBy",
+                      "value": "me",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "vehicle-123",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "3029"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"bd5-q7+Lyy+DZ/5KHg++10C9hPf8QE0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:25:46 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [\n        {\n            \"id\": \"ac3886c8-8649-4802-a05c-c61c5dcc0d70\",\n            \"user_id\": \"101e4567-e89b-12d3-a456-426614174002\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"approved\",\n            \"priority\": \"high\",\n            \"handled_by\": \"17889ff4-0287-48d3-be86-d5f5d7165c46\",\n            \"handled_at\": \"2026-02-02T21:21:30.979Z\",\n            \"created_at\": \"2026-02-02T16:59:17.387Z\",\n            \"updated_at\": \"2026-02-02T21:21:30.979Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        },\n        {\n            \"id\": \"7c9b3bf1-62f5-4192-9ad1-b04ecf46a330\",\n            \"user_id\": \"456e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"processing\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": null,\n            \"created_at\": \"2026-02-02T16:04:57.840Z\",\n            \"updated_at\": \"2026-02-02T16:36:53.609Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        },\n        {\n            \"id\": \"ad890344-4c1f-48c7-b039-6c600d560435\",\n            \"user_id\": \"456e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": null,\n            \"owner_id\": null,\n            \"vehicle_id\": null,\n            \"booking_id\": null,\n            \"category\": \"booking_issue\",\n            \"title\": \"Issue with booking cancellation\",\n            \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n            \"status\": \"approved\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": \"2026-02-02T16:37:41.746Z\",\n            \"created_at\": \"2026-02-02T16:04:57.821Z\",\n            \"updated_at\": \"2026-02-02T16:37:41.746Z\",\n            \"attachmentIds\": []\n        },\n        {\n            \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n            \"user_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"paused\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": \"2026-02-02T16:04:57.921Z\",\n            \"created_at\": \"2026-02-02T15:41:21.473Z\",\n            \"updated_at\": \"2026-02-02T16:35:57.928Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        },\n        {\n            \"id\": \"7bd4fc17-32a3-4c10-8af6-18f24ff69490\",\n            \"user_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": null,\n            \"owner_id\": null,\n            \"vehicle_id\": null,\n            \"booking_id\": null,\n            \"category\": \"booking_issue\",\n            \"title\": \"Issue with booking cancellation\",\n            \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n            \"status\": \"denied\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": \"2026-02-02T16:38:00.223Z\",\n            \"created_at\": \"2026-02-02T15:41:08.017Z\",\n            \"updated_at\": \"2026-02-02T16:38:00.223Z\",\n            \"attachmentIds\": []\n        }\n    ],\n    \"total\": 5,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Get My Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -189,8 +683,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests/my-requests?page=1&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "my-requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "my-requests"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -212,11 +711,104 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get My Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests/my-requests?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "my-requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "disabled": true
+                    },
+                    {
+                      "key": "category",
+                      "value": "booking_issue",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1251"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4e3-OxP7k5CnGEH7dJiirTC1XQraQv0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:27:22 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [\n        {\n            \"id\": \"7c9b3bf1-62f5-4192-9ad1-b04ecf46a330\",\n            \"user_id\": \"456e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"processing\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": null,\n            \"created_at\": \"2026-02-02T16:04:57.840Z\",\n            \"updated_at\": \"2026-02-02T16:36:53.609Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        },\n        {\n            \"id\": \"ad890344-4c1f-48c7-b039-6c600d560435\",\n            \"user_id\": \"456e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": null,\n            \"owner_id\": null,\n            \"vehicle_id\": null,\n            \"booking_id\": null,\n            \"category\": \"booking_issue\",\n            \"title\": \"Issue with booking cancellation\",\n            \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n            \"status\": \"approved\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": \"2026-02-02T16:37:41.746Z\",\n            \"created_at\": \"2026-02-02T16:04:57.821Z\",\n            \"updated_at\": \"2026-02-02T16:37:41.746Z\",\n            \"attachmentIds\": []\n        }\n    ],\n    \"total\": 2,\n    \"page\": 1,\n    \"limit\": 10,\n    \"totalPages\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Get Request by ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -225,11 +817,79 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/requests/{{requestId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}"]
+              "raw": "{{baseUrl}}/requests/2c22c112-f6a1-41de-80e5-9870527fd2f6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "2c22c112-f6a1-41de-80e5-9870527fd2f6"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Request by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests/2c22c112-f6a1-41de-80e5-9870527fd2f6",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "2c22c112-f6a1-41de-80e5-9870527fd2f6"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "4386"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1122-Ocl0VT8VlS5PHxvJLYuh4i2AiQQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:28:03 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"user_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n        \"user_email\": \"maungmyatthiri@gmail.com\",\n        \"customer_id\": \"customer-123\",\n        \"owner_id\": \"owner-456\",\n        \"vehicle_id\": \"vehicle-789\",\n        \"booking_id\": \"booking-101\",\n        \"category\": \"booking_confirmation\",\n        \"title\": \"Booking confirmation required\",\n        \"description\": \"Please confirm my booking\",\n        \"status\": \"paused\",\n        \"priority\": \"high\",\n        \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n        \"handled_at\": \"2026-02-02T16:04:57.921Z\",\n        \"created_at\": \"2026-02-02T15:41:21.473Z\",\n        \"updated_at\": \"2026-02-02T16:35:57.928Z\",\n        \"attachmentIds\": [\n            \"media-1\",\n            \"media-2\"\n        ],\n        \"actions\": [\n            {\n                \"id\": \"34349dd4-e7f2-45c8-a5d7-a48dfc82bc95\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n                \"action\": \"request_paused\",\n                \"notes\": \"fiejfie\",\n                \"created_at\": \"2026-02-02T16:35:57.929Z\"\n            },\n            {\n                \"id\": \"fc25c025-bdb2-48b7-a886-6e88aa276153\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"note_added\",\n                \"notes\": \"Customer contacted via email for clarification\",\n                \"created_at\": \"2026-02-02T16:04:57.962Z\"\n            },\n            {\n                \"id\": \"adcead7c-09bf-4f94-b56e-ff3539d269fe\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_resumed\",\n                \"notes\": \"Information received, continuing processing\",\n                \"created_at\": \"2026-02-02T16:04:57.950Z\"\n            },\n            {\n                \"id\": \"bde87d4a-3095-435c-a3ed-0f84bba9ea43\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_paused\",\n                \"notes\": \"Waiting for additional information from user\",\n                \"created_at\": \"2026-02-02T16:04:57.937Z\"\n            },\n            {\n                \"id\": \"ec39bb65-0203-4038-b872-e4a6cfccd90d\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_denied\",\n                \"notes\": \"Insufficient documentation provided\",\n                \"created_at\": \"2026-02-02T16:04:57.923Z\"\n            },\n            {\n                \"id\": \"752cc514-0452-40f4-bebd-52fccdb778ec\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_approved\",\n                \"notes\": \"Request approved after verification\",\n                \"created_at\": \"2026-02-02T16:04:57.911Z\"\n            },\n            {\n                \"id\": \"a92959f9-f8bc-4a63-903f-30b14fa245f6\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"456e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"status_changed_to_processing\",\n                \"notes\": \"Started working on this request\",\n                \"created_at\": \"2026-02-02T16:04:57.899Z\"\n            },\n            {\n                \"id\": \"1b3f86dc-1691-4ce5-a680-a42b01e88b76\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"note_added\",\n                \"notes\": \"Customer contacted via email for clarification\",\n                \"created_at\": \"2026-02-02T15:49:46.557Z\"\n            },\n            {\n                \"id\": \"8cd1d45a-1b84-434c-9d0f-3165225ffec2\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_resumed\",\n                \"notes\": \"Information received, continuing processing\",\n                \"created_at\": \"2026-02-02T15:49:34.720Z\"\n            },\n            {\n                \"id\": \"c575da17-342f-4158-88e7-9cce034f0bc4\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_paused\",\n                \"notes\": \"Waiting for additional information from user\",\n                \"created_at\": \"2026-02-02T15:49:18.137Z\"\n            },\n            {\n                \"id\": \"fecb27e4-0be6-402b-b2d0-07960b0077b9\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_denied\",\n                \"notes\": \"Insufficient documentation provided\",\n                \"created_at\": \"2026-02-02T15:49:07.617Z\"\n            },\n            {\n                \"id\": \"93100d67-de5e-459e-b443-f1311ff91d17\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_approved\",\n                \"notes\": \"Request approved after verification\",\n                \"created_at\": \"2026-02-02T15:48:59.000Z\"\n            },\n            {\n                \"id\": \"44f96231-3642-4162-bfdc-ada888f28f3e\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"status_changed_to_processing\",\n                \"notes\": \"Started working on this request\",\n                \"created_at\": \"2026-02-02T15:48:41.949Z\"\n            },\n            {\n                \"id\": \"f14ded28-e17a-43b4-859a-d1a0e85eb66b\",\n                \"request_id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n                \"performed_by\": \"123e4567-e89b-12d3-a456-426614174001\",\n                \"action\": \"request_created\",\n                \"notes\": \"Request submitted\",\n                \"created_at\": \"2026-02-02T15:41:21.477Z\"\n            }\n        ]\n    }\n}"
+            }
+          ]
         }
       ]
     },
@@ -239,6 +899,16 @@
         {
           "name": "Update Status",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -256,14 +926,102 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "status"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Update Status",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"processing\",\n  \"notes\": \"Started working on this request\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "219"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"db-U4btf1gHstzfJCFQh4vPquOigsY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:38:07 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request status updated\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"status\": \"processing\",\n        \"handledBy\": \"456e4567-e89b-12d3-a456-426614174001\",\n        \"updatedAt\": \"2026-02-05T12:38:07.008Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Approve Request",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -281,14 +1039,102 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/approve",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "approve"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "approve"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Approve Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notes\": \"Request approved after verification\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/approve",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "approve"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "224"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"e0-tb0CYJLe/9D8qm+3Madj82xzjxQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:38:40 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request approved successfully\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"status\": \"approved\",\n        \"handledBy\": \"456e4567-e89b-12d3-a456-426614174001\",\n        \"handledAt\": \"2026-02-05T12:38:40.033Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Deny Request",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -306,14 +1152,102 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/deny",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "deny"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "deny"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Deny Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Insufficient documentation provided\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/deny",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "deny"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "207"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"cf-/Licx6HUFQ9WYkoyXk15qXlwwvk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:39:12 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request denied\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"status\": \"denied\",\n        \"handledBy\": \"456e4567-e89b-12d3-a456-426614174001\",\n        \"handledAt\": \"2026-02-05T12:39:12.164Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Pause Request",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -331,14 +1265,102 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/pause",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "pause"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "pause"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Pause Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Waiting for additional information from user\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/pause",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "pause"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "168"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"a8-uEC7x+0/sb+JodwYpzembk6R/6w\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:39:54 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request paused\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"status\": \"paused\",\n        \"handledBy\": \"456e4567-e89b-12d3-a456-426614174001\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Resume Request",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -356,14 +1378,102 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/resume",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "resume"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "resume"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Resume Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notes\": \"Information received, continuing processing\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/resume",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "resume"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "195"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"c3-3dJeD3683wpqF+nffh4leDVIlaA\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:40:27 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Request resumed and set to processing\",\n    \"request\": {\n        \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n        \"status\": \"processing\",\n        \"handledBy\": \"456e4567-e89b-12d3-a456-426614174001\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Add Note",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -381,10 +1491,88 @@
             },
             "url": {
               "raw": "{{baseUrl}}/requests/{{requestId}}/notes",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests", "{{requestId}}", "notes"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "notes"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Add Note",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"note\": \"Customer contacted via email for clarification\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/requests/{{requestId}}/notes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests",
+                    "{{requestId}}",
+                    "notes"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "52"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"34-Yp9pYpevtRfpLx7CKc5QhIRezXk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:40:59 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Note added successfully\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -394,6 +1582,16 @@
         {
           "name": "Get Request Stats",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -403,8 +1601,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/analytics/requests/stats?timeRange=30d",
-              "host": ["{{baseUrl}}"],
-              "path": ["analytics", "requests", "stats"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "requests",
+                "stats"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -412,22 +1616,103 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Request Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/analytics/requests/stats?timeRange=30d",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "requests",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "240"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"f0-3r29rAjH1icQW0gLfnlvd75uuLI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:30:35 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"total\": 7,\n    \"pending\": 2,\n    \"approved\": 2,\n    \"denied\": 1,\n    \"byCategory\": {\n        \"booking_confirmation\": 4,\n        \"booking_issue\": 3\n    },\n    \"byStatus\": {\n        \"approved\": 2,\n        \"denied\": 1,\n        \"paused\": 1,\n        \"pending\": 2,\n        \"processing\": 1\n    },\n    \"avgResponseTime\": \"1.56\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Staff Performance",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/analytics/staff/performance?timeRange=30d",
-              "host": ["{{baseUrl}}"],
-              "path": ["analytics", "staff", "performance"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "staff",
+                "performance"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -435,7 +1720,72 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Staff Performance",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/analytics/staff/performance?timeRange=30d",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "staff",
+                    "performance"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "599"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"257-lGUY+KZ2eYEq/0UxYM7IgBkMsqg\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:36:46 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"staff\": [\n        {\n            \"staffId\": \"17889ff4-0287-48d3-be86-d5f5d7165c46\",\n            \"username\": \"17889ff4-0287-48d3-be86-d5f5d7165c46\",\n            \"totalHandled\": 1,\n            \"approved\": 1,\n            \"denied\": 0,\n            \"avgResponseTime\": 4.37,\n            \"approvalRate\": 1,\n            \"byCategory\": {\n                \"booking_confirmation\": 1\n            }\n        },\n        {\n            \"staffId\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"username\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"totalHandled\": 4,\n            \"approved\": 1,\n            \"denied\": 1,\n            \"avgResponseTime\": 0.63,\n            \"approvalRate\": 0.25,\n            \"byCategory\": {\n                \"booking_confirmation\": 2,\n                \"booking_issue\": 2\n            }\n        }\n    ],\n    \"summary\": {\n        \"totalStaff\": 2,\n        \"totalHandled\": 5,\n        \"avgResponseTime\": 2.5,\n        \"avgApprovalRate\": 0.4\n    }\n}"
+            }
+          ]
         }
       ]
     },
@@ -445,6 +1795,16 @@
         {
           "name": "Get Unassigned Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -454,8 +1814,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?handledBy=unassigned&sortBy=priority",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "handledBy",
@@ -467,11 +1831,93 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Unassigned Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?handledBy=unassigned&sortBy=priority",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "handledBy",
+                      "value": "unassigned"
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "priority"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1165"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"48d-SwDvD7fbTQSphsURBMe86adN4oY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:31:46 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [\n        {\n            \"id\": \"64d4cb1c-35a1-471f-b3ed-b31e5260eaef\",\n            \"user_id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n            \"user_email\": \"maungmyatthiriwork@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"pending\",\n            \"priority\": \"high\",\n            \"handled_by\": null,\n            \"handled_at\": null,\n            \"created_at\": \"2026-02-05T12:29:46.205Z\",\n            \"updated_at\": \"2026-02-05T12:29:46.205Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        },\n        {\n            \"id\": \"b11fdc3b-d1b9-41d8-ba96-16823b682241\",\n            \"user_id\": \"e35dafe5-8eb4-435c-a76c-70c927ce5e5d\",\n            \"user_email\": \"maungmyatthiriwork@gmail.com\",\n            \"customer_id\": null,\n            \"owner_id\": null,\n            \"vehicle_id\": null,\n            \"booking_id\": null,\n            \"category\": \"booking_issue\",\n            \"title\": \"Issue with booking cancellation\",\n            \"description\": \"I am unable to cancel my booking for vehicle ABC123\",\n            \"status\": \"pending\",\n            \"priority\": \"high\",\n            \"handled_by\": null,\n            \"handled_at\": null,\n            \"created_at\": \"2026-02-05T12:29:21.353Z\",\n            \"updated_at\": \"2026-02-05T12:29:21.353Z\",\n            \"attachmentIds\": []\n        }\n    ],\n    \"total\": 2,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Search by Vehicle ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -481,8 +1927,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?search=vehicle-123",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -490,11 +1940,89 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Search by Vehicle ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?search=vehicle-123",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "vehicle-123"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "95"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5f-Pl3AyZDzBX4ROaEmtjwtsMrRH7M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:33:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [],\n    \"total\": 0,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 0\n}"
+            }
+          ]
         },
         {
           "name": "Get My Processing Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -504,8 +2032,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?status=processing&handledBy=me",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -517,11 +2049,93 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get My Processing Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?status=processing&handledBy=me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "processing"
+                    },
+                    {
+                      "key": "handledBy",
+                      "value": "me"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "95"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5f-Pl3AyZDzBX4ROaEmtjwtsMrRH7M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:33:18 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [],\n    \"total\": 0,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 0\n}"
+            }
+          ]
         },
         {
           "name": "Get Paused Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -531,8 +2145,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?status=paused",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -540,11 +2158,89 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Paused Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?status=paused",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "paused"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "697"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2b9-tchPE2vMn1lxCGgrxb+XES/ILgw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:32:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [\n        {\n            \"id\": \"2c22c112-f6a1-41de-80e5-9870527fd2f6\",\n            \"user_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n            \"user_email\": \"maungmyatthiri@gmail.com\",\n            \"customer_id\": \"customer-123\",\n            \"owner_id\": \"owner-456\",\n            \"vehicle_id\": \"vehicle-789\",\n            \"booking_id\": \"booking-101\",\n            \"category\": \"booking_confirmation\",\n            \"title\": \"Booking confirmation required\",\n            \"description\": \"Please confirm my booking\",\n            \"status\": \"paused\",\n            \"priority\": \"high\",\n            \"handled_by\": \"38195816-f032-42dd-b652-f97ee882082c\",\n            \"handled_at\": \"2026-02-02T16:04:57.921Z\",\n            \"created_at\": \"2026-02-02T15:41:21.473Z\",\n            \"updated_at\": \"2026-02-02T16:35:57.928Z\",\n            \"attachmentIds\": [\n                \"media-1\",\n                \"media-2\"\n            ]\n        }\n    ],\n    \"total\": 1,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Get Vehicle Deactivation Requests",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [
               {
@@ -554,8 +2250,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/requests?category=vehicle_deactivation&status=pending",
-              "host": ["{{baseUrl}}"],
-              "path": ["requests"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ],
               "query": [
                 {
                   "key": "category",
@@ -567,9 +2267,133 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Vehicle Deactivation Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/requests?category=vehicle_deactivation&status=pending",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "category",
+                      "value": "vehicle_deactivation"
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "95"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5f-Pl3AyZDzBX4ROaEmtjwtsMrRH7M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 12:32:18 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Success\",\n    \"requests\": [],\n    \"total\": 0,\n    \"page\": 1,\n    \"limit\": 20,\n    \"totalPages\": 0\n}"
+            }
+          ]
         }
       ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NTZlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDEiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3MDA0NzUzOCwiZXhwIjoxNzcwMTMzOTM4fQ.HKrT5zB-q9h816DazTFr1bksNfz_KsMW5AZqeAK_lNA",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3010"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN_HERE"
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
     }
   ]
 }

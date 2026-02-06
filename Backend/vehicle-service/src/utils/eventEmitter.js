@@ -5,7 +5,7 @@ class EventEmitter {
   constructor() {
     this.connection = null;
     this.channel = null;
-    this.exchange = "wiz_events";
+    this.exchange = "wiz.events";
     this.isConnecting = false;
     this.reconnectTimeout = null;
   }
