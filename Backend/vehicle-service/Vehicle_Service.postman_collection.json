@@ -1,0 +1,935 @@
+{
+  "info": {
+    "name": "Vehicle Service API - Complete Collection",
+    "description": "Comprehensive API collection for Vehicle Service with all new features",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "owner_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "owner_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public APIs",
+      "item": [
+        {
+          "name": "Search Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/search?vehicleType=suv&city=Ho Chi Minh&page=1&limit=20&sortBy=price",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "search"],
+              "query": [
+                { "key": "vehicleType", "value": "suv" },
+                { "key": "city", "value": "Ho Chi Minh" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "sortBy", "value": "price" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/{{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "{{vehicle_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Check Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/{{vehicle_id}}/availability?startDate=2026-02-10&endDate=2026-02-15",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "{{vehicle_id}}", "availability"],
+              "query": [
+                { "key": "startDate", "value": "2026-02-10" },
+                { "key": "endDate", "value": "2026-02-15" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner APIs",
+      "item": [
+        {
+          "name": "Get My Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/my-vehicles?status=all&page=1&limit=20&sortBy=revenue",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "my-vehicles"],
+              "query": [
+                { "key": "status", "value": "all" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "sortBy", "value": "revenue" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicles by Owner ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{owner_id}}/vehicles?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{owner_id}}", "vehicles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Honda Civic 2023\",\n  \"description\": \"Modern sedan with excellent fuel efficiency\",\n  \"vehicleType\": \"sedan\",\n  \"transmission\": \"automatic\",\n  \"fuelType\": \"gasoline\",\n  \"seats\": 5,\n  \"year\": 2023,\n  \"mileage\": 5000,\n  \"licensePlate\": \"59C-99999\",\n  \"pricePerDay\": 400000,\n  \"location\": {\n    \"address\": \"123 Main St\",\n    \"city\": \"Ho Chi Minh City\",\n    \"district\": \"District 1\",\n    \"coordinates\": {\n      \"lat\": 10.7769,\n      \"lng\": 106.7009\n    }\n  },\n  \"features\": [\"AC\", \"GPS\", \"Bluetooth\"],\n  \"rules\": {\n    \"noSmoking\": true,\n    \"noPets\": false\n  },\n  \"driverSupported\": false,\n  \"instantBooking\": true,\n  \"deliveryAvailable\": false,\n  \"photoIds\": [\"assets/images/Car.png\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner"]
+            }
+          }
+        },
+        {
+          "name": "Get My Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerDay\": 450000,\n  \"mileage\": 6000,\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Upload Photos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoUrls\": [\n    \"assets/images/Car.png\",\n    \"assets/images/Car_2.png\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/photos",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}", "photos"]
+            }
+          }
+        },
+        {
+          "name": "Submit Verification Photos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoUrls\": [\n    \"assets/verification/front.jpg\",\n    \"assets/verification/back.jpg\",\n    \"assets/verification/interior.jpg\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}", "verification"]
+            }
+          }
+        },
+        {
+          "name": "Get Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/owner/{{vehicle_id}}/verification-status",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "owner", "{{vehicle_id}}", "verification-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs - Vehicle Management",
+      "item": [
+        {
+          "name": "Get All Vehicles (Comprehensive)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?status=all&verificationStatus=unverified&sortBy=created_at&sortOrder=DESC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "status", "value": "all" },
+                { "key": "verificationStatus", "value": "unverified" },
+                { "key": "sortBy", "value": "created_at" },
+                { "key": "sortOrder", "value": "DESC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?vehicleId={{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "vehicleId", "value": "{{vehicle_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Vehicle by Owner ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?ownerId={{owner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "ownerId", "value": "{{owner_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Vehicle by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?search=Honda",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "search", "value": "Honda" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Approved Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/approved?page=1&limit=20&sortBy=rating&sortOrder=DESC",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "approved"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "sortBy", "value": "rating" },
+                { "key": "sortOrder", "value": "DESC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Active Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/active?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-status", "active"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Deactivated Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/deactivated?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-status", "deactivated"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Banned Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-status/banned?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-status", "banned"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Top Rated Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/top-rated?minRating=4.0&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "top-rated"],
+              "query": [
+                { "key": "minRating", "value": "4.0" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Number of Rentals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=rentals&sortOrder=DESC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "sortBy", "value": "rentals" },
+                { "key": "sortOrder", "value": "DESC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Price",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=price&sortOrder=ASC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "sortBy", "value": "price" },
+                { "key": "sortOrder", "value": "ASC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=name&sortOrder=ASC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "sortBy", "value": "name" },
+                { "key": "sortOrder", "value": "ASC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Revenue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=revenue&sortOrder=DESC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "sortBy", "value": "revenue" },
+                { "key": "sortOrder", "value": "DESC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Next Verification Due",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles?sortBy=next_verification_due&sortOrder=ASC&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles"],
+              "query": [
+                { "key": "sortBy", "value": "next_verification_due" },
+                { "key": "sortOrder", "value": "ASC" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by SUV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/suv?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-type", "suv"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Sedan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/sedan?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-type", "sedan"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Van",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/van?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-type", "van"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Hatchback",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/by-type/hatchback?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "by-type", "hatchback"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs - Verification",
+      "item": [
+        {
+          "name": "Get Vehicles Due for Verification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/vehicles/due-verification?daysAhead=30&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "vehicles", "due-verification"],
+              "query": [
+                { "key": "daysAhead", "value": "30" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Verifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/verifications/pending?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "verifications", "pending"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/verifications/:verificationId/approve",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "verifications", ":verificationId", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Photos are unclear. Please resubmit with better quality images.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/verifications/:verificationId/reject",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "verifications", ":verificationId", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs - Status Management",
+      "item": [
+        {
+          "name": "Update Vehicle Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"reason\": \"Vehicle meets all requirements\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "{{vehicle_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Approve Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "{{vehicle_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Vehicle does not meet safety standards\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/admin/{{vehicle_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "admin", "{{vehicle_id}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics APIs",
+      "item": [
+        {
+          "name": "Get Platform Vehicle Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/analytics/vehicles/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "analytics", "vehicles", "stats"],
+              "query": [
+                { "key": "timeRange", "value": "30d" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Owner Vehicle Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicles/analytics/vehicles/owner/{{owner_id}}/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "analytics", "vehicles", "owner", "{{owner_id}}", "stats"],
+              "query": [
+                { "key": "timeRange", "value": "30d" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

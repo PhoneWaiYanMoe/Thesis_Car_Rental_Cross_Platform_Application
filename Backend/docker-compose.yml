@@ -109,7 +109,7 @@ services:
       - DB_NAME=wiz_user
       - PORT=3001
       - GRPC_PORT=50053
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3001
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
@@ -169,7 +169,7 @@ services:
       - DB_NAME=wiz_location
       - PORT=3003
       - GRPC_PORT=50051
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3003
       - JWT_SECRET=${JWT_SECRET}
       - RATE_LIMIT_WINDOW_MS=900000
@@ -198,11 +198,12 @@ services:
       - DB_NAME=wiz_vehicle
       - PORT=3002
       - GRPC_PORT=50055
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3002
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
       - REVIEW_SERVICE_GRPC_URL=wiz-review-service:50054
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
@@ -230,7 +231,7 @@ services:
       - DB_NAME=wiz_payment
       - PORT=3006
       - GRPC_PORT=50056
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3006
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
@@ -285,7 +286,7 @@ services:
       - DB_NAME=wiz_booking
       - PORT=3004
       - GRPC_PORT=50052
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3004
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
@@ -329,12 +330,13 @@ services:
       - MONGODB_PASSWORD=${MONGODB_PASSWORD:-wiz_password}
       - PORT=3005
       - GRPC_PORT=50054
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3005
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
       - VEHICLE_SERVICE_GRPC_URL=wiz-vehicle-service:50055
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       mongodb:
         condition: service_healthy
@@ -358,7 +360,7 @@ services:
       - "3007:3007"
     environment:
       - PORT=3007
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       - USER_SERVICE_URL=http://user-service:3001
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
@@ -411,7 +413,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_media_db
       - PORT=3008
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3008
       - JWT_SECRET=${JWT_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
@@ -465,6 +467,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
@@ -503,7 +506,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_request_db
       - PORT=3010
-      - NODE_ENV=development
+      - NODE_ENV=docker
       - BASE_URL=http://localhost:3010
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672

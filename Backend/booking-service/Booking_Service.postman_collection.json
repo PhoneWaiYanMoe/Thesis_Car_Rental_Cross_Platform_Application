@@ -1,0 +1,994 @@
+{
+  "info": {
+    "name": "Wiz Booking Service - Complete API Collection",
+    "_postman_id": "booking-service-complete-v1",
+    "description": "Complete Postman collection for testing all Booking Service APIs including new admin endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3004",
+      "type": "string"
+    },
+    {
+      "key": "customer_token",
+      "value": "YOUR_CUSTOMER_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "owner_token",
+      "value": "YOUR_OWNER_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "YOUR_ADMIN_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the booking service is running"
+      }
+    },
+    {
+      "name": "Customer APIs",
+      "item": [
+        {
+          "name": "1. Get My Verification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/verification/me",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "verification", "me"]
+            },
+            "description": "Get customer's verification status"
+          }
+        },
+        {
+          "name": "2. Upload Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"licenseNumber\": \"ABC123456\",\n  \"expiryDate\": \"2027-12-31\",\n  \"licenseFrontPhoto\": \"file-id-front\",\n  \"licenseBackPhoto\": \"file-id-back\",\n  \"frontSelfie\": \"file-id-selfie-front\",\n  \"leftSelfie\": \"file-id-selfie-left\",\n  \"rightSelfie\": \"file-id-selfie-right\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/verification",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "verification"]
+            }
+          }
+        },
+        {
+          "name": "3. Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"booking_id\", jsonData.booking.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicle_id}}\",\n  \"startDate\": \"2026-03-01T10:00:00Z\",\n  \"endDate\": \"2026-03-05T10:00:00Z\",\n  \"pickupLocation\": {\n    \"displayName\": \"District 1, HCMC\",\n    \"latitude\": 10.7769,\n    \"longitude\": 106.7009\n  },\n  \"dropoffLocation\": {\n    \"displayName\": \"District 7, HCMC\",\n    \"latitude\": 10.7320,\n    \"longitude\": 106.7190\n  },\n  \"driverRequired\": false,\n  \"insuranceCoverage\": 30,\n  \"provider\": \"vnpay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            }
+          }
+        },
+        {
+          "name": "4. Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/my-bookings?status=all&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "my-bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Get Booking By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Sign Contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedContractFileId\": \"signed-contract-file-id-from-media-service\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/sign-contract",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "sign-contract"]
+            }
+          }
+        },
+        {
+          "name": "7. Pay Final Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"vnpay\",\n  \"paymentMethodId\": \"optional-payment-method-id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/pay-final",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "pay-final"]
+            }
+          }
+        },
+        {
+          "name": "8. Confirm Pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditionPhotos\": [\"photo-id-1\", \"photo-id-2\", \"photo-id-3\"],\n  \"odometerReading\": 50000,\n  \"notes\": \"Car condition is excellent\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/confirm-pickup",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "confirm-pickup"]
+            }
+          }
+        },
+        {
+          "name": "9. Confirm Return (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnPhotos\": [\"return-photo-1\", \"return-photo-2\", \"return-photo-3\"],\n  \"odometerReading\": 50500,\n  \"notes\": \"Returned in good condition\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/confirm-return",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "confirm-return"]
+            }
+          }
+        },
+        {
+          "name": "10. Cancel Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Change of plans\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner APIs",
+      "item": [
+        {
+          "name": "1. Get Owner Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/owner/bookings?status=all&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "owner", "bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Accept Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/owner/{{booking_id}}/accept",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "owner", "{{booking_id}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "3. Reject Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Vehicle not available on those dates\",\n  \"refundAmount\": 200000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/owner/{{booking_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "owner", "{{booking_id}}", "reject"]
+            }
+          }
+        },
+        {
+          "name": "4. Confirm Return (Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditionPhotos\": [\"owner-photo-1\", \"owner-photo-2\", \"owner-photo-3\"],\n  \"conditionNotes\": \"Car returned in good condition\",\n  \"damagesReported\": false,\n  \"odometerReading\": 50500,\n  \"action\": \"complete\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/owner/{{booking_id}}/confirm-return",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "owner", "{{booking_id}}", "confirm-return"]
+            },
+            "description": "action can be 'complete' or 'dispute'"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs (NEW)",
+      "item": [
+        {
+          "name": "1. Get All Bookings (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?page=1&limit=20&sortBy=recently&sortOrder=desc&filter=all_time",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (default: 20, max: 100)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "recently",
+                  "description": "Options: recently, amount, duration, start_date"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "Options: asc, desc"
+                },
+                {
+                  "key": "filter",
+                  "value": "all_time",
+                  "description": "Options: all_time, today, this_week, this_month, this_year, custom"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Comma-separated statuses (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by booking_id, vehicle_id, or customer_id",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get All Bookings (By Status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?status=ongoing,completed&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ongoing,completed",
+                  "description": "Comma-separated. Special: 'ongoing' = booking+picked_up"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Bookings (Today)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?filter=today&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "today"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Bookings (This Week)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?filter=this_week",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "this_week"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Get Bookings (This Month)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?filter=this_month",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "this_month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. Get Bookings (This Year)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?filter=this_year",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "this_year"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Get Bookings (Custom Date Range)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?filter=custom&startDate=2026-01-01&endDate=2026-03-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "custom"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-03-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8. Get Bookings (Sort by Amount)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?sortBy=amount&sortOrder=desc",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "amount"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "9. Get Bookings (Sort by Duration)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?sortBy=duration&sortOrder=desc",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "duration"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "10. Search Bookings (All Fields)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/search?q=550e8400",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "550e8400",
+                  "description": "Search term"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "Optional: booking_id, vehicle_id, customer_id",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11. Search Bookings (By Booking ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/search?q={{booking_id}}&type=booking_id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{booking_id}}"
+                },
+                {
+                  "key": "type",
+                  "value": "booking_id"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12. Search Bookings (By Vehicle ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/search?q={{vehicle_id}}&type=vehicle_id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{vehicle_id}}"
+                },
+                {
+                  "key": "type",
+                  "value": "vehicle_id"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "13. Search Bookings (By Customer ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/search?q={{customer_id}}&type=customer_id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{customer_id}}"
+                },
+                {
+                  "key": "type",
+                  "value": "customer_id"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14. Get Bookings By Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/by-status?statuses=pending,booking,completed",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "by-status"],
+              "query": [
+                {
+                  "key": "statuses",
+                  "value": "pending,booking,completed",
+                  "description": "Required comma-separated list"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "15. Get Enhanced Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/stats?filter=all_time",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "stats"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "all_time",
+                  "description": "Options: all_time, today, this_week, this_month, this_year, custom"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "16. Get Booking Details (Admin View)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings", "{{booking_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics APIs",
+      "item": [
+        {
+          "name": "1. Platform Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/bookings/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "bookings", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d",
+                  "description": "Options: 7d, 30d, 90d, 1y"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Owner Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/bookings/owner/:ownerId/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "bookings", "owner", ":ownerId", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Vehicle Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/bookings/vehicle/{{vehicle_id}}/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "bookings", "vehicle", "{{vehicle_id}}", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

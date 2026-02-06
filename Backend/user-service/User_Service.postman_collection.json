@@ -1,52 +1,11 @@
 {
   "info": {
+    "_postman_id": "75154aa1-9d41-43c4-96d5-2a47d2ce6710",
     "name": "Wiz User Service API",
-    "_postman_id": "wiz-user-service-v2",
     "description": "Complete API collection for Wiz User Service including authentication, user management, devices, and payments",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "42883958"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{accessToken}}",
-        "type": "string"
-      }
-    ]
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3001",
-      "type": "string"
-    },
-    {
-      "key": "accessToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "refreshToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "userId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "deviceId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "paymentMethodId",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "Authentication",
@@ -65,11 +24,17 @@
                   "        pm.environment.set('otp', response.otp);",
                   "    }",
                   "}"
-                ]
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -79,14 +44,86 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"fullName\": \"Test User\",\n  \"password\": \"TestPass123!\",\n  \"confirmPassword\": \"TestPass123!\"\n}"
+              "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"fullName\": \"Myat Thiri\",\n  \"password\": \"MyatPass123!\",\n  \"confirmPassword\": \"MyatPass123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Register User",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"fullName\": \"Myat Thiri\",\n  \"password\": \"MyatPass123!\",\n  \"confirmPassword\": \"MyatPass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "79"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4f-Rqe0T6N8kUsNGfk86DX51ufK+L4\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:50:41 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"OTP sent to email\",\n    \"userId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\"\n}"
+            }
+          ]
         },
         {
           "name": "Verify Email OTP",
@@ -100,7 +137,10 @@
                   "    pm.environment.set('accessToken', response.token);",
                   "    pm.environment.set('refreshToken', response.refreshToken);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -114,14 +154,86 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"code\": \"{{otp}}\"\n}"
+              "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"code\": \"468728\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/verify-email-otp",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "verify-email-otp"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email-otp"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Verify Email OTP",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"code\": \"642472\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/verify-email-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "verify-email-otp"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "717"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2cd-zOtr6NUnGvM/lVOlazHfTQ0w3pY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:51:53 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZjc4MWM1OC0xMzA2LTQ4NjYtOGM5Zi1iYWIzZGM5ZDUzM2EiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGdtYWlsLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImZ1bGxOYW1lIjoiTXlhdCBUaGlyaSIsInBob25lIjpudWxsLCJhdmF0YXJVcmwiOm51bGwsImlhdCI6MTc3MDI4MTUxMywiZXhwIjoxNzcwODg2MzEzfQ.9j_Su0jvbY5Ry-drc1VNl59_e13juYKRMttl6xDVtjA\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZjc4MWM1OC0xMzA2LTQ4NjYtOGM5Zi1iYWIzZGM5ZDUzM2EiLCJpYXQiOjE3NzAyODE1MTMsImV4cCI6MTc3Mjg3MzUxM30.bKFVnEwOO34BtrjvAoiSq4SXhyxQ-i8UL-LDL1PaNO4\",\n    \"user\": {\n        \"id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"email\": \"maungmyatthiri@gmail.com\",\n        \"fullName\": \"Myat Thiri\",\n        \"phone\": null,\n        \"avatarUrl\": null,\n        \"role\": \"customer\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Login",
@@ -136,11 +248,17 @@
                   "    pm.environment.set('refreshToken', response.refreshToken);",
                   "    pm.environment.set('userId', response.user.id);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -150,14 +268,86 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}"
+              "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"password\": \"MyatPass123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\",\n  \"password\": \"MyatPass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "717"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2cd-vKRCuiFCPKMOlFcO9ch4MvWaMjE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:52:54 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZjc4MWM1OC0xMzA2LTQ4NjYtOGM5Zi1iYWIzZGM5ZDUzM2EiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGdtYWlsLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImZ1bGxOYW1lIjoiTXlhdCBUaGlyaSIsInBob25lIjpudWxsLCJhdmF0YXJVcmwiOm51bGwsImlhdCI6MTc3MDI4MTU3NCwiZXhwIjoxNzcwODg2Mzc0fQ.KOF2ZtdH4DTUvzDOD_rp_B3VtRd_qrFfG-Lem9VgKmw\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZjc4MWM1OC0xMzA2LTQ4NjYtOGM5Zi1iYWIzZGM5ZDUzM2EiLCJpYXQiOjE3NzAyODE1NzQsImV4cCI6MTc3Mjg3MzU3NH0.R6w4yMZ2rH898CtSy1YvMUBIYvARswOuGCwbFuQVS48\",\n    \"user\": {\n        \"id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"email\": \"maungmyatthiri@gmail.com\",\n        \"fullName\": \"Myat Thiri\",\n        \"phone\": null,\n        \"avatarUrl\": null,\n        \"role\": \"customer\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Refresh Token",
@@ -170,7 +360,10 @@
                   "    const response = pm.response.json();",
                   "    pm.environment.set('accessToken', response.newToken);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -188,10 +381,82 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/refresh-token",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "refresh-token"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh-token"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Refresh Token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh-token",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh-token"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "278"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"116-SXmP+nMB5XwkxEC2w3b9QbXkj3o\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:54:02 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"newToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZjc4MWM1OC0xMzA2LTQ4NjYtOGM5Zi1iYWIzZGM5ZDUzM2EiLCJlbWFpbCI6Im1hdW5nbXlhdHRoaXJpQGdtYWlsLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MDI4MTY0MiwiZXhwIjoxNzcwODg2NDQyfQ.YIymAwwOjWuxd5uekrN774SNRt6taZ_trBrm6DxsO1E\"\n}"
+            }
+          ]
         },
         {
           "name": "Forgot Password",
@@ -205,14 +470,86 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+              "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/forgot-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "forgot-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Forgot Password",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"maungmyatthiri@gmail.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/forgot-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "forgot-password"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "29"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1d-yGmQGDaBGCF6ejOQPsOhtu9WtHk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:54:39 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Reset code sent\"\n}"
+            }
+          ]
         },
         {
           "name": "Logout",
@@ -231,10 +568,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "logout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Logout",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "27"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1b-r8X2z70qA7x6D797fvSHZ2HYChc\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:54:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Session ended\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -258,8 +658,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users?page=1&limit=20&search=&role=&status=&sortBy=created_at&sortOrder=DESC",
-              "host": ["{{baseUrl}}"],
-              "path": ["users"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -291,7 +695,94 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get All Users",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users?page=1&limit=20&search=&role=&status=&sortBy=created_at&sortOrder=DESC",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "role",
+                      "value": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": ""
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "created_at"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "DESC"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1718"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"6b6-u+DwecT4OOtZGaLDf6eZlqVNoeI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:55:09 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"users\": [\n        {\n            \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"email\": \"maungmyatthiri@gmail.com\",\n            \"full_name\": \"Myat Thiri\",\n            \"phone\": null,\n            \"role\": \"customer\",\n            \"status\": \"normal\",\n            \"license_status\": \"unverified\",\n            \"owner_status\": null,\n            \"is_verified\": true,\n            \"avatar_url\": null,\n            \"created_at\": \"2026-02-05T08:50:41.140Z\",\n            \"updated_at\": \"2026-02-05T08:51:53.078Z\",\n            \"total_bookings_as_customer\": null,\n            \"completed_bookings_as_customer\": null,\n            \"total_rentals_as_owner\": null,\n            \"average_rating_as_customer\": null,\n            \"average_rating_as_owner\": null,\n            \"total_spent\": null,\n            \"total_earned\": null\n        },\n        {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"email\": \"owner1@wiz.com\",\n            \"full_name\": \"Rumbling\",\n            \"phone\": \"+84 900 000 001\",\n            \"role\": \"owner\",\n            \"status\": \"normal\",\n            \"license_status\": \"unverified\",\n            \"owner_status\": null,\n            \"is_verified\": true,\n            \"avatar_url\": \"assets/images/Car_2.png\",\n            \"created_at\": \"2026-02-05T08:11:41.560Z\",\n            \"updated_at\": \"2026-02-05T08:11:41.560Z\",\n            \"total_bookings_as_customer\": 0,\n            \"completed_bookings_as_customer\": 0,\n            \"total_rentals_as_owner\": 0,\n            \"average_rating_as_customer\": \"0.00\",\n            \"average_rating_as_owner\": \"0.00\",\n            \"total_spent\": \"0.00\",\n            \"total_earned\": \"0.00\"\n        },\n        {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440020\",\n            \"email\": \"customer1@wiz.com\",\n            \"full_name\": \"Jass Myatt\",\n            \"phone\": \"+84 900 000 002\",\n            \"role\": \"customer\",\n            \"status\": \"normal\",\n            \"license_status\": \"unverified\",\n            \"owner_status\": null,\n            \"is_verified\": true,\n            \"avatar_url\": \"assets/images/article_2.png\",\n            \"created_at\": \"2026-02-05T08:11:41.560Z\",\n            \"updated_at\": \"2026-02-05T08:11:41.560Z\",\n            \"total_bookings_as_customer\": 0,\n            \"completed_bookings_as_customer\": 0,\n            \"total_rentals_as_owner\": 0,\n            \"average_rating_as_customer\": \"0.00\",\n            \"average_rating_as_owner\": \"0.00\",\n            \"total_spent\": \"0.00\",\n            \"total_earned\": \"0.00\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 3,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Support Users",
@@ -310,10 +801,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/support",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "support"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "support"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Support Users",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/support",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "support"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "340"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"154-3gPQCFi/Hl3p20R0/m0w9oLqLcw\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:55:23 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"users\": [\n        {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440030\",\n            \"email\": \"support@wiz.com\",\n            \"full_name\": \"Customer Support\",\n            \"phone\": \"+84 900 000 003\",\n            \"status\": \"normal\",\n            \"is_verified\": true,\n            \"avatar_url\": null,\n            \"created_at\": \"2026-02-05T08:11:41.583Z\",\n            \"updated_at\": \"2026-02-05T08:11:41.583Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Owner Users",
@@ -332,10 +886,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/owners",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "owners"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "owners"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Owner Users",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/owners",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "owners"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "515"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"203-hI/rFqmO/d2vgSN96YJLzX+sgFk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:55:30 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"users\": [\n        {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440010\",\n            \"email\": \"owner1@wiz.com\",\n            \"full_name\": \"Rumbling\",\n            \"phone\": \"+84 900 000 001\",\n            \"status\": \"normal\",\n            \"owner_status\": null,\n            \"license_status\": \"unverified\",\n            \"is_verified\": true,\n            \"avatar_url\": \"assets/images/Car_2.png\",\n            \"created_at\": \"2026-02-05T08:11:41.560Z\",\n            \"updated_at\": \"2026-02-05T08:11:41.560Z\",\n            \"total_rentals_as_owner\": 0,\n            \"completed_rentals_as_owner\": 0,\n            \"average_rating_as_owner\": \"0.00\",\n            \"total_earned\": \"0.00\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Customer Users",
@@ -354,10 +971,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/customers",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "customers"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "customers"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Customer Users",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/customers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "customers"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "928"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"3a0-E8RZwWfSB/gEpMUmJsJDg2N5IL8\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:55:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"users\": [\n        {\n            \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n            \"email\": \"maungmyatthiri@gmail.com\",\n            \"full_name\": \"Myat Thiri\",\n            \"phone\": null,\n            \"status\": \"normal\",\n            \"license_status\": \"unverified\",\n            \"is_verified\": true,\n            \"avatar_url\": null,\n            \"created_at\": \"2026-02-05T08:50:41.140Z\",\n            \"updated_at\": \"2026-02-05T08:51:53.078Z\",\n            \"total_bookings_as_customer\": null,\n            \"completed_bookings_as_customer\": null,\n            \"average_rating_as_customer\": null,\n            \"total_spent\": null\n        },\n        {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440020\",\n            \"email\": \"customer1@wiz.com\",\n            \"full_name\": \"Jass Myatt\",\n            \"phone\": \"+84 900 000 002\",\n            \"status\": \"normal\",\n            \"license_status\": \"unverified\",\n            \"is_verified\": true,\n            \"avatar_url\": \"assets/images/article_2.png\",\n            \"created_at\": \"2026-02-05T08:11:41.560Z\",\n            \"updated_at\": \"2026-02-05T08:11:41.560Z\",\n            \"total_bookings_as_customer\": 0,\n            \"completed_bookings_as_customer\": 0,\n            \"average_rating_as_customer\": \"0.00\",\n            \"total_spent\": \"0.00\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20,\n        \"totalPages\": 1\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get User by ID",
@@ -376,24 +1056,77 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get User by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "844"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"34c-rKLQ+uEJnXu8wtunAbMm+0pQ8YE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:55:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"user\": {\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"email\": \"maungmyatthiri@gmail.com\",\n        \"full_name\": \"Myat Thiri\",\n        \"phone\": null,\n        \"role\": \"customer\",\n        \"is_verified\": true,\n        \"avatar_url\": null,\n        \"created_at\": \"2026-02-05T08:50:41.140Z\",\n        \"updated_at\": \"2026-02-05T08:51:53.078Z\",\n        \"license_status\": \"unverified\",\n        \"owner_status\": null,\n        \"status\": \"normal\",\n        \"license_url\": null,\n        \"total_bookings_as_customer\": null,\n        \"active_bookings_as_customer\": null,\n        \"completed_bookings_as_customer\": null,\n        \"cancelled_bookings_as_customer\": null,\n        \"total_rentals_as_owner\": null,\n        \"active_rentals_as_owner\": null,\n        \"completed_rentals_as_owner\": null,\n        \"cancelled_rentals_as_owner\": null,\n        \"total_spent\": null,\n        \"total_earned\": null,\n        \"average_rating_as_customer\": null,\n        \"total_reviews_as_customer\": null,\n        \"average_rating_as_owner\": null,\n        \"total_reviews_as_owner\": null,\n        \"last_booking_date\": null,\n        \"last_rental_date\": null\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Change User Role",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PUT",
             "header": [
               {
@@ -407,10 +1140,84 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}/role",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "role"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "role"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Change User Role",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newRole\": \"owner\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}/role",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}",
+                    "role"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "175"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"af-T3gu0Nb28LwgdMgEACeKwC+Lc5g\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:57:04 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role updated successfully\",\n    \"user\": {\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"email\": \"maungmyatthiri@gmail.com\",\n        \"role\": \"owner\",\n        \"owner_status\": \"unverified\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Update User Status",
@@ -420,7 +1227,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{accessToken}}",
+                  "value": "{{adminToken}}",
                   "type": "string"
                 }
               ]
@@ -438,10 +1245,84 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "status"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Update User Status",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"suspended\",\n  \"reason\": \"Violation of terms\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}",
+                    "status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "162"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"a2-v5AIwz0koRYjmIPbNfT9vb5CiQk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:57:47 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"User status updated\",\n    \"user\": {\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"email\": \"maungmyatthiri@gmail.com\",\n        \"status\": \"suspended\",\n        \"role\": \"owner\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get License Status",
@@ -460,10 +1341,75 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}/license-status",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "license-status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "license-status"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get License Status",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}/license-status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}",
+                    "license-status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "128"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"80-dR3W4RDGvEfMQOqlXdcVkqpI4LQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:56:36 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"userId\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n    \"email\": \"maungmyatthiri@gmail.com\",\n    \"licenseStatus\": \"pending\",\n    \"hasLicense\": true\n}"
+            }
+          ]
         },
         {
           "name": "Upload License",
@@ -491,10 +1437,84 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}/upload-license",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "upload-license"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "upload-license"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Upload License",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"licenseUrl\": \"https://storage.example.com/licenses/12345.jpg\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}/upload-license",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}",
+                    "upload-license"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "69"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"45-fig4yyuB7LY4BDm88GF5Byf3Lo8\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 08:56:24 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"License uploaded successfully\",\n    \"licenseStatus\": \"pending\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -512,7 +1532,8 @@
                   "    const response = pm.response.json();",
                   "    pm.environment.set('deviceId', response.device.id);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -540,32 +1561,153 @@
             },
             "url": {
               "raw": "{{baseUrl}}/devices",
-              "host": ["{{baseUrl}}"],
-              "path": ["devices"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Register Device",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fcmToken\": \"test-fcm-token-12345\",\n  \"platform\": \"android\",\n  \"deviceName\": \"Samsung Galaxy S21\",\n  \"appVersion\": \"1.0.0\",\n  \"osVersion\": \"Android 12\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/devices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "devices"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "156"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"9c-ieRJNRAoJzLOhlphkLvyFnf6rSM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:01:45 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Device registered\",\n    \"device\": {\n        \"id\": \"8d9ef048-349e-44c2-9a2a-59e7c33925d8\",\n        \"fcmToken\": \"test-fcm-token-12345\",\n        \"platform\": \"android\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get My Devices",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/devices",
-              "host": ["{{baseUrl}}"],
-              "path": ["devices"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get My Devices",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/devices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "devices"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "262"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"106-9fMwbORxXXUlP0J+A94acqlmhUc\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:02:15 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"devices\": [\n        {\n            \"id\": \"8d9ef048-349e-44c2-9a2a-59e7c33925d8\",\n            \"device_name\": \"Samsung Galaxy S21\",\n            \"platform\": \"android\",\n            \"app_version\": \"1.0.0\",\n            \"os_version\": \"Android 12\",\n            \"is_active\": true,\n            \"last_used_at\": \"2026-02-05T09:01:45.454Z\",\n            \"created_at\": \"2026-02-05T09:01:45.454Z\"\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Get User Devices (Public API)",
@@ -574,10 +1716,77 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/users/{{userId}}/devices",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "{{userId}}", "devices"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}",
+                "devices"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get User Devices (Public API)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/{{userId}}/devices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "{{userId}}",
+                    "devices"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "201"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"c9-vN5XWCA2B/qybZGGR8uedfFPaDo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:02:26 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"devices\": [\n        {\n            \"id\": \"8d9ef048-349e-44c2-9a2a-59e7c33925d8\",\n            \"fcmToken\": \"test-fcm-token-12345\",\n            \"platform\": \"android\",\n            \"deviceName\": \"Samsung Galaxy S21\",\n            \"lastUsed\": \"2026-02-05T09:01:45.454Z\"\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Delete Device",
@@ -596,10 +1805,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/devices/{{deviceId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["devices", "{{deviceId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "{{deviceId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Delete Device",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{deviceId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "devices",
+                    "{{deviceId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "43"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2b-eOIbGI1/Cr7/xZ9X6cF+y41fqFc\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:02:36 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Device deleted\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -623,10 +1895,73 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payments/methods",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Payment Methods",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "384"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"180-E2cpjv9c6efkX2At9macTwIxpkE\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:10 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"paymentMethods\": [\n        {\n            \"id\": \"cd95d73e-2eb6-401c-84fb-7cd5f609523a\",\n            \"type\": \"credit_card\",\n            \"provider\": \"stripe\",\n            \"card_last_four\": \"4242\",\n            \"card_brand\": \"visa\",\n            \"card_exp_month\": 12,\n            \"card_exp_year\": 2025,\n            \"bank_account_last_four\": null,\n            \"bank_name\": null,\n            \"holder_name\": \"Test User\",\n            \"billing_address\": null,\n            \"is_default\": true,\n            \"is_verified\": false,\n            \"status\": \"active\",\n            \"created_at\": \"2026-02-05T09:03:02.706Z\"\n        }\n    ]\n}"
+            }
+          ]
         },
         {
           "name": "Add Payment Method",
@@ -639,7 +1974,8 @@
                   "    const response = pm.response.json();",
                   "    pm.environment.set('paymentMethodId', response.paymentMethod.id);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -667,10 +2003,82 @@
             },
             "url": {
               "raw": "{{baseUrl}}/payments/methods",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Add Payment Method",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"credit_card\",\n  \"provider\": \"stripe\",\n  \"cardLastFour\": \"4242\",\n  \"cardBrand\": \"visa\",\n  \"cardExpMonth\": 12,\n  \"cardExpYear\": 2025,\n  \"holderName\": \"Test User\",\n  \"isDefault\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "553"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"229-VrsidN7YWIJpfutYmrAdibp3r6E\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:02 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Payment method added\",\n    \"paymentMethod\": {\n        \"id\": \"cd95d73e-2eb6-401c-84fb-7cd5f609523a\",\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"type\": \"credit_card\",\n        \"provider\": \"stripe\",\n        \"provider_payment_method_id\": null,\n        \"card_last_four\": \"4242\",\n        \"card_brand\": \"visa\",\n        \"card_exp_month\": 12,\n        \"card_exp_year\": 2025,\n        \"bank_account_last_four\": null,\n        \"bank_name\": null,\n        \"holder_name\": \"Test User\",\n        \"billing_address\": null,\n        \"is_default\": true,\n        \"is_verified\": false,\n        \"status\": \"active\",\n        \"metadata\": null,\n        \"created_at\": \"2026-02-05T09:03:02.706Z\",\n        \"updated_at\": \"2026-02-05T09:03:02.706Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get Payment Method by ID",
@@ -689,10 +2097,75 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods", "{{paymentMethodId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods",
+                "{{paymentMethodId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Payment Method by ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods",
+                    "{{paymentMethodId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "520"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"208-JXXf/Pf1XpSPqhQbEc8nKo6aZT0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:18 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"paymentMethod\": {\n        \"id\": \"cd95d73e-2eb6-401c-84fb-7cd5f609523a\",\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"type\": \"credit_card\",\n        \"provider\": \"stripe\",\n        \"provider_payment_method_id\": null,\n        \"card_last_four\": \"4242\",\n        \"card_brand\": \"visa\",\n        \"card_exp_month\": 12,\n        \"card_exp_year\": 2025,\n        \"bank_account_last_four\": null,\n        \"bank_name\": null,\n        \"holder_name\": \"Test User\",\n        \"billing_address\": null,\n        \"is_default\": true,\n        \"is_verified\": false,\n        \"status\": \"active\",\n        \"metadata\": null,\n        \"created_at\": \"2026-02-05T09:03:02.706Z\",\n        \"updated_at\": \"2026-02-05T09:03:02.706Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Update Payment Method",
@@ -720,10 +2193,84 @@
             },
             "url": {
               "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods", "{{paymentMethodId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods",
+                "{{paymentMethodId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Update Payment Method",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cardExpMonth\": 6,\n  \"cardExpYear\": 2026\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods",
+                    "{{paymentMethodId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "554"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"22a-EDU8VqYjajWSeEY8Ef8QcmBNg5M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:30 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Payment method updated\",\n    \"paymentMethod\": {\n        \"id\": \"cd95d73e-2eb6-401c-84fb-7cd5f609523a\",\n        \"user_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n        \"type\": \"credit_card\",\n        \"provider\": \"stripe\",\n        \"provider_payment_method_id\": null,\n        \"card_last_four\": \"4242\",\n        \"card_brand\": \"visa\",\n        \"card_exp_month\": 6,\n        \"card_exp_year\": 2026,\n        \"bank_account_last_four\": null,\n        \"bank_name\": null,\n        \"holder_name\": \"Test User\",\n        \"billing_address\": null,\n        \"is_default\": true,\n        \"is_verified\": false,\n        \"status\": \"active\",\n        \"metadata\": null,\n        \"created_at\": \"2026-02-05T09:03:02.706Z\",\n        \"updated_at\": \"2026-02-05T09:03:30.625Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Set Default Payment Method",
@@ -742,10 +2289,77 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}/set-default",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods", "{{paymentMethodId}}", "set-default"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods",
+                "{{paymentMethodId}}",
+                "set-default"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Set Default Payment Method",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}/set-default",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods",
+                    "{{paymentMethodId}}",
+                    "set-default"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "44"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"2c-Q9xz4+zV1TTFAdYyD0THAHDjx/k\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:39 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Default payment method updated\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete Payment Method",
@@ -764,10 +2378,75 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "methods", "{{paymentMethodId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "methods",
+                "{{paymentMethodId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Delete Payment Method",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/methods/{{paymentMethodId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payments",
+                    "methods",
+                    "{{paymentMethodId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "36"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"24-44rEWq6wumiNSU5epvbnM98r3Og\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:03:49 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Payment method deleted\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -791,8 +2470,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/favorites?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favorites"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -804,7 +2487,74 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get Favorites",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/favorites?page=1&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "favorites"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "398"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"18e-RccFM199Om6BsIu308QtjOVoqKo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:13:37 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"favorites\": [\n        {\n            \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n            \"addedAt\": \"2026-02-05T09:13:24.691Z\",\n            \"vehicleDetails\": {\n                \"vehicle_id\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\",\n                \"owner_id\": \"bf781c58-1306-4866-8c9f-bab3dc9d533a\",\n                \"name\": \"Honda Civic 2023\",\n                \"vehicle_type\": \"sedan\",\n                \"price_per_day\": 400000,\n                \"status\": \"active\",\n                \"average_rating\": 0,\n                \"total_rentals\": 0\n            }\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"page\": 1,\n        \"limit\": 20\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Add to Favorites",
@@ -828,14 +2578,84 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"vehicleId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/favorites",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favorites"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Add to Favorites",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/favorites",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "favorites"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "91"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5b-6fypVS/aIigj36aMZ1+9oP/jync\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:13:24 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle added to favorites\",\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\"\n}"
+            }
+          ]
         },
         {
           "name": "Remove from Favorites",
@@ -853,11 +2673,74 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/favorites/550e8400-e29b-41d4-a716-446655440000",
-              "host": ["{{baseUrl}}"],
-              "path": ["favorites", "550e8400-e29b-41d4-a716-446655440000"]
+              "raw": "{{baseUrl}}/favorites/{{vehicleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favorites",
+                "{{vehicleId}}"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Remove from Favorites",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/favorites/{{vehicleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "favorites",
+                    "{{vehicleId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "95"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5f-KX/CN6exboEYc7GKWMBC6o5+T+g\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:15:32 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Vehicle removed from favorites\",\n    \"vehicleId\": \"7021ee97-b44e-4cd9-b5db-97769115aa64\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -872,7 +2755,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{accessToken}}",
+                  "value": "{{adminToken}}",
                   "type": "string"
                 }
               ]
@@ -881,8 +2764,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/analytics/users/stats?timeRange=30d",
-              "host": ["{{baseUrl}}"],
-              "path": ["analytics", "users", "stats"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "users",
+                "stats"
+              ],
               "query": [
                 {
                   "key": "timeRange",
@@ -890,7 +2779,72 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get User Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/analytics/users/stats?timeRange=30d",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "users",
+                    "stats"
+                  ],
+                  "query": [
+                    {
+                      "key": "timeRange",
+                      "value": "30d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "162"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"a2-DSZjF0ran3voMBlL63W0kzgxCWQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:00:42 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"total\": 5,\n    \"active\": 5,\n    \"newUsers\": 5,\n    \"renters\": 1,\n    \"owners\": 2,\n    \"growth\": 100,\n    \"byType\": {\n        \"renter\": 1,\n        \"owner\": 2\n    },\n    \"byStatus\": {\n        \"normal\": 5,\n        \"stopped\": 0,\n        \"banned\": 0,\n        \"pending\": 0\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get User Growth",
@@ -900,7 +2854,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{accessToken}}",
+                  "value": "{{adminToken}}",
                   "type": "string"
                 }
               ]
@@ -909,8 +2863,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/analytics/users/growth?startDate=2024-01-01&endDate=2024-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["analytics", "users", "growth"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "users",
+                "growth"
+              ],
               "query": [
                 {
                   "key": "startDate",
@@ -922,7 +2882,76 @@
                 }
               ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "Get User Growth",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/analytics/users/growth?startDate=2024-01-01&endDate=2024-12-31",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "analytics",
+                    "users",
+                    "growth"
+                  ],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2024-12-31"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "182"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"b6-vIiOoftCePFrv8lPw7F42HVfIwQ\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 05 Feb 2026 09:01:01 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"growth\": [],\n    \"retention\": {\n        \"day7\": 0,\n        \"day30\": 0,\n        \"day90\": 0\n    },\n    \"churn\": {\n        \"rate\": 0,\n        \"count\": 0\n    },\n    \"demographics\": {\n        \"byType\": {\n            \"support\": 1,\n            \"admin\": 1,\n            \"owner\": 2,\n            \"customer\": 1\n        },\n        \"byStatus\": {\n            \"normal\": 5\n        }\n    }\n}"
+            }
+          ]
         }
       ]
     },
@@ -933,10 +2962,139 @@
         "header": [],
         "url": {
           "raw": "{{baseUrl}}/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["health"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
         }
+      },
+      "response": [
+        {
+          "name": "Health Check",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "79"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"4f-TdXQ8DwfFJN6SwrW5c0QJrEKHjo\""
+            },
+            {
+              "key": "Date",
+              "value": "Thu, 05 Feb 2026 09:01:13 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"ok\",\n    \"service\": \"user-service\",\n    \"timestamp\": \"2026-02-05T09:01:13.121Z\"\n}"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
       }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "deviceId",
+      "value": ""
+    },
+    {
+      "key": "paymentMethodId",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
     }
   ]
 }

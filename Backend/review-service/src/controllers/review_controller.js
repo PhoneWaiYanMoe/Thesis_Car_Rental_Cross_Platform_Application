@@ -3,6 +3,7 @@ const { VehicleReview, OwnerReview } = require("../models/Review");
 const bookingGrpcClient = require("../grpc/booking_grpc_client");
 const userGrpcClient = require("../grpc/user_grpc_client");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
+const eventEmitter = require("../events/eventEmitter");
 
 class ReviewController {
   // ==================== SUBMIT REVIEWS ====================
@@ -34,7 +35,7 @@ class ReviewController {
       try {
         bookingVerification = await bookingGrpcClient.verifyBooking(
           bookingId,
-          userId
+          userId,
         );
       } catch (error) {
         console.error("❌ Booking verification failed:", error.message);
@@ -68,9 +69,8 @@ class ReviewController {
       // Get booking details for owner ID
       let ownerId = null;
       try {
-        const bookingDetails = await bookingGrpcClient.getBookingDetails(
-          bookingId
-        );
+        const bookingDetails =
+          await bookingGrpcClient.getBookingDetails(bookingId);
         ownerId = bookingDetails.owner_id;
       } catch (error) {
         console.error("❌ Could not fetch booking details:", error.message);
@@ -85,7 +85,7 @@ class ReviewController {
         });
       }
 
-      // ✅ SIMPLE FIX: Just save file IDs directly
+      // Process photo file IDs
       let reviewPhotos = [];
       if (photos && Array.isArray(photos) && photos.length > 0) {
         console.log(`📸 Processing ${photos.length} review photos...`);
@@ -99,7 +99,7 @@ class ReviewController {
 
         // Filter out empty strings and save file IDs directly
         reviewPhotos = photos.filter(
-          (id) => id && typeof id === "string" && id.trim()
+          (id) => id && typeof id === "string" && id.trim(),
         );
         console.log(`✅ Saving ${reviewPhotos.length} photo file IDs`);
       }
@@ -116,6 +116,20 @@ class ReviewController {
       });
 
       await review.save();
+
+      // 📤 Emit review.created event
+      await eventEmitter.emit("review.created", {
+        reviewId: review._id.toString(),
+        reviewType: "vehicle",
+        bookingId: review.bookingId,
+        vehicleId: review.vehicleId,
+        customerId: review.customerId,
+        ownerId: review.ownerId,
+        rating: review.rating,
+        hasComment: !!review.comment,
+        photoCount: review.photos.length,
+        createdAt: review.createdAt,
+      });
 
       // Mark booking as reviewed
       try {
@@ -138,18 +152,18 @@ class ReviewController {
         await vehicleGrpcClient.updateVehicleRating(
           vehicleId,
           newAvgRating,
-          newReviewCount
+          newReviewCount,
         );
 
         console.log(
-          `✅ Updated vehicle ${vehicleId} rating to ${newAvgRating.toFixed(1)}`
+          `✅ Updated vehicle ${vehicleId} rating to ${newAvgRating.toFixed(1)}`,
         );
       } catch (error) {
         console.error("⚠️  Could not update vehicle rating:", error.message);
       }
 
       console.log(
-        `✅ Vehicle review submitted: ${review._id} with ${reviewPhotos.length} photos`
+        `✅ Vehicle review submitted: ${review._id} with ${reviewPhotos.length} photos`,
       );
 
       res.status(201).json({
@@ -196,7 +210,7 @@ class ReviewController {
       try {
         bookingVerification = await bookingGrpcClient.verifyBooking(
           bookingId,
-          userId
+          userId,
         );
       } catch (error) {
         console.error("❌ Booking verification failed:", error.message);
@@ -238,6 +252,20 @@ class ReviewController {
 
       await review.save();
 
+      // 📤 Emit review.owner_reviewed event
+      await eventEmitter.emit("review.owner_reviewed", {
+        reviewId: review._id.toString(),
+        reviewType: "owner",
+        bookingId: review.bookingId,
+        ownerId: review.ownerId,
+        customerId: review.customerId,
+        rating: review.rating,
+        hasComment: !!review.comment,
+        hasAspects: !!review.aspects,
+        aspects: review.aspects,
+        createdAt: review.createdAt,
+      });
+
       // Mark booking as reviewed
       try {
         await bookingGrpcClient.markBookingReviewed(bookingId, "owner");
@@ -275,8 +303,9 @@ class ReviewController {
       console.log(`📖 Fetching vehicle reviews for: ${vehicleId}`);
 
       const query = { vehicleId, isVisible: true };
+
       if (minRating) {
-        query.rating = { $gte: parseFloat(minRating) };
+        query.rating = { $gte: parseInt(minRating) };
       }
 
       let sort = {};
@@ -284,6 +313,8 @@ class ReviewController {
         sort = { rating: -1, createdAt: -1 };
       } else if (sortBy === "lowest") {
         sort = { rating: 1, createdAt: -1 };
+      } else if (sortBy === "helpful") {
+        sort = { helpful: -1, createdAt: -1 };
       } else {
         sort = { createdAt: -1 };
       }
@@ -300,7 +331,6 @@ class ReviewController {
         VehicleReview.find({ vehicleId, isVisible: true }).lean(),
       ]);
 
-      // Get unique user IDs
       const userIds = [...new Set(reviews.map((r) => r.customerId))];
       let userProfiles = {};
 
@@ -329,7 +359,7 @@ class ReviewController {
 
       // Count reviews with photos
       const reviewsWithPhotos = allReviews.filter(
-        (r) => r.photos && r.photos.length > 0
+        (r) => r.photos && r.photos.length > 0,
       ).length;
 
       // Format reviews - photos are file IDs
@@ -354,7 +384,7 @@ class ReviewController {
       });
 
       console.log(
-        `✅ Found ${reviews.length} reviews (${reviewsWithPhotos} with photos)`
+        `✅ Found ${reviews.length} reviews (${reviewsWithPhotos} with photos)`,
       );
 
       res.json({
@@ -460,6 +490,155 @@ class ReviewController {
     }
   }
 
+  // ==================== NEW: GET ALL REVIEWS WITH PAGINATION ====================
+
+  async getAllReviews(req, res, next) {
+    try {
+      const { page = 1, limit = 10, sortBy = "newest", type } = req.query;
+
+      console.log(`📖 Fetching all reviews (page ${page}, limit ${limit})`);
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      let sort = {};
+      if (sortBy === "highest") {
+        sort = { rating: -1, createdAt: -1 };
+      } else if (sortBy === "lowest") {
+        sort = { rating: 1, createdAt: -1 };
+      } else {
+        sort = { createdAt: -1 };
+      }
+
+      let vehicleReviews = [];
+      let ownerReviews = [];
+      let totalVehicle = 0;
+      let totalOwner = 0;
+
+      // If type is specified, fetch only that type
+      if (type === "vehicle") {
+        [vehicleReviews, totalVehicle] = await Promise.all([
+          VehicleReview.find({ isVisible: true })
+            .sort(sort)
+            .limit(parseInt(limit))
+            .skip(skip)
+            .lean(),
+          VehicleReview.countDocuments({ isVisible: true }),
+        ]);
+      } else if (type === "owner") {
+        [ownerReviews, totalOwner] = await Promise.all([
+          OwnerReview.find({ isVisible: true })
+            .sort(sort)
+            .limit(parseInt(limit))
+            .skip(skip)
+            .lean(),
+          OwnerReview.countDocuments({ isVisible: true }),
+        ]);
+      } else {
+        // Fetch both types
+        [vehicleReviews, ownerReviews, totalVehicle, totalOwner] =
+          await Promise.all([
+            VehicleReview.find({ isVisible: true }).sort(sort).lean(),
+            OwnerReview.find({ isVisible: true }).sort(sort).lean(),
+            VehicleReview.countDocuments({ isVisible: true }),
+            OwnerReview.countDocuments({ isVisible: true }),
+          ]);
+      }
+
+      // Combine and sort all reviews
+      const allReviews = [
+        ...vehicleReviews.map((r) => ({ ...r, type: "vehicle" })),
+        ...ownerReviews.map((r) => ({ ...r, type: "owner" })),
+      ];
+
+      // Sort combined reviews
+      allReviews.sort((a, b) => {
+        if (sortBy === "highest") {
+          return b.rating - a.rating || b.createdAt - a.createdAt;
+        } else if (sortBy === "lowest") {
+          return a.rating - b.rating || b.createdAt - a.createdAt;
+        } else {
+          return b.createdAt - a.createdAt;
+        }
+      });
+
+      // Apply pagination to combined results
+      const paginatedReviews = allReviews.slice(skip, skip + parseInt(limit));
+
+      // Get unique user IDs
+      const userIds = [...new Set(paginatedReviews.map((r) => r.customerId))];
+      let userProfiles = {};
+
+      try {
+        const profiles = await userGrpcClient.getUserProfiles(userIds);
+        profiles.forEach((profile) => {
+          userProfiles[profile.user_id] = profile;
+        });
+      } catch (error) {
+        console.warn("⚠️  Could not fetch user profiles");
+      }
+
+      // Format reviews
+      const formattedReviews = paginatedReviews.map((review) => {
+        const userProfile = userProfiles[review.customerId] || {};
+        const baseReview = {
+          id: review._id,
+          type: review.type,
+          user: {
+            id: review.customerId,
+            name: userProfile.full_name || "Unknown User",
+            avatar: userProfile.avatar_url || null,
+          },
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+        };
+
+        if (review.type === "vehicle") {
+          return {
+            ...baseReview,
+            vehicleId: review.vehicleId,
+            ownerId: review.ownerId,
+            photos: review.photos || [],
+            hasPhotos: !!(review.photos && review.photos.length > 0),
+            photoCount: review.photos?.length || 0,
+            helpful: review.helpful,
+            ownerResponse: review.ownerResponse?.text || null,
+          };
+        } else {
+          return {
+            ...baseReview,
+            ownerId: review.ownerId,
+            aspects: review.aspects || null,
+          };
+        }
+      });
+
+      const total = totalVehicle + totalOwner;
+
+      console.log(
+        `✅ Found ${paginatedReviews.length} reviews (${vehicleReviews.length} vehicle, ${ownerReviews.length} owner)`,
+      );
+
+      res.json({
+        reviews: formattedReviews,
+        summary: {
+          totalReviews: total,
+          vehicleReviews: totalVehicle,
+          ownerReviews: totalOwner,
+        },
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(total / parseInt(limit)),
+        },
+      });
+    } catch (error) {
+      console.error("❌ Get all reviews error:", error);
+      next(error);
+    }
+  }
+
   // ==================== REVIEW ACTIONS ====================
 
   async postResponse(req, res, next) {
@@ -486,6 +665,16 @@ class ReviewController {
       };
 
       await review.save();
+
+      // 📤 Emit review.response_posted event
+      await eventEmitter.emit("review.response_posted", {
+        reviewId: review._id.toString(),
+        vehicleId: review.vehicleId,
+        ownerId: review.ownerId,
+        customerId: review.customerId,
+        response: response,
+        respondedAt: review.ownerResponse.respondedAt,
+      });
 
       console.log(`✅ Owner response posted for review: ${id}`);
 

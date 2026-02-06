@@ -1,0 +1,626 @@
+{
+  "info": {
+    "name": "Review Service v2.0 - Updated",
+    "description": "Complete API collection for Wiz Car Rental Review Service with Event Emission and Pagination",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3005",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "your-jwt-token-here",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "booking123",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "vehicle456",
+      "type": "string"
+    },
+    {
+      "key": "owner_id",
+      "value": "owner789",
+      "type": "string"
+    },
+    {
+      "key": "review_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check service health including database and RabbitMQ connection"
+      }
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "NEW - Get All Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?page=1&limit=10&sortBy=newest",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort order: newest, highest, lowest"
+                },
+                {
+                  "key": "type",
+                  "value": "vehicle",
+                  "description": "Filter by type: vehicle, owner (optional)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all reviews with pagination. Optionally filter by type."
+          }
+        },
+        {
+          "name": "Submit Vehicle Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('review_id', response.review.id);",
+                  "    pm.test('Review ID saved', () => {",
+                  "        pm.expect(response.review.id).to.not.be.empty;",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('Status code is 201', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Event emitted: review.created', () => {",
+                  "    pm.expect(pm.response.text()).to.include('Review submitted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"vehicleId\": \"{{vehicle_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent vehicle! Very clean and well-maintained. The pickup was smooth and the owner was very responsive.\",\n  \"photos\": [\n    \"file_id_1\",\n    \"file_id_2\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reviews/vehicle",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "vehicle"]
+            },
+            "description": "Submit a vehicle review. Requires authentication. Emits 'review.created' event."
+          }
+        },
+        {
+          "name": "Submit Owner Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Event emitted: review.owner_reviewed', () => {",
+                  "    pm.expect(pm.response.text()).to.include('Owner review submitted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"ownerId\": \"{{owner_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Great host! Very professional and accommodating.\",\n  \"aspects\": {\n    \"communication\": 5,\n    \"reliability\": 5,\n    \"carCondition\": 5\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reviews/owner",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "owner"]
+            },
+            "description": "Submit an owner review. Requires authentication. Emits 'review.owner_reviewed' event."
+          }
+        },
+        {
+          "name": "Get Vehicle Reviews (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/vehicle/{{vehicle_id}}?page=1&limit=10&sortBy=newest&minRating=4",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "vehicle", "{{vehicle_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort: newest, highest, lowest, helpful"
+                },
+                {
+                  "key": "minRating",
+                  "value": "4",
+                  "description": "Minimum rating filter (1-5)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get reviews for a specific vehicle with pagination support"
+          }
+        },
+        {
+          "name": "Get Owner Reviews (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/owner/{{owner_id}}?page=1&limit=10&sortBy=newest",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "owner", "{{owner_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort: newest, highest, lowest"
+                }
+              ]
+            },
+            "description": "Get reviews for a specific owner with pagination support"
+          }
+        },
+        {
+          "name": "Post Owner Response",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Event emitted: review.response_posted', () => {",
+                  "    pm.expect(pm.response.text()).to.include('Response posted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"response\": \"Thank you so much for your kind words! We're glad you enjoyed the experience and hope to host you again soon.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}/response",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "{{review_id}}", "response"]
+            },
+            "description": "Owner responds to a review. Requires authentication. Emits 'review.response_posted' event."
+          }
+        },
+        {
+          "name": "Mark Review as Helpful",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}/helpful",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "{{review_id}}", "helpful"]
+            },
+            "description": "Mark a review as helpful. Requires authentication."
+          }
+        },
+        {
+          "name": "Report Review",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"spam\",\n  \"details\": \"This review appears to be spam and not a genuine customer experience.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}/report",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "{{review_id}}", "report"]
+            },
+            "description": "Report an inappropriate review. Requires authentication."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Owner Review Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/reviews/owner/{{owner_id}}/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "reviews", "owner", "{{owner_id}}", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d",
+                  "description": "Time range: 7d, 30d, 90d, 1y"
+                }
+              ]
+            },
+            "description": "Get review statistics for an owner. Requires authentication (owner or admin)."
+          }
+        },
+        {
+          "name": "Get Vehicle Review Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/reviews/vehicle/{{vehicle_id}}/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "reviews", "vehicle", "{{vehicle_id}}", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d",
+                  "description": "Time range: 7d, 30d, 90d, 1y"
+                }
+              ]
+            },
+            "description": "Get review statistics for a vehicle. Requires authentication."
+          }
+        },
+        {
+          "name": "Get Platform Review Stats (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/reviews/platform/stats?timeRange=30d",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "reviews", "platform", "stats"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "30d",
+                  "description": "Time range: 7d, 30d, 90d, 1y"
+                }
+              ]
+            },
+            "description": "Get platform-wide review statistics. Requires admin authentication."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagination Examples",
+      "item": [
+        {
+          "name": "All Reviews - Page 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "All Reviews - Page 2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?page=2&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vehicle Reviews Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?type=vehicle&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "vehicle"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Owner Reviews Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?type=owner&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "owner"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reviews - Sorted by Highest Rating",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?sortBy=highest&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "highest"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reviews - Custom Limit (20 per page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/all?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "all"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
