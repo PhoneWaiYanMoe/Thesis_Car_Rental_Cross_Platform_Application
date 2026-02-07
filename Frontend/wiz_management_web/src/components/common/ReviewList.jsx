@@ -18,7 +18,7 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -28,7 +28,7 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
   if (reviews.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-[#717685]">Chưa có đánh giá nào</p>
+        <p className="text-[#717685]">No reviews yet.</p>
       </div>
     );
   }
@@ -48,10 +48,18 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
               {/* Review Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-[#6679C0] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">
-                      {review.userName?.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-12 h-12 rounded-full bg-[#6679C0] flex items-center justify-center overflow-hidden">
+                    {review.avatar ? (
+                      <img
+                        src={review.avatar}
+                        alt={review.userName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white font-bold">
+                        {review.userName?.charAt(0)?.toUpperCase() || "?"}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold text-[#131A34]">
@@ -93,11 +101,11 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
                   >
                     {isExpanded ? (
                       <>
-                        Thu gọn <ChevronUp className="w-4 h-4" />
+                        Close <ChevronUp className="w-4 h-4" />
                       </>
                     ) : (
                       <>
-                        Xem thêm <ChevronDown className="w-4 h-4" />
+                        See More <ChevronDown className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -124,12 +132,12 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
 
               {/* Helpful Counter */}
               <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
-                <button className="flex items-center gap-2 text-[#717685] hover:text-[#6679C0] transition-all">
+                <div className="flex items-center gap-2 text-[#717685] hover:text-[#6679C0] transition-all">
                   <ThumbsUp className="w-4 h-4" />
                   <span className="text-sm font-semibold">
-                    Hữu ích ({review.helpful})
+                    Helpful ({review.helpful})
                   </span>
-                </button>
+                </div>
               </div>
 
               {/* Owner Reply */}
@@ -168,7 +176,7 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
             disabled={currentPage === 1}
             className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            Trước
+            Previous
           </button>
 
           {[...Array(totalPages)].map((_, i) => (
@@ -192,7 +200,7 @@ export default function ReviewList({ reviews, itemsPerPage = 10 }) {
             disabled={currentPage === totalPages}
             className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            Sau
+            Next
           </button>
         </div>
       )}

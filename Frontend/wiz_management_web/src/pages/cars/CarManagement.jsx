@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Filter, ChevronDown, Car as CarIcon, ArrowLeft } from "lucide-react";
+import {
+  Search,
+  Filter,
+  ChevronDown,
+  Car as CarIcon,
+  ArrowLeft,
+} from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import CarCard from "../../components/common/CarCard";
+import { useVehicles } from "../../hooks";
 
-export default function CarManagement({ carData, onUpdateCarStatus }) {
+export default function CarManagement() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const ownerId = searchParams.get("ownerId");
   const sortByParam = searchParams.get("sortBy");
 
+  const { vehicles, loading, error, fetchVehicles } = useVehicles();
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchBy, setSearchBy] = useState("name"); // name, id, ownerId, licensePlate
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState(sortByParam || "name");
@@ -19,28 +29,43 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const vehicleTypes = ["all", ...new Set(carData.map((c) => c.vehicleType))];
+  const vehicleTypes = ["all", "sedan", "suv", "hatchback", "truck", "van"];
 
-  let filteredCars = carData;
+  // Load data from API
+  useEffect(() => {
+    loadVehicles();
+  }, [currentPage, filterStatus, filterType, ownerId]);
 
-  // Apply owner filter if provided in URL
-  if (ownerId) {
-    filteredCars = filteredCars.filter((car) => car.ownerId === ownerId);
-  }
+  const loadVehicles = async () => {
+    try {
+      const filters = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
 
-  // Then apply other filters
-  filteredCars = filteredCars.filter((car) => {
-    const matchesSearch =
-      car.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      car.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      car.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || car.status === filterStatus;
-    const matchesType = filterType === "all" || car.vehicleType === filterType;
-    return matchesSearch && matchesStatus && matchesType;
-  });
+      if (filterStatus !== "all") filters.status = filterStatus;
+      if (filterType !== "all") filters.vehicleType = filterType;
+      if (ownerId) filters.ownerId = ownerId;
+      if (searchTerm && searchBy) {
+        filters.search = searchTerm;
+        filters.searchBy = searchBy;
+      }
 
-  // sort
-  filteredCars = [...filteredCars].sort((a, b) => {
+      await fetchVehicles(filters);
+    } catch (err) {
+      console.error("Failed to load vehicles:", err);
+    }
+  };
+
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1);
+    loadVehicles();
+  };
+
+  // Client-side sorting
+  let displayVehicles = [...vehicles];
+  displayVehicles = displayVehicles.sort((a, b) => {
     switch (sortBy) {
       case "name":
         return a.name.localeCompare(b.name);
@@ -56,21 +81,17 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
   });
 
   const statusCounts = {
-    all: carData.length,
-    normal: carData.filter((c) => c.status === "normal").length,
-    stopped: carData.filter((c) => c.status === "stopped").length,
-    banned: carData.filter((c) => c.status === "banned").length,
+    all: vehicles.length,
+    active: vehicles.filter((c) => c.status === "active").length,
+    stopped: vehicles.filter((c) => c.status === "stopped").length,
+    banned: vehicles.filter((c) => c.status === "banned").length,
   };
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredCars.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentCars = filteredCars.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   }, [searchTerm, filterStatus, filterType, sortBy, ownerId]);
 
   return (
@@ -104,7 +125,7 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: "all", label: "All Cars" },
-          { id: "normal", label: "Normal" },
+          { id: "active", label: "Active" },
           { id: "stopped", label: "Stopped" },
           { id: "banned", label: "Banned" },
         ].map((tab) => (
@@ -135,15 +156,34 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by car name, owner, or ID..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
-            />
+          <div className="flex-1 flex gap-2">
+            <select
+              value={searchBy}
+              onChange={(e) => setSearchBy(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white font-medium text-[#131A34]"
+            >
+              <option value="name">Name</option>
+              <option value="id">ID</option>
+              <option value="ownerId">Owner ID</option>
+              <option value="licensePlate">License Plate</option>
+            </select>
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                placeholder={`Search by ${searchBy}...`}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+            >
+              Search
+            </button>
           </div>
 
           {/* filter button */}
@@ -201,11 +241,7 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
         <p className="text-[#717685]">
           Showing{" "}
           <span className="font-semibold text-[#131A34]">
-            {startIndex + 1}-{Math.min(endIndex, filteredCars.length)}
-          </span>{" "}
-          of{" "}
-          <span className="font-semibold text-[#131A34]">
-            {filteredCars.length}
+            {displayVehicles.length}
           </span>{" "}
           cars
         </p>
@@ -215,6 +251,7 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
               setSearchTerm("");
               setFilterStatus("all");
               setFilterType("all");
+              setSearchBy("name");
             }}
             className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
           >
@@ -223,34 +260,77 @@ export default function CarManagement({ carData, onUpdateCarStatus }) {
         )}
       </div>
 
-      {/* car grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {currentCars.length === 0 ? (
-          <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-gray-100">
-            <CarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-            <p className="text-[#717685] text-lg font-medium">No cars found</p>
-            <p className="text-[#B2BCE0] text-sm mt-1">
-              Try adjusting your filters
-            </p>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#6679C0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#717685] font-semibold">Loading vehicles...</p>
           </div>
-        ) : (
-          currentCars.map((car) => (
-            <CarCard
-              key={car.id}
-              car={car}
-              showOwner={true}
-              onClickPath={`/cars/${car.id}`}
-            />
-          ))
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
+          <p className="text-red-700 font-semibold">{error}</p>
+          <button
+            onClick={loadVehicles}
+            className="mt-3 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* car grid */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayVehicles.length === 0 ? (
+            <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-gray-100">
+              <CarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+              <p className="text-[#717685] text-lg font-medium">
+                No cars found
+              </p>
+              <p className="text-[#B2BCE0] text-sm mt-1">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            displayVehicles.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                showOwner={true}
+                onClickPath={`/cars/${car.id}`}
+              />
+            ))
+          )}
+        </div>
+      )}
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {!loading && !error && displayVehicles.length > 0 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2 text-[#717685] font-medium">
+            Page {currentPage}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            disabled={displayVehicles.length < itemsPerPage}
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

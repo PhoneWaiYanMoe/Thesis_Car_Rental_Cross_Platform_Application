@@ -6,13 +6,15 @@ export default function CarCard({ car, showOwner = true, onClickPath = null }) {
 
   const getStatusBadge = (status) => {
     const badges = {
-      normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
+      active: { bg: "bg-green-50", text: "text-green-700", label: "Active" },
       stopped: {
         bg: "bg-yellow-50",
         text: "text-yellow-700",
         label: "Stopped",
       },
       banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
+      deactivated: { bg: "bg-red-50", text: "text-red-700", label: "Deactivated" },
+      pending: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Pending" },
     };
     return badges[status];
   };
@@ -27,7 +29,7 @@ export default function CarCard({ car, showOwner = true, onClickPath = null }) {
     >
       <div className="aspect-video bg-gray-200 overflow-hidden">
         <img
-          src={car.image}
+          src={car.primaryPhoto}
           alt={car.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
         />
@@ -39,7 +41,7 @@ export default function CarCard({ car, showOwner = true, onClickPath = null }) {
               {car.name}
             </h3>
             {showOwner && (
-              <p className="text-sm text-[#717685]">{car.ownerName}</p>
+              <p className="text-xs text-[#717685]">{car.ownerId}</p>
             )}
           </div>
           <span
