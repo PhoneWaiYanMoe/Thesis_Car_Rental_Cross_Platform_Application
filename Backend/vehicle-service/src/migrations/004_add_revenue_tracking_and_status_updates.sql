@@ -4,9 +4,9 @@
 ALTER TABLE vehicles 
 DROP CONSTRAINT IF EXISTS vehicles_status_check;
 
-ALTER TABLE vehicles 
-ADD CONSTRAINT vehicles_status_check 
-CHECK (status IN ('pending', 'active', 'deactivated', 'stopped', 'banned'));
+-- ALTER TABLE vehicles 
+-- ADD CONSTRAINT vehicles_status_check 
+-- CHECK (status IN ('pending', 'active', 'deactivated', 'stopped', 'banned'));
 
 -- ✅ 2. Update verification_status enum to include 'unverified' and 'denied'
 ALTER TABLE vehicles 

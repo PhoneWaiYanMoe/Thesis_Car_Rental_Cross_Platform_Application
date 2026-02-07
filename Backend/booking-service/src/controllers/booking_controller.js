@@ -637,6 +637,7 @@ class BookingController {
   async getBookingById(req, res, next) {
     try {
       const userId = req.user.userId;
+      const userRole = req.user.role;
       const { id } = req.params;
 
       const result = await pool.query(
@@ -657,7 +658,7 @@ class BookingController {
         vehicle = { name: "Unknown Vehicle", owner_id: null };
       }
 
-      if (booking.customer_id !== userId && vehicle.owner_id !== userId) {
+      if (booking.customer_id !== userId && vehicle.owner_id !== userId && userRole !== "admin") {
         return res.status(403).json({ error: "Access denied" });
       }
 

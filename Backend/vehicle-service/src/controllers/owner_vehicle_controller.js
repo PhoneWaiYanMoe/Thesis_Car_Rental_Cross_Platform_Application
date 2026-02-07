@@ -87,9 +87,9 @@ class OwnerVehicleController {
       const userId = req.user.userId;
       const userRole = req.user.role;
 
-      if (userRole !== "owner") {
+      if (userRole !== "owner" && userRole !== "admin") {
         return res.status(403).json({
-          error: "Only vehicle owners can create listings",
+          error: "Only vehicle owners and admin can create listings",
           requiredRole: "owner",
         });
       }
@@ -319,8 +319,8 @@ class OwnerVehicleController {
            WHERE vehicle_id = v.vehicle_id
            AND end_date >= CURRENT_DATE) as unavailable_periods
          FROM vehicles v
-         WHERE v.vehicle_id = $1 AND v.owner_id = $2`,
-        [id, userId],
+         WHERE v.vehicle_id = $1`,
+        [id],
       );
 
       if (result.rows.length === 0) {
@@ -405,7 +405,7 @@ class OwnerVehicleController {
         return res.status(404).json({ error: "Vehicle not found" });
       }
 
-      if (ownershipResult.rows[0].owner_id !== userId) {
+      if (ownershipResult.rows[0].owner_id !== userId && req.user.role !== "admin") {
         return res.status(403).json({
           error: "Access denied. You can only update your own vehicles.",
         });
@@ -422,6 +422,7 @@ class OwnerVehicleController {
         location,
         features,
         rules,
+        vehicleStatus,
         driverSupported,
         instantBooking,
         deliveryAvailable,
@@ -479,6 +480,11 @@ class OwnerVehicleController {
       if (rules) {
         updateFields.push(`rules = $${paramIndex}`);
         values.push(JSON.stringify(rules));
+        paramIndex++;
+      }
+      if (vehicleStatus) {
+        updateFields.push(`status = $${paramIndex}`);
+        values.push(vehicleStatus);
         paramIndex++;
       }
       if (driverSupported !== undefined) {
