@@ -8,12 +8,14 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
   const getStatusBadge = (status) => {
     const badges = {
       normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
-      stopped: {
+      active: { bg: "bg-green-50", text: "text-green-700", label: "Active" },
+      suspended: {
         bg: "bg-yellow-50",
         text: "text-yellow-700",
-        label: "Stopped",
+        label: "Suspended",
       },
       banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
+      deleted: { bg: "bg-red-50", text: "text-red-700", label: "Deleted" },
     };
     return badges[status];
   };
@@ -29,7 +31,19 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
         <div className="flex items-center gap-4 flex-1">
           <div className="w-12 h-12 bg-[#6679C0] rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-lg">
-              {user.name.charAt(0).toUpperCase()}
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-[#6679C0] flex items-center justify-center">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-bold">
+                    {user.name?.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
             </span>
           </div>
           <div className="flex-1">
@@ -43,16 +57,21 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
                 {badge.label}
               </span>
               <span className="bg-[#F8F9FF] text-[#6679C0] px-2.5 py-1 rounded-lg text-xs font-semibold">
-                {user.type === "renter" ? "Renter" : "Car Owner"}
+                {user.type === "customer" ? "Customer" : "Car Owner"}
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-[#717685]">
               <span>{user.email}</span>
               <span>•</span>
-              <span>{user.id}</span>
+              <span className="text-xs">{user.id}</span>
               <span>•</span>
               <span>
-                Joined {new Date(user.joinedDate).toLocaleDateString()}
+                Joined{" "}
+                {new Date(user.joinedDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </span>
             </div>
           </div>
