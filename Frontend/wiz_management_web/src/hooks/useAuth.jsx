@@ -1,5 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { authService } from '../utils/auth';
+import { useState, useEffect, createContext, useContext } from "react";
+import apiClient from "../utils/apiClient";
+import { API_ENDPOINTS } from "../config/api";
 
 const AuthContext = createContext(null);
 
@@ -9,51 +10,74 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is already logged in
-    const storedUser = authService.getUser();
-    if (storedUser) {
-      setUser(storedUser);
+    const token = localStorage.getItem("auth_token");
+    const storedUser = localStorage.getItem("auth_user");
+
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (credentials) => {
     try {
-      // Mock login for demo - Replace with actual API call
-      const mockUsers = [
-        { username: 'admin', password: 'admin123', type: 'admin', name: 'Admin User' },
-        { username: 'support1', password: 'pass123', type: 'support', name: 'Support User 1' },
-        { username: 'support2', password: 'pass123', type: 'support', name: 'Support User 2' },
-        { username: 'support3', password: 'pass123', type: 'support', name: 'Support User 3' },
-        { username: 'support4', password: 'pass123', type: 'support', name: 'Support User 4' },
-      ];
-
-      const foundUser = mockUsers.find(
-        u => u.username === credentials.username && u.password === credentials.password
+      // Call your auth service login endpoint
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.LOGIN,
+        credentials,
       );
 
-      if (!foundUser) {
-        throw new Error('Invalid credentials');
+      // Your response format:
+      // {
+      //   token: "...",
+      //   refreshToken: "...",
+      //   user: { id: "...", email: "...", fullName: "...", role: "admin" }
+      // }
+      const { token, refreshToken, user: userData } = response.data;
+
+      if (!token || !userData) {
+        throw new Error("Invalid response from server");
       }
 
-      // Mock token
-      const token = `mock_token_${foundUser.username}_${Date.now()}`;
-      const userData = {
-        username: foundUser.username,
-        type: foundUser.type,
-        name: foundUser.name
+      // Map your user data to frontend format
+      const mappedUser = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.fullName,
+        username: userData.email, // Use email as username for compatibility
+        type: userData.role, // Map 'role' to 'type' for frontend
+        role: userData.role,
+        phone: userData.phone,
+        avatarUrl: userData.avatarUrl,
       };
 
-      authService.login(token, userData);
-      setUser(userData);
+      // Store token and user data
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("refresh_token", refreshToken); // Store refresh token too
+      localStorage.setItem("auth_user", JSON.stringify(mappedUser));
 
-      return { success: true, user: userData };
+      setUser(mappedUser);
+
+      return { success: true, user: mappedUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error("Login error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || "Login failed",
+      };
     }
   };
 
   const logout = () => {
-    authService.logout();
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("auth_user");
     setUser(null);
   };
 
@@ -63,8 +87,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     isAuthenticated: !!user,
-    isAdmin: user?.type === 'admin',
-    isSupport: user?.type === 'support',
+    isAdmin: user?.type === "admin" || user?.role === "admin",
+    isSupport: user?.type === "support" || user?.role === "support",
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -73,7 +97,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };

@@ -37,26 +37,26 @@ function AppContent() {
                   element={<Navigate to="/dashboard" replace />}
                 />
 
-                {/* Dashboard */}
+                {/* Dashboard - No props needed, fetches own data */}
                 <Route path="/dashboard" element={<Dashboard />} />
 
-                {/* Cars */}
+                {/* Cars - No props needed, uses useVehicles hook */}
                 <Route path="/cars" element={<CarManagement />} />
                 <Route path="/cars/:id" element={<CarDetail />} />
 
-                {/* Users */}
+                {/* Users - No props needed, uses useUsers hook */}
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/users/:id" element={<UserDetail />} />
 
-                {/* Bookings */}
+                {/* Bookings - No props needed, uses useBookings hook */}
                 <Route path="/bookings" element={<BookingList />} />
                 <Route path="/bookings/:id" element={<BookingDetail />} />
 
-                {/* Request Management */}
+                {/* Request Management - No props needed, uses useRequests hook */}
                 <Route path="/requests" element={<RequestList />} />
                 <Route path="/requests/:id" element={<RequestDetail />} />
 
-                {/* Staff Management - Admin only */}
+                {/* Staff Management - Admin only, uses useStaff hook */}
                 <Route
                   path="/staff"
                   element={

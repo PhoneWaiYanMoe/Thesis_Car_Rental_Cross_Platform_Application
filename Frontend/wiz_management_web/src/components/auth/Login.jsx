@@ -3,19 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!username || !password) {
-      setError("Please enter both username and password");
+
+    if (!email || !password) {
+      setError("Please enter both email and password");
       return;
     }
 
@@ -23,15 +23,17 @@ export default function Login() {
     setError("");
 
     try {
-      const result = await login({ username, password });
-      
+      // Your backend expects { email, password }
+      const result = await login({ email, password });
+
       if (result.success) {
         navigate("/dashboard");
       } else {
-        setError(result.error || "Invalid username or password");
+        setError(result.error || "Invalid email or password");
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
@@ -55,18 +57,18 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-semibold text-[#131A34] mb-2">
-              Username
+              Email
             </label>
             <input
-              type="text"
-              value={username}
+              type="email"
+              value={email}
               onChange={(e) => {
-                setUsername(e.target.value);
+                setEmail(e.target.value);
                 setError("");
               }}
               disabled={loading}
               className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all disabled:bg-gray-50"
-              placeholder="Enter your username"
+              placeholder="Enter your email"
             />
           </div>
 
@@ -109,10 +111,12 @@ export default function Login() {
             </p>
             <div className="space-y-1 text-sm">
               <p className="text-[#131A34]">
-                <span className="font-semibold">Admin:</span> admin / admin123
+                <span className="font-semibold">Admin:</span> admin@wiz.com /
+                Admin123!
               </p>
               <p className="text-[#131A34]">
-                <span className="font-semibold">Support:</span> support1 / pass123
+                <span className="font-semibold">Support:</span> support@wiz.com
+                / Support123!
               </p>
             </div>
           </div>
