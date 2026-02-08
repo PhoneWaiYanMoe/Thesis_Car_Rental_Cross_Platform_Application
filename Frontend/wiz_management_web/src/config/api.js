@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     LOGIN: `${USER_SERVICE_URL}/auth/login`,
     REGISTER: `${USER_SERVICE_URL}/auth/register`,
     VERIFY_EMAIL_OTP: `${USER_SERVICE_URL}/auth/verify-email-otp`,
+    RESEND_OTP: `${USER_SERVICE_URL}/auth/resend-otp`,
     LOGOUT: `${USER_SERVICE_URL}/auth/logout`,
     REFRESH_TOKEN: `${USER_SERVICE_URL}/auth/refresh-token`,
     FORGOT_PASSWORD: `${USER_SERVICE_URL}/auth/forgot-password`,
