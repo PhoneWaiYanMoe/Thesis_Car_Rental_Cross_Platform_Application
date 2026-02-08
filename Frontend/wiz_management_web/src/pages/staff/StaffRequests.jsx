@@ -1,59 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Search, Eye, ImageIcon } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye, AlertCircle } from "lucide-react";
+import { useUsers, useRequests } from "../../hooks";
 
-export default function StaffRequests({ requests, staffData }) {
+export default function StaffRequests() {
   const { staffId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const statusFilter = searchParams.get("status") || "all";
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState(statusFilter);
+  const { getUserById } = useUsers();
+  const { requests, loading, error, fetchRequests } = useRequests();
+
+  const [staff, setStaff] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    setFilterStatus(statusFilter);
-  }, [statusFilter]);
+    loadStaffData();
+  }, [staffId]);
 
-  const staff = staffData.find((s) => s.id === staffId);
+  useEffect(() => {
+    if (staff) {
+      loadRequests();
+    }
+  }, [staff, filterStatus]);
 
-  if (!staff) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <p className="text-[#717685] text-lg font-medium">
-            Staff member not found
-          </p>
-          <button
-            onClick={() => navigate("/staff")}
-            className="mt-4 px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-          >
-            Back to Staff Management
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const loadStaffData = async () => {
+    try {
+      const userData = await getUserById(staffId);
+      setStaff(userData);
+    } catch (err) {
+      console.error("Failed to load staff:", err);
+    }
+  };
 
-  // Filter requests by staff member
-  let filteredRequests = requests.filter(
-    (req) => req.handledBy === staff.username
-  );
+  const loadRequests = async () => {
+    try {
+      const filters = {
+        handledBy: staff.email || staff.username,
+        limit: 1000,
+      };
 
-  // Apply search and status filters
-  filteredRequests = filteredRequests.filter((req) => {
-    const matchesSearch =
-      req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || req.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+      if (filterStatus !== "all") {
+        filters.status = filterStatus;
+      }
 
-  // Sort by handled date (most recent first)
-  filteredRequests = [...filteredRequests].sort((a, b) => {
-    return new Date(b.handledAt) - new Date(a.handledAt);
-  });
+      await fetchRequests(filters);
+    } catch (err) {
+      console.error("Failed to load requests:", err);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -69,16 +63,32 @@ export default function StaffRequests({ requests, staffData }) {
       },
       denied: { bg: "bg-red-50", text: "text-red-700", label: "Denied" },
     };
-    return badges[status];
+    return badges[status] || badges.pending;
   };
 
-  // Calculate counts for this staff member only
-  const staffRequests = requests.filter((r) => r.handledBy === staff.username);
   const statusCounts = {
-    all: staffRequests.length,
-    approved: staffRequests.filter((r) => r.status === "approved").length,
-    denied: staffRequests.filter((r) => r.status === "denied").length,
+    all: requests.length,
+    pending: requests.filter((r) => r.status === "pending").length,
+    approved: requests.filter((r) => r.status === "approved").length,
+    denied: requests.filter((r) => r.status === "denied").length,
   };
+
+  let displayRequests =
+    filterStatus === "all"
+      ? requests
+      : requests.filter((r) => r.status === filterStatus);
+
+  // Loading state
+  if (loading && !staff) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#6679C0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#717685] font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -89,20 +99,23 @@ export default function StaffRequests({ requests, staffData }) {
           className="flex items-center gap-2 text-[#717685] hover:text-[#131A34] mb-4 font-semibold transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Staff Management
+          Back to Staff
         </button>
-        <h1 className="text-3xl font-bold text-[#131A34] mb-2">
-          Requests Handled by {staff.username}
-        </h1>
-        <p className="text-[#717685]">
-          View all requests handled by this staff member
-        </p>
+        <div>
+          <h1 className="text-3xl font-bold text-[#131A34] mb-2">
+            {staff?.full_name || staff?.name}'s Requests
+          </h1>
+          <p className="text-[#717685]">
+            Viewing all requests handled by this staff member
+          </p>
+        </div>
       </div>
 
-      {/* Status Tabs */}
+      {/* Status tabs */}
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
-          { id: "all", label: "All Requests" },
+          { id: "all", label: "All" },
+          { id: "pending", label: "Pending" },
           { id: "approved", label: "Approved" },
           { id: "denied", label: "Denied" },
         ].map((tab) => (
@@ -129,121 +142,100 @@ export default function StaffRequests({ requests, staffData }) {
         ))}
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by title, ID, or customer name..."
-            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Results Count */}
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-[#717685]">
-          Showing{" "}
-          <span className="font-semibold text-[#131A34]">
-            {filteredRequests.length}
-          </span>{" "}
-          requests
-        </p>
-        {(searchTerm || filterStatus !== "all") && (
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setFilterStatus("all");
-            }}
-            className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
-          >
-            Clear all filters
-          </button>
-        )}
-      </div>
-
-      {/* Request List */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {filteredRequests.length === 0 ? (
-          <div className="p-12 text-center">
-            <Search className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-            <p className="text-[#717685] text-lg font-medium">
-              No requests found
-            </p>
-            <p className="text-[#B2BCE0] text-sm mt-1">
-              {statusFilter !== "all"
-                ? `This staff member has no ${statusFilter} requests`
-                : "This staff member has not handled any requests yet"}
-            </p>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#6679C0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#717685] font-semibold">Loading requests...</p>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {filteredRequests.map((req) => {
-              const badge = getStatusBadge(req.status);
-              return (
-                <div
-                  key={req.id}
-                  onClick={() => navigate(`/requests/${req.id}`)}
-                  className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
-                          {req.title}
-                        </h4>
-                        <span
-                          className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
-                        >
-                          {badge.label}
-                        </span>
-                        {req.photos && req.photos.length > 0 && (
-                          <span className="flex items-center gap-1 text-[#6679C0] text-xs font-semibold">
-                            <ImageIcon className="w-4 h-4" />
-                            {req.photos.length}
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
+          <p className="text-red-700 font-semibold">{error}</p>
+          <button
+            onClick={loadRequests}
+            className="mt-3 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Request list */}
+      {!loading && !error && (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {displayRequests.length === 0 ? (
+            <div className="p-12 text-center">
+              <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+              <p className="text-[#717685] text-lg font-medium">
+                No requests found
+              </p>
+              <p className="text-[#B2BCE0] text-sm mt-1">
+                This staff member hasn't handled any{" "}
+                {filterStatus !== "all" ? filterStatus : ""} requests yet
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {displayRequests.map((req) => {
+                const badge = getStatusBadge(req.status);
+                return (
+                  <div
+                    key={req.id}
+                    onClick={() => navigate(`/requests/${req.id}`)}
+                    className="p-6 hover:bg-[#F8F9FF] cursor-pointer transition-all group"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h4 className="font-semibold text-[#131A34] group-hover:text-[#6679C0] transition-colors">
+                            {req.title}
+                          </h4>
+                          <span
+                            className={`${badge.bg} ${badge.text} px-2.5 py-1 rounded-lg text-xs font-semibold`}
+                          >
+                            {badge.label}
                           </span>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-sm text-[#717685] mb-2 flex-wrap">
+                          <span className="font-medium">{req.id}</span>
+                          <span>•</span>
+                          <span>{req.category}</span>
+                          <span>•</span>
+                          <span>{req.customerName}</span>
+                        </div>
+
+                        <p className="text-sm text-[#717685] line-clamp-1">
+                          {req.body}
+                        </p>
+
+                        {req.handledAt && (
+                          <div className="mt-2 text-xs text-[#717685]">
+                            Handled on{" "}
+                            {new Date(req.handledAt).toLocaleDateString()}
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-sm text-[#717685] mb-2 flex-wrap">
-                        <span className="font-medium">{req.id}</span>
-                        <span>•</span>
-                        <span>{req.category}</span>
-                        <span>•</span>
-                        <span>{req.customerName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[#717685]">
+                          {new Date(req.createdAt).toLocaleDateString()}
+                        </span>
+                        <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
                       </div>
-
-                      <p className="text-sm text-[#717685] line-clamp-1">
-                        {req.body}
-                      </p>
-
-                      <div className="mt-2 text-xs text-[#717685]">
-                        Handled on{" "}
-                        {new Date(req.handledAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </div>
-                    </div>
-
-                    {/* View Button */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-[#717685]">
-                        {new Date(req.createdAt).toLocaleDateString()}
-                      </span>
-                      <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

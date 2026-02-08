@@ -149,25 +149,60 @@ export const useUsers = () => {
     }
   };
 
-  // Get support users
-  const getSupportUsers = async () => {
+  // Get support users with search, filter, sort, and pagination
+  const getSupportUsers = async (params = {}) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await apiClient.get(API_ENDPOINTS.USERS.SUPPORT);
-      return response.data.users.map((user) => ({
+      const queryParams = new URLSearchParams();
+
+      // Add all supported parameters
+      if (params.page) queryParams.append("page", params.page);
+      if (params.limit) queryParams.append("limit", params.limit);
+      if (params.search) queryParams.append("search", params.search);
+      if (params.status) queryParams.append("status", params.status);
+      if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
+      const url = `${API_ENDPOINTS.USERS.SUPPORT}${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
+      const response = await apiClient.get(url);
+
+      // Map backend response to frontend format
+      const mappedUsers = response.data.users.map((user) => ({
         id: user.id,
-        full_name: user.fullName,
-        name: user.fullName,
+        full_name: user.full_name,
+        name: user.full_name,
         username: user.email,
         email: user.email,
         phone: user.phone,
         type: user.role,
         role: user.role,
         status: user.status,
+        isVerified: user.isVerified,
         avatarUrl: user.avatarUrl,
-        joinedDate: user.createdAt,
+        joinedDate: user.joinedDate,
+        createdAt: user.joinedDate,
+        // Performance stats from request service
+        totalHandled: user.totalHandled || 0,
+        totalApproved: user.totalApproved || 0,
+        totalDenied: user.totalDenied || 0,
+        avgResponseTime: user.avgResponseTime,
+        approvalRate: user.approvalRate || 0,
+        byCategory: user.byCategory || {},
       }));
+
+      setUsers(mappedUsers);
+
+      return {
+        users: mappedUsers,
+        pagination: response.data.pagination,
+      };
     } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch support users");
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -223,6 +258,74 @@ export const useUsers = () => {
     }
   };
 
+  // Create new user (for creating staff)
+  const createUser = async (userData) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
+        fullName: userData.fullName,
+        email: userData.email,
+        password: userData.password,
+        confirmPassword: userData.password, // Same as password
+        phone: userData.phone || null,
+        role: userData.role || "support",
+      });
+
+      // Response only contains user ID and message
+      return {
+        userId: response.data.userId,
+        message: response.data.message,
+        email: userData.email, // Keep email for verification step
+      };
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create user");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify email with OTP
+  const verifyEmailOTP = async (email, code) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP, {
+        email,
+        code,
+      });
+
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to verify OTP");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const resendOTP = async (email) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_OTP, {
+        email,
+      });
+
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend OTP");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     users,
     loading,
@@ -235,5 +338,8 @@ export const useUsers = () => {
     getOwnerUsers,
     getCustomerUsers,
     getUserStats,
+    createUser,
+    verifyEmailOTP,
+    resendOTP,
   };
 };
