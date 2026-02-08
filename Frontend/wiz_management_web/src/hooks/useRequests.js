@@ -35,28 +35,26 @@ export const useRequests = () => {
       const mappedRequests = response.data.requests.map((request) => ({
         id: request.id,
         title: request.title,
-        body: request.body,
+        description: request.description,
+        priority: request.priority,
         category: request.category,
+        userId: request.user_id,
+        userEmail: request.user_email,
         status: request.status,
         customerId: request.customerId,
-        customerName: request.customerName || "Unknown Customer",
-        customerEmail: request.customerEmail,
-        // Optional IDs
+        ownerId: request.owner_id,
         vehicleId: request.vehicleId,
-        vehicleName: request.vehicleName,
         bookingId: request.bookingId,
-        ownerId: request.ownerId,
-        ownerName: request.ownerName,
         // Handler info
-        handledBy: request.handledBy,
-        handledAt: request.handledAt,
+        handledById: request.handled_by,
+        handledAt: request.handled_at,
         // Photos
-        photos: request.photos || [],
+        photos: request.attachmentIds || [],
         // Notes
         notes: request.notes || [],
         // Timestamps
-        createdAt: request.createdAt,
-        updatedAt: request.updatedAt,
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
       }));
 
       setRequests(mappedRequests);
@@ -86,24 +84,22 @@ export const useRequests = () => {
       return {
         id: request.id,
         title: request.title,
-        body: request.body,
+        description: request.description,
         category: request.category,
         status: request.status,
-        customerId: request.customerId,
-        customerName: request.customerName,
-        customerEmail: request.customerEmail,
-        customerPhone: request.customerPhone,
-        vehicleId: request.vehicleId,
-        vehicleName: request.vehicleName,
-        bookingId: request.bookingId,
-        ownerId: request.ownerId,
-        ownerName: request.ownerName,
-        handledBy: request.handledBy,
-        handledAt: request.handledAt,
-        photos: request.photos || [],
-        notes: request.notes || [],
-        createdAt: request.createdAt,
-        updatedAt: request.updatedAt,
+        priority: request.priority,
+        userId: request.user_id,
+        userEmail: request.user_email,
+        customerId: request.customer_id,
+        vehicleId: request.vehicle_id,
+        bookingId: request.booking_id,
+        ownerId: request.owner_id,
+        handledById: request.handled_by,
+        handledAt: request.handled_at,
+        photos: request.attachmentIds || [],
+        actions: request.actions || [],
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
       };
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch request");
