@@ -2,6 +2,8 @@
 const pool = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
 const eventEmitter = require("../utils/eventEmitter");
+const userGrpcClient = require("../grpc/user_grpc_client");
+
 
 class OwnerVehicleController {
   /**
@@ -331,6 +333,24 @@ class OwnerVehicleController {
 
       const vehicle = result.rows[0];
 
+      let ownerName = "Vehicle Owner";
+      let ownerAvatar = "assets/images/article_2.png";
+
+      try {
+        console.log(`📞 Fetching owner info for user ${vehicle.owner_id}...`);
+        const ownerProfile = await userGrpcClient.getUserProfile(
+          vehicle.owner_id,
+        );
+        ownerName = ownerProfile.full_name;
+        ownerAvatar = ownerProfile.avatar_url || ownerAvatar;
+        console.log(`✅ Owner name: ${ownerName}`);
+      } catch (error) {
+        console.error(
+          "⚠️ Failed to fetch owner info via gRPC – using defaults:",
+          error.message,
+        );
+      }
+
       res.json({
         vehicle: {
           id: vehicle.vehicle_id,
@@ -374,6 +394,8 @@ class OwnerVehicleController {
           updatedAt: vehicle.updated_at,
           bannedReason: vehicle.banned_reason,
           rejectionReason: vehicle.rejection_reason,
+          ownerName: ownerName, // FROM gRPC
+          ownerAvatar: ownerAvatar,
         },
       });
     } catch (error) {
@@ -405,7 +427,10 @@ class OwnerVehicleController {
         return res.status(404).json({ error: "Vehicle not found" });
       }
 
-      if (ownershipResult.rows[0].owner_id !== userId && req.user.role !== "admin") {
+      if (
+        ownershipResult.rows[0].owner_id !== userId &&
+        req.user.role !== "admin"
+      ) {
         return res.status(403).json({
           error: "Access denied. You can only update your own vehicles.",
         });

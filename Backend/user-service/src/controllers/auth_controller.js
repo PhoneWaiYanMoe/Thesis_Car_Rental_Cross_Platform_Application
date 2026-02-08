@@ -9,7 +9,7 @@ const oauthService = require("../services/oauth_service");
 class AuthController {
   async register(req, res, next) {
     try {
-      const { email, fullName, password } = req.body;
+      const { email, fullName, password, role } = req.body;
 
       console.log("Registering user:", email);
 
@@ -34,7 +34,7 @@ class AuthController {
         `INSERT INTO users (user_id, email, password_hash, full_name, role, is_verified) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING user_id, email, full_name`,
-        [userId, email, passwordHash, fullName, "customer", false]
+        [userId, email, passwordHash, fullName, role || "customer", false]
       );
 
       console.log("User created:", result.rows[0]);

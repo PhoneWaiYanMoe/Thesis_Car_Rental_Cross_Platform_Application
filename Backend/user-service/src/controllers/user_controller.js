@@ -1,6 +1,7 @@
 // Backend/user-service/src/controllers/user_controller.js
 const pool = require("../config/database");
 const eventPublisher = require("../services/event_publisher");
+const { fetchStaffPerformance } = require("../clients/request_service_client");
 
 class UserController {
   /**
@@ -136,38 +137,135 @@ class UserController {
    */
   async getSupportUsers(req, res, next) {
     try {
-      const { page = 1, limit = 20 } = req.query;
+      const {
+        page = 1,
+        limit = 20,
+        search = "",
+        status = "",
+        sortBy = "created_at",
+        sortOrder = "DESC",
+      } = req.query;
 
+      // 1. Extract auth token
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // 2. Build WHERE clause (ONLY admin + support)
+      const conditions = [`role IN ('support', 'admin')`];
+      const params = [];
+      let paramCount = 1;
+
+      // Search (name, email, user_id)
+      if (search && search.trim() !== "") {
+        conditions.push(
+          `(full_name ILIKE $${paramCount} 
+          OR email ILIKE $${paramCount} 
+          OR user_id::text = $${paramCount})`,
+        );
+        params.push(`%${search}%`);
+        paramCount++;
+      }
+
+      // Filter by status (NOTE: admin usually has NULL status)
+      if (status && status.trim() !== "") {
+        conditions.push(`status = $${paramCount}`);
+        params.push(status);
+        paramCount++;
+      }
+
+      const whereClause = `WHERE ${conditions.join(" AND ")}`;
+
+      // 3. Validate sort column
+      const allowedSortColumns = ["full_name", "email", "status", "created_at"];
+
+      const sortColumn = allowedSortColumns.includes(sortBy)
+        ? sortBy
+        : "created_at";
+
+      const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      // 4. Count total
       const countResult = await pool.query(
-        "SELECT COUNT(*) FROM users WHERE role = 'support'",
+        `SELECT COUNT(*) FROM users ${whereClause}`,
+        params,
       );
-      const total = parseInt(countResult.rows[0].count);
+      const total = Number(countResult.rows[0].count);
 
-      const result = await pool.query(
-        `SELECT 
-          user_id,
-          email,
-          full_name,
-          phone,
-          status,
-          is_verified,
-          avatar_url,
-          created_at,
-          updated_at
-         FROM users
-         WHERE role = 'support'
-         ORDER BY created_at DESC
-         LIMIT $1 OFFSET $2`,
-        [parseInt(limit), (parseInt(page) - 1) * parseInt(limit)],
+      // 5. Pagination params
+      params.push(Number(limit));
+      params.push((Number(page) - 1) * Number(limit));
+
+      // 6. Fetch users
+      const usersResult = await pool.query(
+        `
+      SELECT 
+        user_id,
+        email,
+        full_name,
+        phone,
+        role,
+        status,
+        is_verified,
+        avatar_url,
+        created_at,
+        updated_at
+      FROM users
+      ${whereClause}
+      ORDER BY ${sortColumn} ${order}
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+      `,
+        params,
       );
 
+      // 7. Call Request Service
+      const analyticsResponse = await fetchStaffPerformance(authHeader);
+      const analyticsList = analyticsResponse?.staff || [];
+
+      // Index analytics by staffId
+      const analyticsMap = {};
+      analyticsList.forEach((a) => {
+        analyticsMap[String(a.staffId)] = a;
+      });
+
+      // 8. Merge users + analytics
+      const users = usersResult.rows.map((user) => {
+        const perf = analyticsMap[String(user.user_id)];
+
+        // const isAdmin = user.role === "admin";
+        console.log('User:', user.user_id, 'name:', user.full_name, 'Performance:', perf);
+
+        return {
+          id: user.user_id,
+          email: user.email,
+          full_name: user.full_name,
+          phone: user.phone,
+          role: user.role,
+          status: user.status ?? null,
+          isVerified: user.is_verified,
+          avatarUrl: user.avatar_url,
+          joinedDate: user.created_at,
+
+          // Analytics
+          totalHandled: (perf?.totalHandled ?? 0),
+          totalApproved: (perf?.approved ?? 0),
+          totalDenied: (perf?.denied ?? 0),
+          avgResponseTime: (perf?.avgResponseTime ?? null),
+          approvalRate: (perf?.approvalRate ?? 0),
+          byCategory: (perf?.byCategory ?? {}),
+        };
+      });
+
+      // 9. Response
       res.json({
-        users: result.rows,
+        success: true,
+        users,
         pagination: {
           total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(total / parseInt(limit)),
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / limit),
         },
       });
     } catch (error) {

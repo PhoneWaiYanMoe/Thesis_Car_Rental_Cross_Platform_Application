@@ -811,6 +811,8 @@ class BookingController {
             canReview,
             canCancel,
           },
+          createdAt: booking.created_at,
+          updatedAt: booking.updated_at,
         },
       });
     } catch (error) {

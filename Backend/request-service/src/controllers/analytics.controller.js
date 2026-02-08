@@ -27,7 +27,7 @@ class AnalyticsController {
         startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         break;
       default:
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startDate = new Date(0); // Default to all time
     }
 
     return { startDate, endDate: now };
@@ -39,7 +39,7 @@ class AnalyticsController {
    */
   async getRequestStats(req, res, next) {
     try {
-      const { timeRange = "30d" } = req.query;
+      const { timeRange } = req.query;
       const { startDate, endDate } = this.getDateRange(timeRange);
 
       // Get request stats
@@ -119,96 +119,159 @@ class AnalyticsController {
    * 2. GET /analytics/staff/performance?timeRange=30d
    * Staff performance analytics
    */
+  /**
+   * GET /analytics/staff/performance?timeRange=30d
+   */
   async getStaffPerformance(req, res, next) {
     try {
-      const { timeRange = "30d" } = req.query;
+      const { timeRange } = req.query;
       const { startDate, endDate } = this.getDateRange(timeRange);
 
-      // Get staff performance data
-      const staffData = await pool.query(
-        `SELECT 
-          handled_by as staff_id,
-          COUNT(*) as total_handled,
-          COUNT(*) FILTER (WHERE status = 'approved') as approved,
-          COUNT(*) FILTER (WHERE status = 'denied') as denied,
-          AVG(EXTRACT(EPOCH FROM (handled_at - created_at)) / 3600) as avg_response_time
-         FROM requests
-         WHERE handled_by IS NOT NULL
-         AND created_at BETWEEN $1 AND $2
-         GROUP BY handled_by`,
+      /**
+       * 1️⃣ Final decision per request (approved / denied)
+       * - take the LATEST decision only
+       */
+      const finalDecisionResult = await pool.query(
+        `
+      WITH final_decision AS (
+        SELECT DISTINCT ON (ra.request_id)
+          ra.request_id,
+          ra.performed_by AS staff_id,
+          ra.action,
+          ra.created_at
+        FROM request_actions ra
+        WHERE ra.action IN ('request_approved', 'request_denied')
+          AND ra.created_at BETWEEN $1 AND $2
+        ORDER BY ra.request_id, ra.created_at DESC
+      )
+      SELECT
+        staff_id,
+        COUNT(DISTINCT request_id) AS total_handled,
+        COUNT(*) FILTER (WHERE action = 'request_approved') AS approved,
+        COUNT(*) FILTER (WHERE action = 'request_denied') AS denied
+      FROM final_decision
+      GROUP BY staff_id
+      `,
         [startDate, endDate],
       );
 
-      // Get category breakdown per staff
-      const categoryByStaff = await pool.query(
-        `SELECT 
-          handled_by as staff_id,
-          category,
-          COUNT(*) as count
-         FROM requests
-         WHERE handled_by IS NOT NULL
-         AND created_at BETWEEN $1 AND $2
-         GROUP BY handled_by, category`,
+      /**
+       * 2️⃣ Average response time
+       * - first meaningful staff action per request
+       */
+      const responseTimeResult = await pool.query(
+        `
+      WITH first_action AS (
+        SELECT
+          ra.request_id,
+          ra.performed_by AS staff_id,
+          MIN(ra.created_at) AS first_action_at
+        FROM request_actions ra
+        WHERE ra.action != 'request_created'
+          AND ra.created_at BETWEEN $1 AND $2
+        GROUP BY ra.request_id, ra.performed_by
+      )
+      SELECT
+        fa.staff_id,
+        AVG(EXTRACT(EPOCH FROM (fa.first_action_at - r.created_at)) / 3600)
+          AS avg_response_time
+      FROM first_action fa
+      JOIN requests r ON r.id = fa.request_id
+      GROUP BY fa.staff_id
+      `,
         [startDate, endDate],
       );
 
-      // Build category map
+      /**
+       * 3️⃣ Category breakdown (unique requests)
+       */
+      const categoryResult = await pool.query(
+        `
+      SELECT
+        ra.performed_by AS staff_id,
+        r.category,
+        COUNT(DISTINCT ra.request_id) AS count
+      FROM request_actions ra
+      JOIN requests r ON r.id = ra.request_id
+      WHERE ra.action != 'request_created'
+        AND ra.created_at BETWEEN $1 AND $2
+      GROUP BY ra.performed_by, r.category
+      `,
+        [startDate, endDate],
+      );
+
+      /**
+       * 4️⃣ Build maps
+       */
+      const responseTimeMap = {};
+      responseTimeResult.rows.forEach((row) => {
+        responseTimeMap[row.staff_id] = parseFloat(
+          Number(row.avg_response_time || 0).toFixed(2),
+        );
+      });
+
       const categoryMap = {};
-      categoryByStaff.rows.forEach((row) => {
+      categoryResult.rows.forEach((row) => {
         if (!categoryMap[row.staff_id]) {
           categoryMap[row.staff_id] = {};
         }
         categoryMap[row.staff_id][row.category] = parseInt(row.count);
       });
 
-      // Calculate totals
-      let totalStaff = staffData.rows.length;
+      /**
+       * 5️⃣ Build staff list
+       */
       let totalHandled = 0;
       let totalApproved = 0;
 
-      const staff = staffData.rows.map((row) => {
+      const staff = finalDecisionResult.rows.map((row) => {
         const handled = parseInt(row.total_handled);
         const approved = parseInt(row.approved);
+        const denied = parseInt(row.denied);
+
         totalHandled += handled;
         totalApproved += approved;
 
         return {
           staffId: row.staff_id,
-          username: row.staff_id, // Could be enriched via user service
+          username: row.staff_id, // enrichment happens in user-service
           totalHandled: handled,
-          approved: approved,
-          denied: parseInt(row.denied),
-          avgResponseTime: parseFloat(
-            Number(row.avg_response_time || 0).toFixed(2),
-          ),
+          approved,
+          denied,
+          avgResponseTime: responseTimeMap[row.staff_id] ?? 0,
           approvalRate:
             handled > 0 ? parseFloat((approved / handled).toFixed(2)) : 0,
           byCategory: categoryMap[row.staff_id] || {},
         };
       });
 
-      res.json(
-        successResponse({
-          staff: staff,
-          summary: {
-            totalStaff: totalStaff,
-            totalHandled: totalHandled,
-            avgResponseTime:
-              staff.length > 0
-                ? parseFloat(
-                    (
-                      staff.reduce((sum, s) => sum + s.avgResponseTime, 0) /
-                      staff.length
-                    ).toFixed(2),
-                  )
-                : 0,
-            avgApprovalRate:
-              totalHandled > 0
-                ? parseFloat((totalApproved / totalHandled).toFixed(2))
-                : 0,
-          },
-        }),
-      );
+      /**
+       * 6️⃣ Summary
+       */
+      const summary = {
+        totalStaff: staff.length,
+        totalHandled,
+        avgResponseTime:
+          staff.length > 0
+            ? parseFloat(
+                (
+                  staff.reduce((sum, s) => sum + s.avgResponseTime, 0) /
+                  staff.length
+                ).toFixed(2),
+              )
+            : 0,
+        avgApprovalRate:
+          totalHandled > 0
+            ? parseFloat((totalApproved / totalHandled).toFixed(2))
+            : 0,
+      };
+
+      res.json({
+        success: true,
+        message: "Success",
+        staff,
+        summary,
+      });
     } catch (error) {
       console.error("❌ Get staff performance error:", error);
       next(error);
