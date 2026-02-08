@@ -108,7 +108,7 @@ export default function UserManagement() {
         {[
           { id: "all", label: "All Users" },
           { id: "normal", label: "Normal" },
-          { id: "active", label: "Active" },
+          // { id: "active", label: "Active" },
           { id: "suspended", label: "Suspended" },
           { id: "banned", label: "Banned" },
           { id: "deleted", label: "Deleted" },

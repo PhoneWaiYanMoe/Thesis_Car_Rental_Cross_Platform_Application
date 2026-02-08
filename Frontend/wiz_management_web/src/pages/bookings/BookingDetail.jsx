@@ -1,45 +1,136 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Car,
   User,
+  Car,
   Calendar,
   DollarSign,
   MapPin,
   AlertCircle,
-  CreditCard,
 } from "lucide-react";
+import { useBookings, useUsers, useVehicles } from "../../hooks";
 
-export default function BookingDetail({ bookingData, carData, userData }) {
+export default function BookingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const booking = bookingData.find((b) => b.id === id);
-  const car = booking ? carData.find((c) => c.id === booking.carId) : null;
-  const user = booking ? userData.find((u) => u.id === booking.userId) : null;
-  const owner = booking ? userData.find((u) => u.id === booking.ownerId) : null;
 
-  if (!booking) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
-            Booking Not Found
-          </h2>
-          <p className="text-[#717685] mb-6">
-            The booking you're looking for doesn't exist
-          </p>
-          <button
-            onClick={() => navigate("/bookings")}
-            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
-          >
-            Back to Bookings
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const { getBookingById } = useBookings();
+  const { getUserById } = useUsers();
+  const { getVehicleById } = useVehicles();
+
+  const DEFAULT_CAR = {
+    id: null,
+    brand: "Unknown",
+    model: "Unknown",
+    year: "-",
+    pricePerDay: 0,
+    imageUrl: "/placeholder-car.png",
+  };
+
+  const DEFAULT_USER = {
+    id: null,
+    name: "Guest",
+    email: "-",
+    phone: "-",
+  };
+
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const [car, setCar] = useState(DEFAULT_CAR);
+  const [user, setUser] = useState(DEFAULT_USER);
+  const [owner, setOwner] = useState(DEFAULT_USER);
+
+  const [error, setError] = useState(null);
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      // second: "2-digit",
+      hour12: false, // 24-hour format
+    });
+  };
+
+  // Load booking data
+  useEffect(() => {
+    loadBooking();
+  }, [id]);
+
+  useEffect(() => {
+    if (!booking?.userId) return;
+
+    const fetchUser = async () => {
+      try {
+        const userData = await getUserById(booking.userId);
+        setUser(userData || DEFAULT_USER);
+      } catch (err) {
+        console.error("Failed to load user:", err);
+        setUser(DEFAULT_USER);
+      }
+    };
+
+    fetchUser();
+  }, [booking?.userId]);
+
+  useEffect(() => {
+    if (!booking?.vehicleId) return;
+
+    const fetchCar = async () => {
+      try {
+        const vehicleData = await getVehicleById(booking.vehicleId);
+        setCar(vehicleData || DEFAULT_CAR);
+      } catch (err) {
+        console.error("Failed to load vehicle:", err);
+        setCar(DEFAULT_CAR);
+      }
+    };
+
+    fetchCar();
+  }, [booking?.vehicleId]);
+
+  useEffect(() => {
+    if (!car?.ownerId) return;
+
+    // Optimization: owner === renter
+    // if (car.ownerId === booking?.ownerId) {
+    //   setOwner(user);
+    //   return;
+    // }
+
+    const fetchOwner = async () => {
+      try {
+        const ownerData = await getUserById(car.ownerId);
+        setOwner(ownerData || DEFAULT_USER);
+      } catch (err) {
+        console.error("Failed to load owner:", err);
+        setOwner(DEFAULT_USER);
+      }
+    };
+
+    fetchOwner();
+  }, [car?.ownerId]);
+
+  const loadBooking = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const bookingData = await getBookingById(id);
+      setBooking(bookingData);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load booking");
+      console.error("Failed to load booking:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -48,15 +139,45 @@ export default function BookingDetail({ bookingData, carData, userData }) {
         text: "text-green-700",
         label: "Completed",
       },
-      ongoing: { bg: "bg-blue-50", text: "text-blue-700", label: "Ongoing" },
-      cancelled: { bg: "bg-red-50", text: "text-red-700", label: "Cancelled" },
-      upcoming: {
+      completed_with_charge: {
+        bg: "bg-green-50",
+        text: "text-green-700",
+        label: "Completed with Charge",
+      },
+      picked_up: { bg: "bg-blue-50", text: "text-blue-700", label: "Picked Up" },
+      returned_submitted: {
+        bg: "bg-blue-50",
+        text: "text-blue-700",
+        label: "Returned Submitted",
+      },
+      dispute_opened: {
         bg: "bg-purple-50",
         text: "text-purple-700",
-        label: "Upcoming",
+        label: "Dispute Opened",
+      },
+      under_review: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Under Review",
+      },
+      cancelled: { bg: "bg-red-50", text: "text-red-700", label: "Cancelled" },
+      booking: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Booking",
+      },
+      pending: {
+        bg: "bg-yellow-50",
+        text: "text-yellow-700",
+        label: "Pending",
+      },
+      pending_payment: {
+        bg: "bg-yellow-50",
+        text: "text-yellow-700",
+        label: "Pending Payment",
       },
     };
-    const badge = badges[status];
+    const badge = badges[status] || badges.pending;
     return (
       <div
         className={`inline-flex items-center ${badge.bg} ${badge.text} px-4 py-2 rounded-xl font-semibold`}
@@ -73,15 +194,40 @@ export default function BookingDetail({ bookingData, carData, userData }) {
     }).format(amount);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#6679C0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#717685] font-semibold">Loading booking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !booking) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+            {error || "Booking Not Found"}
+          </h2>
+          <p className="text-[#717685] mb-6">
+            {error || "The booking you're looking for doesn't exist"}
+          </p>
+          <button
+            onClick={() => navigate("/bookings")}
+            className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+          >
+            Back to Bookings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -196,7 +342,12 @@ export default function BookingDetail({ bookingData, carData, userData }) {
               <div className="bg-[#F8F9FF] rounded-xl p-4">
                 <p className="text-sm text-[#717685] mb-1">Booking Date</p>
                 <p className="font-semibold text-[#131A34]">
-                  {new Date(booking.createdDate).toLocaleDateString()}
+                  {/* {new Date(booking.createdAt).toLocaleDateString()} */}
+                  {new Date(booking.createdAt).toLocaleString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </p>
               </div>
             </div>
@@ -242,22 +393,22 @@ export default function BookingDetail({ bookingData, carData, userData }) {
               <div className="flex items-center justify-between py-2">
                 <span className="text-[#717685]">
                   Rental Price ({booking.duration} days ×{" "}
-                  {formatCurrency(car?.pricePerDay || 0)}/day)
+                  {formatCurrency(booking.pricing.dailyRate || 0)}/day)
                 </span>
                 <span className="font-semibold text-[#131A34]">
-                  {formatCurrency(booking.rentalPrice)}
+                  {formatCurrency(booking.pricing.rentalPrice || 0)}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-[#717685]">Insurance Fee</span>
                 <span className="font-semibold text-[#131A34]">
-                  {formatCurrency(booking.insuranceFee)}
+                  {formatCurrency(booking.pricing.insuranceFee || 0)}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-[#717685]">Service Fee</span>
                 <span className="font-semibold text-[#131A34]">
-                  {formatCurrency(booking.serviceFee)}
+                  {formatCurrency(booking.pricing.serviceFee)}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-gray-200">
@@ -265,7 +416,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                   Total Amount
                 </span>
                 <span className="font-bold text-[#6679C0] text-xl">
-                  {formatCurrency(booking.total)}
+                  {formatCurrency(booking.pricing.totalPrice)}
                 </span>
               </div>
 
@@ -280,7 +431,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                     )}
                   </span>
                   <span className="font-semibold text-[#131A34]">
-                    {formatCurrency(booking.deposit)}
+                    {formatCurrency(booking.pricing.depositAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -293,7 +444,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                     )}
                   </span>
                   <span className="font-semibold text-[#131A34]">
-                    {formatCurrency(booking.remaining)}
+                    {formatCurrency(booking.pricing.remainingPayment)}
                   </span>
                 </div>
               </div>
@@ -301,7 +452,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
           </div>
 
           {/* payment information */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-[#131A34] mb-4">
               Payment Information
             </h2>
@@ -323,7 +474,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                 </p>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* sidebar */}
@@ -341,7 +492,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                   </div>
                   <div>
                     <p className="text-sm text-[#717685]">Name</p>
-                    <p className="font-semibold text-[#131A34]">{user.name}</p>
+                    <p className="font-semibold text-sm text-[#131A34]">{user.name}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -349,20 +500,20 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                     <MapPin className="w-5 h-5 text-[#6679C0]" />
                   </div>
                   <div>
-                    <p className="text-sm text-[#717685]">Location</p>
-                    <p className="font-semibold text-[#131A34]">
-                      {user.location}
+                    <p className="text-sm text-[#717685]">Email</p>
+                    <p className="font-semibold text-sm text-[#131A34]">
+                      {user.email}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-[#F8F9FF] rounded-xl flex items-center justify-center flex-shrink-0">
+                  {/* <div className="w-10 h-10 bg-[#F8F9FF] rounded-xl flex items-center justify-center flex-shrink-0">
                     <CreditCard className="w-5 h-5 text-[#6679C0]" />
-                  </div>
+                  </div> */}
                   <div>
-                    <p className="text-sm text-[#717685]">License Number</p>
+                    <p className="text-sm text-[#717685]">Phone no : </p>
                     <p className="font-semibold text-[#131A34]">
-                      {booking.userLicense}
+                      {user.phone}
                     </p>
                   </div>
                 </div>
@@ -389,7 +540,7 @@ export default function BookingDetail({ bookingData, carData, userData }) {
                   </div>
                   <div>
                     <p className="text-sm text-[#717685]">Name</p>
-                    <p className="font-semibold text-[#131A34]">{owner.name}</p>
+                    <p className="font-semibold text-sm text-[#131A34]">{owner.name}</p>
                   </div>
                 </div>
                 <button

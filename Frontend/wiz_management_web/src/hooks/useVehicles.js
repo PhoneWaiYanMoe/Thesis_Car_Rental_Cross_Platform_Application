@@ -93,6 +93,7 @@ export const useVehicles = () => {
         id: vehicle.id,
         ownerId: vehicle.ownerId,
         ownerName: vehicle.ownerName || "Unknown Owner",
+        ownerAvatar: vehicle.ownerAvatar || "/default-avatar.png",
         name: vehicle.name,
         description: vehicle.description,
         vehicleType: vehicle.specifications?.vehicleType,

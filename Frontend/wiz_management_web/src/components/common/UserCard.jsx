@@ -67,11 +67,12 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
               <span>•</span>
               <span>
                 Joined{" "}
-                {new Date(user.joinedDate).toLocaleDateString("en-US", {
+                {/* {new Date(user.joinedDate).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
-                })}
+                })} */}
+                {new Date(user.joinedDate).toLocaleDateString()}
               </span>
             </div>
           </div>

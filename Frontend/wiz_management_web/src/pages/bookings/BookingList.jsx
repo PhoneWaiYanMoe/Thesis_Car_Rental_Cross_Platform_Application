@@ -9,14 +9,19 @@ import {
 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import BookingCard from "../../components/common/BookingCard";
+import { useBookings } from "../../hooks";
 
-export default function BookingList({ bookingData, carData, userData }) {
+export default function BookingList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get("userId");
   const ownerId = searchParams.get("ownerId");
+  const vehicleId = searchParams.get("vehicleId");
+
+  const { bookings, loading, error, fetchBookings } = useBookings();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchBy, setSearchBy] = useState("id"); // id, customerId, vehicleId, ownerId
   const [filterStatus, setFilterStatus] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [customFromDate, setCustomFromDate] = useState("");
@@ -27,42 +32,52 @@ export default function BookingList({ bookingData, carData, userData }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  // Filter bookings
-  let filteredBookings = bookingData;
+  // Load data from API
+  useEffect(() => {
+    loadBookings();
+  }, [currentPage, filterStatus, userId, ownerId, vehicleId]);
 
-  // Apply user filter if provided in URL
-  if (userId) {
-    filteredBookings = filteredBookings.filter((b) => b.userId === userId);
-  }
+  const loadBookings = async () => {
+    try {
+      const filters = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
 
-  // Apply owner filter if provided in URL
-  if (ownerId) {
-    filteredBookings = filteredBookings.filter((b) => b.ownerId === ownerId);
-  }
+      if (filterStatus !== "all") filters.status = filterStatus;
+      if (userId) filters.userId = userId;
+      if (ownerId) filters.ownerId = ownerId;
+      if (vehicleId) filters.vehicleId = vehicleId;
+      if (searchTerm && searchBy) {
+        filters.search = searchTerm;
+        filters.searchBy = searchBy;
+      }
 
-  // Apply search filter
-  filteredBookings = filteredBookings.filter((booking) => {
-    const matchesSearch =
-      booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.carName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.userName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || booking.status === filterStatus;
+      await fetchBookings(filters);
+    } catch (err) {
+      console.error("Failed to load bookings:", err);
+    }
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1);
+    loadBookings();
+  };
 
-  // Apply date filter
+  // Filter bookings by date (client-side)
+  let displayBookings = [...bookings];
+
   const now = new Date();
-  filteredBookings = filteredBookings.filter((booking) => {
-    const bookingDate = new Date(booking.createdDate);
+  displayBookings = displayBookings.filter((booking) => {
+    const bookingDate = new Date(booking.createdDate || booking.createdAt);
 
     switch (dateFilter) {
       case "today":
         const today = new Date(
           now.getFullYear(),
           now.getMonth(),
-          now.getDate()
+          now.getDate(),
         );
         return bookingDate >= today;
       case "week":
@@ -85,10 +100,13 @@ export default function BookingList({ bookingData, carData, userData }) {
   });
 
   // Sort
-  filteredBookings = [...filteredBookings].sort((a, b) => {
+  displayBookings = [...displayBookings].sort((a, b) => {
     switch (sortBy) {
       case "date":
-        return new Date(b.createdDate) - new Date(a.createdDate);
+        return (
+          new Date(b.createdDate || b.createdAt) -
+          new Date(a.createdDate || a.createdAt)
+        );
       case "amount":
         return b.total - a.total;
       case "duration":
@@ -99,22 +117,24 @@ export default function BookingList({ bookingData, carData, userData }) {
   });
 
   const statusCounts = {
-    all: bookingData.length,
-    completed: bookingData.filter((b) => b.status === "completed").length,
-    ongoing: bookingData.filter((b) => b.status === "ongoing").length,
-    cancelled: bookingData.filter((b) => b.status === "cancelled").length,
-    upcoming: bookingData.filter((b) => b.status === "upcoming").length,
+    all: bookings.length,
+    pending_payment: bookings.filter((b) => b.status === "pending_payment").length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    completed: bookings.filter((b) => b.status === "completed").length,
+    completed_with_charge: bookings.filter((b) => b.status === "completed_with_charge").length,
+    booking: bookings.filter((b) => b.status === "booking").length,
+    picked_up: bookings.filter((b) => b.status === "picked_up").length,
+    return_submitted: bookings.filter((b) => b.status === "return_submitted").length,
+    dispute_opened: bookings.filter((b) => b.status === "dispute_opened").length,
+    under_review: bookings.filter((b) => b.status === "under_review").length,
+    cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentBookings = filteredBookings.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   }, [
     searchTerm,
     filterStatus,
@@ -127,7 +147,7 @@ export default function BookingList({ bookingData, carData, userData }) {
   return (
     <div>
       {/* Back button */}
-      {(userId || ownerId) && (
+      {(userId || ownerId || vehicleId) && (
         <div className="mb-6">
           <button
             onClick={() => navigate(-1)}
@@ -145,8 +165,10 @@ export default function BookingList({ bookingData, carData, userData }) {
           {userId
             ? "User Bookings"
             : ownerId
-            ? "Owner Bookings"
-            : "All Bookings"}
+              ? "Owner Bookings"
+              : vehicleId
+                ? "Vehicle Bookings"
+                : "All Bookings"}
         </h1>
         <p className="text-[#717685]">View and manage rental bookings</p>
       </div>
@@ -155,8 +177,14 @@ export default function BookingList({ bookingData, carData, userData }) {
       <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-100 overflow-x-auto">
         {[
           { id: "all", label: "All Bookings" },
-          { id: "upcoming", label: "Upcoming" },
-          { id: "ongoing", label: "Ongoing" },
+          { id: "pending_payment", label: "Pending Payment" },
+          { id: "pending_contract", label: "Pending Contract" },
+          { id: "booking", label: "Confirmed Booking" },
+          { id: "picked_up", label: "Picked Up" },
+          { id: "return_submitted", label: "Return Submitted" },
+          { id: "under_review", label: "Under Review" },
+          { id: "dispute_opened", label: "Dispute Opened" },
+          { id: "completed_with_charge", label: "Completed With Charge" },
           { id: "completed", label: "Completed" },
           { id: "cancelled", label: "Cancelled" },
         ].map((tab) => (
@@ -188,15 +216,34 @@ export default function BookingList({ bookingData, carData, userData }) {
         <div className="flex flex-col gap-4">
           {/* First row */}
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by booking ID, car, or user..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
-              />
+            <div className="flex-1 flex gap-2">
+              <select
+                value={searchBy}
+                onChange={(e) => setSearchBy(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white font-medium text-[#131A34]"
+              >
+                <option value="id">Booking ID</option>
+                <option value="customerId">Customer ID</option>
+                <option value="vehicleId">Vehicle ID</option>
+                <option value="ownerId">Owner ID</option>
+              </select>
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder={`Search by ${searchBy}...`}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
+              >
+                Search
+              </button>
             </div>
 
             <button
@@ -281,11 +328,7 @@ export default function BookingList({ bookingData, carData, userData }) {
         <p className="text-[#717685]">
           Showing{" "}
           <span className="font-semibold text-[#131A34]">
-            {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)}
-          </span>{" "}
-          of{" "}
-          <span className="font-semibold text-[#131A34]">
-            {filteredBookings.length}
+            {displayBookings.length}
           </span>{" "}
           bookings
         </p>
@@ -297,6 +340,7 @@ export default function BookingList({ bookingData, carData, userData }) {
               setDateFilter("all");
               setCustomFromDate("");
               setCustomToDate("");
+              setSearchBy("id");
             }}
             className="text-sm text-[#6679C0] hover:text-[#131A34] font-semibold"
           >
@@ -305,37 +349,78 @@ export default function BookingList({ bookingData, carData, userData }) {
         )}
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#6679C0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#717685] font-semibold">Loading bookings...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
+          <p className="text-red-700 font-semibold">{error}</p>
+          <button
+            onClick={loadBookings}
+            className="mt-3 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* booking list */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {currentBookings.length === 0 ? (
-          <div className="p-12 text-center">
-            <CalendarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-            <p className="text-[#717685] text-lg font-medium">
-              No bookings found
-            </p>
-            <p className="text-[#B2BCE0] text-sm mt-1">
-              Try adjusting your filters
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {currentBookings.map((booking) => (
-              <BookingCard
-                key={booking.id}
-                booking={booking}
-                basePath="/bookings"
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {!loading && !error && (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {displayBookings.length === 0 ? (
+            <div className="p-12 text-center">
+              <CalendarIcon className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
+              <p className="text-[#717685] text-lg font-medium">
+                No bookings found
+              </p>
+              <p className="text-[#B2BCE0] text-sm mt-1">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {displayBookings.map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  basePath="/bookings"
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {!loading && !error && displayBookings.length > 0 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2 text-[#717685] font-medium">
+            Page {currentPage}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            disabled={displayBookings.length < itemsPerPage}
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

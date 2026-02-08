@@ -7,17 +7,39 @@ export default function BookingCard({ booking, basePath = "/admin/bookings" }) {
 
   const getStatusBadge = (status) => {
     const badges = {
+      pending_payment: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Pending Payment" },
+      pending: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Pending" },
       completed: {
         bg: "bg-green-50",
         text: "text-green-700",
         label: "Completed",
       },
-      ongoing: { bg: "bg-blue-50", text: "text-blue-700", label: "Ongoing" },
+      completed_with_charge: {
+        bg: "bg-green-50",
+        text: "text-green-700",
+        label: "Completed With Charge",
+      },
+      picked_up: { bg: "bg-blue-50", text: "text-blue-700", label: "Ongoing" },
       cancelled: { bg: "bg-red-50", text: "text-red-700", label: "Cancelled" },
-      upcoming: {
+      booking: {
         bg: "bg-purple-50",
         text: "text-purple-700",
-        label: "Upcoming",
+        label: "Booking",
+      },
+      under_review: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Under Review",
+      },
+      return_submitted: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Return Submitted",
+      },
+      dispute_opened: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Dispute Opened",
       },
     };
     return badges[status];
@@ -41,7 +63,7 @@ export default function BookingCard({ booking, basePath = "/admin/bookings" }) {
         <div className="flex items-center gap-4 flex-1">
           <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
             <img
-              src={booking.carImage}
+              src="/images/wiz_logo.png"
               alt={booking.carName}
               className="w-full h-full object-cover"
             />
@@ -58,13 +80,16 @@ export default function BookingCard({ booking, basePath = "/admin/bookings" }) {
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-[#717685] flex-wrap">
-              <span className="font-medium">{booking.id}</span>
-              <span>•</span>
-              <span>{booking.userName}</span>
-              <span>•</span>
-              <span>{booking.duration} days</span>
-              <span>•</span>
-              <span>{new Date(booking.startDate).toLocaleDateString()}</span>
+              <span></span>
+              <span className="font-medium text-xs">Booking ID : {booking.id}</span>
+              <span></span>
+              <span className="text-xs">{new Date(booking.startDate).toLocaleDateString()}</span>
+
+              <span className="basis-full h-0"></span>
+              <span></span>
+              <span className="text-xs">Customer ID : {booking.userId}</span>
+              <span></span>
+              <span className="text-xs">{booking.duration} days</span>
             </div>
           </div>
         </div>
