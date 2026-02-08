@@ -17,11 +17,12 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
+      - '--web.external-url=http://206.189.147.242/prometheus'
+      - '--web.route-prefix=/'
     ports:
       - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
-      # REMOVED bind mounts — replaced with configs below
     configs:
       - source: prometheus_config
         target: /etc/prometheus/prometheus.yml
@@ -59,12 +60,12 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123_change_in_production}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3100
+      - GF_SERVER_ROOT_URL=http://206.189.147.242/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
       - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
-      # REMOVED bind mount for provisioning — replaced with configs below
     configs:
       - source: grafana_datasource_prometheus
         target: /etc/grafana/provisioning/datasources/prometheus.yml
@@ -123,6 +124,7 @@ services:
       - '--housekeeping_interval=30s'
       - '--docker_only=true'
       - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
+      - '--url_base_prefix=/cadvisor'
     ports:
       - target: 8080
         published: 8080
@@ -149,11 +151,12 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
       - '--cluster.advertise-address=0.0.0.0:9093'
+      - '--web.external-url=http://206.189.147.242/alertmanager'
+      - '--web.route-prefix=/'
     ports:
       - "9093:9093"
     volumes:
       - alertmanager_data:/alertmanager
-      # REMOVED bind mount — replaced with config below
     configs:
       - source: alertmanager_config
         target: /etc/alertmanager/config.yml

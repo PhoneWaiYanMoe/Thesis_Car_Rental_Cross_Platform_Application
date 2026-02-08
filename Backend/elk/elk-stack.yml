@@ -58,6 +58,9 @@ services:
       - SERVER_NAME=wiz-kibana
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=5601
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
+      - SERVER_PUBLICBASEURL=http://206.189.147.242/kibana
       - LOGGING_VERBOSE=true
       - XPACK_SECURITY_ENABLED=false
       - XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false
@@ -79,7 +82,7 @@ services:
         delay: 30s
         max_attempts: 5
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/kibana/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -154,9 +157,9 @@ services:
 
 configs:
   filebeat_config:
-    file: ./filebeat/filebeat.yml
+    file: ./elk/filebeat/filebeat.yml
   logstash_pipeline:
-    file: ./logstash/pipeline/logstash.conf
+    file: ./elk/logstash/pipeline/logstash.conf
 
 volumes:
   elasticsearch_data:
