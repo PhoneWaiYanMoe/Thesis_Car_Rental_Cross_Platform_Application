@@ -186,13 +186,13 @@ services:
 # =====================================================================
 configs:
   prometheus_config:
-    file: ./monitoring/prometheus/prometheus.yml
+    file: ./prometheus/prometheus.yml
   prometheus_alerts:
-    file: ./monitoring/prometheus/alerts.yml
+    file: ./prometheus/alerts.yml
   alertmanager_config:
-    file: ./monitoring/alertmanager/config.yml
+    file: ./alertmanager/config.yml
   grafana_datasource_prometheus:
-    file: ./monitoring/grafana/provisioning/datasources/prometheus.yml
+    file: ./grafana/provisioning/datasources/prometheus.yml
 
 volumes:
   prometheus_data:
