@@ -17,6 +17,8 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
+      - '--web.external-url=http://206.189.147.242/prometheus'
+      - '--web.route-prefix=/'
     ports:
       - "9090:9090"
     volumes:
@@ -122,6 +124,7 @@ services:
       - '--housekeeping_interval=30s'
       - '--docker_only=true'
       - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
+      - '--url_base_prefix=/cadvisor'
     ports:
       - target: 8080
         published: 8080
@@ -149,6 +152,8 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
       - '--cluster.advertise-address=0.0.0.0:9093'
+      - '--web.external-url=http://206.189.147.242/alertmanager'
+      - '--web.route-prefix=/'
     ports:
       - "9093:9093"
     volumes:
