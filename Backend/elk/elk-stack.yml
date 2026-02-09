@@ -157,9 +157,9 @@ services:
 
 configs:
   filebeat_config:
-    file: ./elk/filebeat/filebeat.yml
+    file: ./filebeat/filebeat.yml
   logstash_pipeline:
-    file: ./elk/logstash/pipeline/logstash.conf
+    file: ./logstash/pipeline/logstash.conf
 
 volumes:
   elasticsearch_data:
@@ -171,4 +171,5 @@ volumes:
 
 networks:
   wiz-network:
+    name: wiz_wiz-network
     external: true
