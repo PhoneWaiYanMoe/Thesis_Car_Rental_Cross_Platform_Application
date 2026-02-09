@@ -17,8 +17,6 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
-      - '--web.external-url=http://206.189.147.242/prometheus'
-      - '--web.route-prefix=/'
     ports:
       - "9090:9090"
     volumes:
