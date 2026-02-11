@@ -25,8 +25,8 @@ scrape_configs:
         type: 'A'
         port: 9100
 
-  - job_name: 'cadvisor'
-    dns_sd_configs:
-      - names: ['tasks.cadvisor']
-        type: 'A'
-        port: 8080
+  # - job_name: 'cadvisor'
+  #   dns_sd_configs:
+  #     - names: ['tasks.cadvisor']
+  #       type: 'A'
+  #       port: 8080

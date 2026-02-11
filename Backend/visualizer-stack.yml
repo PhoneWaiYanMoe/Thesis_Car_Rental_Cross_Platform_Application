@@ -1,0 +1,51 @@
+version: "3.8"
+
+# =====================================================================
+# DOCKER SWARM VISUALIZER
+# Deploy with: docker stack deploy -c visualizer-stack.yml visualizer
+# Access at: http://206.189.147.242/visualizer/
+# =====================================================================
+
+services:
+  visualizer:
+    image: dockersamples/visualizer:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - CTX_ROOT=/visualizer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - wiz-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          # Must run on manager node to access swarm state
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "com.docker.stack.namespace=visualizer"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/visualizer/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  wiz-network:
+    name: wiz_wiz-network
+    external: true

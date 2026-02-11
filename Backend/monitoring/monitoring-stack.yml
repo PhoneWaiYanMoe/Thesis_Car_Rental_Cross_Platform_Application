@@ -117,33 +117,33 @@ services:
           cpus: '0.2'
           memory: 128M
 
-  # ==================== CADVISOR ====================
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
-    command:
-      - '--housekeeping_interval=30s'
-      - '--docker_only=true'
-      - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
-      - '--url_base_prefix=/cadvisor'
-    ports:
-      - target: 8080
-        published: 8080
-        mode: host
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    networks:
-      - wiz-network
-    deploy:
-      mode: global  # Deploy on ALL nodes
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-    privileged: true
+  # # ==================== CADVISOR ====================
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:v0.47.0
+  #   command:
+  #     - '--housekeeping_interval=30s'
+  #     - '--docker_only=true'
+  #     - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
+  #     - '--url_base_prefix=/cadvisor'
+  #   ports:
+  #     - target: 8080
+  #       published: 8080
+  #       mode: host
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /dev/disk/:/dev/disk:ro
+  #   networks:
+  #     - wiz-network
+  #   deploy:
+  #     mode: global  # Deploy on ALL nodes
+  #     resources:
+  #       limits:
+  #         cpus: '0.3'
+  #         memory: 256M
+  #   privileged: true
 
   # ==================== ALERTMANAGER ====================
   alertmanager:
