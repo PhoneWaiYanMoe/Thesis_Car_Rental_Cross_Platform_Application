@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db,wiz_analytics
+      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db,wiz_analytics, wiz_chat
     ports:
       - "5432:5432"
     volumes:
@@ -531,6 +531,57 @@ services:
           "--tries=1",
           "--spider",
           "http://localhost:3010/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== CHAT SERVICE ====================
+  chat-service:
+    build: ./chat-service
+    container_name: wiz-chat-service
+    restart: unless-stopped
+    ports:
+      - "3011:3011"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_chat
+      - PORT=3011
+      - NODE_ENV=docker
+      - BASE_URL=http://localhost:3011
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      - ONLINE_STATUS_TIMEOUT=300
+      - TYPING_TIMEOUT=3
+      - SOCKET_PING_TIMEOUT=60000
+      - SOCKET_PING_INTERVAL=25000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./chat-service/src:/app/src
+    networks:
+      - wiz-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3011/health",
         ]
       interval: 10s
       timeout: 5s

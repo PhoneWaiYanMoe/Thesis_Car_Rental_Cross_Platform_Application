@@ -21,12 +21,7 @@ const PORT = process.env.PORT;
 
 // security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN.split(","),
-    credentials: true,
-  })
-);
+app.use(cors());
 
 // rate limiting
 const limiter = rateLimit({
