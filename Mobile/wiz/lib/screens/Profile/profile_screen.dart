@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/local_storage_service.dart';
+import 'package:wiz/services/logged_in_as_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
 
@@ -14,13 +15,15 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final LocalStorageService _localStorage = LocalStorageService();
+  final LoggedInAsService _loggedInAsService = LoggedInAsService();
 
   bool _isLoading = true;
+  bool _isUpdatingToggle = false;
   String _userName = 'User';
   String _userEmail = '';
   String _userId = '';
   String _userRole = 'customer';
-  String _activeRole = 'customer';
+  String _activeRole = 'customer'; // This will now come from API
   String? _licenseNumber;
 
   @override
@@ -33,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      print('🔄 Loading user info from SharedPreferences...');
+      print('📄 Loading user info from SharedPreferences...');
 
       final userInfo = await _localStorage.getUserInfo();
 
@@ -46,12 +49,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final role = userInfo['role'] ?? 'customer';
       final licenseNumber = userInfo['licenseNumber'];
 
+      // ✅ Get logged_in_as status from API
+      final loggedInAsResult = await _loggedInAsService.getLoggedInAs();
+      final loggedInAs = loggedInAsResult['logged_in_as'] ?? 'customer';
+
       setState(() {
         _userId = userId;
         _userName = userName;
         _userEmail = userEmail;
         _userRole = role;
-        _activeRole = role == 'owner' ? 'owner' : 'customer';
+        _activeRole = loggedInAs; // Use API value instead of role
         _licenseNumber = licenseNumber;
         _isLoading = false;
       });
@@ -61,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print('   - userName: $_userName');
       print('   - userEmail: $_userEmail');
       print('   - userRole: $_userRole');
-      print('   - activeRole: $_activeRole');
+      print('   - activeRole (from API): $_activeRole');
 
       // ✅ Warn if critical data is missing
       if (_userId.isEmpty) {
@@ -87,7 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -105,18 +115,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _toggleRole() {
-    setState(() {
-      _activeRole = _activeRole == 'owner' ? 'customer' : 'owner';
-    });
+  Future<void> _toggleRole() async {
+    if (_isUpdatingToggle) return;
 
-    print('🔄 Switched active role to: $_activeRole');
+    final newRole = _activeRole == 'owner' ? 'customer' : 'owner';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_activeRole == 'owner' ? 'Switched to Owner mode' : 'Switched to Customer mode'),
-        backgroundColor: AppStyles.primary,
-        duration: const Duration(seconds: 2),
+    // If user is trying to switch to owner but doesn't have owner role
+    if (_userRole != 'owner' && newRole == 'owner') {
+      _showUpgradeDialog();
+      return;
+    }
+
+    setState(() => _isUpdatingToggle = true);
+
+    try {
+      print('📤 Updating logged_in_as to $newRole...');
+
+      // Call API to update logged_in_as
+      final result = await _loggedInAsService.updateLoggedInAs(newRole);
+
+      if (mounted) {
+        if (result['success']) {
+          setState(() {
+            _activeRole = result['logged_in_as'] ?? newRole;
+            _isUpdatingToggle = false;
+          });
+
+          print('✅ Successfully switched to $_activeRole mode');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _activeRole == 'owner'
+                    ? 'Switched to Owner mode'
+                    : 'Switched to Customer mode',
+              ),
+              backgroundColor: AppStyles.primary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          setState(() => _isUpdatingToggle = false);
+
+          print('❌ Failed to update: ${result['error']}');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Failed to switch mode'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Toggle error: $e');
+
+      if (mounted) {
+        setState(() => _isUpdatingToggle = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showUpgradeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: AppStyles.primary),
+            const SizedBox(width: 12),
+            const Text('Owner Mode Unavailable'),
+          ],
+        ),
+        content: const Text(
+          'You need to upgrade your account to Owner to access Owner mode.\n\n'
+          'Would you like to become a vehicle owner?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // You can add navigation to upgrade screen here
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Contact support to upgrade your account to Owner',
+                  ),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            style: AppStyles.primaryButtonStyle(context),
+            child: const Text('Learn More'),
+          ),
+        ],
       ),
     );
   }
@@ -140,9 +245,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              const Text('Failed to load user data', style: TextStyle(fontSize: 18)),
+              const Text(
+                'Failed to load user data',
+                style: TextStyle(fontSize: 18),
+              ),
               const SizedBox(height: 8),
-              const Text('Please try logging in again', style: TextStyle(color: Colors.grey)),
+              const Text(
+                'Please try logging in again',
+                style: TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () async {
@@ -190,13 +301,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _userName,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text(_userEmail, style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                  Text(
+                    _userEmail,
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -205,11 +326,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_activeRole == 'owner' ? Icons.business : Icons.person, size: 16, color: Colors.white),
+                        Icon(
+                          _activeRole == 'owner'
+                              ? Icons.business
+                              : Icons.person,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           _activeRole.toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -228,21 +359,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   border: Border.all(color: AppStyles.primary),
                 ),
                 child: ListTile(
-                  leading: Icon(Icons.swap_horiz, color: AppStyles.primary),
+                  leading: _isUpdatingToggle
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(Icons.swap_horiz, color: AppStyles.primary),
                   title: Text(
-                    'Switch to ${_activeRole == 'owner' ? 'Customer' : 'Owner'} Mode',
-                    style: TextStyle(color: AppStyles.primary, fontWeight: FontWeight.w600),
+                    _isUpdatingToggle
+                        ? 'Updating...'
+                        : 'Switch to ${_activeRole == 'owner' ? 'Customer' : 'Owner'} Mode',
+                    style: TextStyle(
+                      color: AppStyles.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   subtitle: Text(
-                    _activeRole == 'owner' ? 'Manage your vehicles and bookings' : 'Browse and rent vehicles',
+                    _activeRole == 'owner'
+                        ? 'Manage your vehicles and bookings'
+                        : 'Browse and rent vehicles',
                     style: AppStyles.caption(context),
                   ),
                   trailing: Switch(
                     value: _activeRole == 'owner',
                     activeColor: AppStyles.primary,
-                    onChanged: (_) => _toggleRole(),
+                    onChanged: _isUpdatingToggle ? null : (_) => _toggleRole(),
                   ),
-                  onTap: _toggleRole,
+                  onTap: _isUpdatingToggle ? null : _toggleRole,
                 ),
               ),
             ],
@@ -263,14 +407,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.directions_car,
                       title: 'My Vehicles',
                       subtitle: 'Manage your vehicle listings',
-                      onTap: () => AppRoutes.navigateTo(context, AppRoutes.ownerVehicles),
+                      onTap: () => AppRoutes.navigateTo(
+                        context,
+                        AppRoutes.ownerVehicles,
+                      ),
                     ),
 
                     _buildMenuItem(
                       icon: Icons.add_circle_outline,
                       title: 'Add New Vehicle',
                       subtitle: 'List a new vehicle for rent',
-                      onTap: () => AppRoutes.navigateTo(context, AppRoutes.ownerVehicleCreate),
+                      onTap: () => AppRoutes.navigateTo(
+                        context,
+                        AppRoutes.ownerVehicleCreate,
+                      ),
                     ),
 
                     _buildMenuItem(
@@ -296,30 +446,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'Edit Profile',
                     subtitle: 'Update your information',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon')),
+                      );
                     },
                   ),
 
                   _buildMenuItem(
                     icon: Icons.credit_card,
                     title: 'Driver License',
-                    subtitle: _licenseNumber != null ? 'License: $_licenseNumber' : 'Not uploaded yet',
-                    onTap: () =>
-                        AppRoutes.navigateTo(context, AppRoutes.licenseUpload, arguments: {'fromBooking': false}),
+                    subtitle: _licenseNumber != null
+                        ? 'License: $_licenseNumber'
+                        : 'Not uploaded yet',
+                    onTap: () => AppRoutes.navigateTo(
+                      context,
+                      AppRoutes.licenseUpload,
+                      arguments: {'fromBooking': false},
+                    ),
                   ),
 
                   _buildMenuItem(
                     icon: Icons.history,
                     title: 'Rental History',
                     subtitle: 'View your past rentals',
-                    onTap: () => AppRoutes.navigateTo(context, AppRoutes.rentalHistory),
+                    onTap: () =>
+                        AppRoutes.navigateTo(context, AppRoutes.rentalHistory),
                   ),
-                  // ✅ ADD: Favorite Cars menu item
+
                   _buildMenuItem(
                     icon: Icons.favorite,
                     title: 'Favorite Vehicles',
                     subtitle: 'View your saved vehicles',
-                    onTap: () => AppRoutes.navigateTo(context, AppRoutes.favoriteCars),
+                    onTap: () =>
+                        AppRoutes.navigateTo(context, AppRoutes.favoriteCars),
                   ),
 
                   const SizedBox(height: 24),
@@ -334,7 +493,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'Notifications',
                     subtitle: 'Manage notification preferences',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon')),
+                      );
                     },
                   ),
 
@@ -343,7 +504,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'Help & Support',
                     subtitle: 'Get help with the app',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon')),
+                      );
                     },
                   ),
 
@@ -357,12 +520,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       icon: const Icon(Icons.logout, color: Colors.white),
                       label: const Text(
                         'Logout',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -391,10 +560,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppStyles.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+            color: AppStyles.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Icon(icon, color: AppStyles.primary),
         ),
-        title: Text(title, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+        title: Text(
+          title,
+          style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(subtitle, style: AppStyles.caption(context)),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,

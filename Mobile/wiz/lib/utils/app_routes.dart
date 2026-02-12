@@ -33,6 +33,7 @@ import 'package:wiz/screens/Owner/views/owner_vehicles_screen.dart';
 import 'package:wiz/screens/Owner/views/create_vehicle_screen.dart';
 import 'package:wiz/screens/Owner/views/owner_vehicle_details_screen.dart';
 import 'package:wiz/screens/Owner/views/edit_vehicle_screen.dart';
+import 'package:wiz/screens/Analytics/views/analytics_home_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -67,8 +68,12 @@ class AppRoutes {
   static const String ownerVehicleEdit = '/owner/vehicles/edit';
   static const String ownerBookings = '/owner/bookings';
 
+  static const String analytics = '/analytics';
+
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case analytics:
+        return MaterialPageRoute(builder: (_) => const AnalyticsHomeScreen());
       case splash:
         return MaterialPageRoute(builder: (_) => SplashScreen());
       case login:
@@ -76,44 +81,63 @@ class AppRoutes {
       case signup:
         return MaterialPageRoute(builder: (_) => const SignupScreenBloc());
       case forgotPassword:
-        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreenBloc());
+        return MaterialPageRoute(
+          builder: (_) => const ForgotPasswordScreenBloc(),
+        );
       case otp:
         final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(builder: (_) => OtpVerificationScreenBloc(arguments: args));
+        return MaterialPageRoute(
+          builder: (_) => OtpVerificationScreenBloc(arguments: args),
+        );
       case passwordChange:
         final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(builder: (_) => PasswordChangeScreenBloc(arguments: args));
+        return MaterialPageRoute(
+          builder: (_) => PasswordChangeScreenBloc(arguments: args),
+        );
       case passwordChangeSuccess:
-        return MaterialPageRoute(builder: (_) => const PasswordChangeSuccessScreen());
+        return MaterialPageRoute(
+          builder: (_) => const PasswordChangeSuccessScreen(),
+        );
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case dateTime:
         return MaterialPageRoute(builder: (_) => const DateTimeScreen());
       case map:
         final args = settings.arguments as String?;
-        return MaterialPageRoute(builder: (_) => MapScreen(title: args ?? 'Select Location'));
+        return MaterialPageRoute(
+          builder: (_) => MapScreen(title: args ?? 'Select Location'),
+        );
 
       case locationSearch:
         final args = settings.arguments as String?;
-        return MaterialPageRoute(builder: (_) => LocationSearchScreen(title: args ?? 'Search Location'));
+        return MaterialPageRoute(
+          builder: (_) =>
+              LocationSearchScreen(title: args ?? 'Search Location'),
+        );
 
       case cars:
         final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(builder: (_) => CarListScreen(tripData: args ?? {}));
+        return MaterialPageRoute(
+          builder: (_) => CarListScreen(tripData: args ?? {}),
+        );
       case favoriteCars:
         return MaterialPageRoute(builder: (_) => const FavoriteCarsScreen());
 
       case carDetails:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('car')) {
-          return MaterialPageRoute(builder: (_) => CarDetailsScreen(arguments: args));
+          return MaterialPageRoute(
+            builder: (_) => CarDetailsScreen(arguments: args),
+          );
         }
         return null;
 
       case booking:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null) {
-          return MaterialPageRoute(builder: (_) => BookingScreen(arguments: args));
+          return MaterialPageRoute(
+            builder: (_) => BookingScreen(arguments: args),
+          );
         }
         return null;
 
@@ -149,11 +173,16 @@ class AppRoutes {
       // ✅ FIXED: Pass bookingId instead of booking object
       case photoSubmission:
         final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null && args.containsKey('bookingId') && args.containsKey('isStartJourney')) {
+        if (args != null &&
+            args.containsKey('bookingId') &&
+            args.containsKey('isStartJourney')) {
           final bookingId = args['bookingId'] as String;
           final isStartJourney = args['isStartJourney'] as bool;
           return MaterialPageRoute(
-            builder: (_) => PhotoSubmissionScreen(bookingId: bookingId, isStartJourney: isStartJourney),
+            builder: (_) => PhotoSubmissionScreen(
+              bookingId: bookingId,
+              isStartJourney: isStartJourney,
+            ),
           );
         }
         return null;
@@ -162,7 +191,9 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('bookingId')) {
           final bookingId = args['bookingId'] as String;
-          return MaterialPageRoute(builder: (_) => RentalDetailsScreen(bookingId: bookingId));
+          return MaterialPageRoute(
+            builder: (_) => RentalDetailsScreen(bookingId: bookingId),
+          );
         }
         return null;
 
@@ -189,8 +220,12 @@ class AppRoutes {
       case chatDetail:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('chat')) {
-          final chat = args['chat'] is ChatData ? args['chat'] as ChatData : throw ArgumentError('Invalid chat data');
-          return MaterialPageRoute(builder: (_) => ChatDetailScreen(chat: chat));
+          final chat = args['chat'] is ChatData
+              ? args['chat'] as ChatData
+              : throw ArgumentError('Invalid chat data');
+          return MaterialPageRoute(
+            builder: (_) => ChatDetailScreen(chat: chat),
+          );
         }
         return null;
 
@@ -204,14 +239,18 @@ class AppRoutes {
       case ownerVehicleDetails:
         final vehicleId = settings.arguments as String?;
         if (vehicleId != null) {
-          return MaterialPageRoute(builder: (_) => OwnerVehicleDetailsScreen(vehicleId: vehicleId));
+          return MaterialPageRoute(
+            builder: (_) => OwnerVehicleDetailsScreen(vehicleId: vehicleId),
+          );
         }
         return null;
 
       case ownerVehicleEdit:
         final vehicleId = settings.arguments as String?;
         if (vehicleId != null) {
-          return MaterialPageRoute(builder: (_) => EditVehicleScreen(vehicleId: vehicleId));
+          return MaterialPageRoute(
+            builder: (_) => EditVehicleScreen(vehicleId: vehicleId),
+          );
         }
         return null;
       case ownerBookings:
@@ -222,7 +261,11 @@ class AppRoutes {
     }
   }
 
-  static Future<dynamic> navigateTo(BuildContext context, String routeName, {Object? arguments}) {
+  static Future<dynamic> navigateTo(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     return Navigator.pushNamed(context, routeName, arguments: arguments);
   }
 
@@ -230,20 +273,44 @@ class AppRoutes {
     return Navigator.pushNamed(context, favoriteCars);
   }
 
-  static void navigateAndReplace(BuildContext context, String routeName, {Object? arguments}) {
+  static void navigateAndReplace(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
   }
 
-  static void navigateAndRemoveUntil(BuildContext context, String routeName, {Object? arguments}) {
-    Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
+  static void navigateAndRemoveUntil(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      routeName,
+      (route) => false,
+      arguments: arguments,
+    );
   }
 
-  static Future<dynamic> navigateToRentalDetails(BuildContext context, String bookingId) {
-    return Navigator.pushNamed(context, rentalDetails, arguments: {'bookingId': bookingId});
+  static Future<dynamic> navigateToRentalDetails(
+    BuildContext context,
+    String bookingId,
+  ) {
+    return Navigator.pushNamed(
+      context,
+      rentalDetails,
+      arguments: {'bookingId': bookingId},
+    );
   }
 
   // ✅ FIXED: Pass bookingId instead of BookingData object
-  static Future<BookingData?> navigateToPhotoSubmission(BuildContext context, String bookingId, bool isStartJourney) {
+  static Future<BookingData?> navigateToPhotoSubmission(
+    BuildContext context,
+    String bookingId,
+    bool isStartJourney,
+  ) {
     return Navigator.pushNamed<BookingData>(
       context,
       photoSubmission,
@@ -261,11 +328,19 @@ class AppRoutes {
     return Navigator.pushNamed(
       context,
       rateReview,
-      arguments: {'bookingId': bookingId, 'vehicleId': vehicleId, 'vehicleName': vehicleName, 'ownerId': ownerId},
+      arguments: {
+        'bookingId': bookingId,
+        'vehicleId': vehicleId,
+        'vehicleName': vehicleName,
+        'ownerId': ownerId,
+      },
     );
   }
 
-  static Future<dynamic> navigateToChatDetail(BuildContext context, ChatData chat) {
+  static Future<dynamic> navigateToChatDetail(
+    BuildContext context,
+    ChatData chat,
+  ) {
     return Navigator.pushNamed(context, chatDetail, arguments: {'chat': chat});
   }
 }

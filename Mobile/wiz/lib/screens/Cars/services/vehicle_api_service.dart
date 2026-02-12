@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/screens/Cars/models/car.dart';
 
 class VehicleApiService {
-  static const String baseUrl = 'http://10.0.2.2:3002'; // vehicle-service
+  // static const String baseUrl = 'http://10.0.2.2:3002'; // vehicle-service
+  static const String baseUrl = 'http://localhost:3002'; // vehicle-service
 
   /// Search vehicles with filters
   /// Returns VehicleSearchResponse with isLocationFiltered flag

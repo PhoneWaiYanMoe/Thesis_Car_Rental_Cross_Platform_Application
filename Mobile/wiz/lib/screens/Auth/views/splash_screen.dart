@@ -51,6 +51,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       if (isLoggedIn) {
         // User is logged in, go to home
         AppRoutes.navigateAndReplace(context, AppRoutes.home);
+        // AppRoutes.navigateAndReplace(context, AppRoutes.analytics);
       } else {
         // User is not logged in, go to login
         AppRoutes.navigateAndReplace(context, AppRoutes.login);

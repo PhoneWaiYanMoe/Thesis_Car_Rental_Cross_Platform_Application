@@ -6,7 +6,8 @@ import 'package:wiz/services/local_storage_service.dart';
 import 'package:http_parser/http_parser.dart';
 
 class MediaApiService {
-  static const String baseUrl = 'http://10.0.2.2:3008'; // media-service
+  // static const String baseUrl = 'http://10.0.2.2:3008'; // media-service
+  static const String baseUrl = 'http://localhost:3008'; // media-service
   final _localStorageService = LocalStorageService();
 
   // Get auth token

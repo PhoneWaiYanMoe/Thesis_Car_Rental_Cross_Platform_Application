@@ -5,7 +5,8 @@ import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/services/media_api_service.dart';
 
 class ReviewApiService {
-  static const String baseUrl = 'http://10.0.2.2:3005'; // review-service
+  // static const String baseUrl = 'http://10.0.2.2:3005'; // review-service
+  static const String baseUrl = 'http://localhost:3005';
   final _localStorageService = LocalStorageService();
   final _mediaApiService = MediaApiService();
 

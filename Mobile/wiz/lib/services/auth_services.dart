@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://10.0.2.2:3001'; // Android emulator
+  // static const String baseUrl = 'http://10.0.2.2:3001'; // Android emulator
+  static const String baseUrl = 'http://localhost:3001'; // Localhost for development
   final _storage = const FlutterSecureStorage();
 
   // Storage keys
