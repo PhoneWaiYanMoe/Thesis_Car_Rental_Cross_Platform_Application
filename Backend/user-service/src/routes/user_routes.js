@@ -35,4 +35,10 @@ router.get("/:userId/license-status", userController.getLicenseStatus);
 // Upload driver's license
 router.post("/:userId/upload-license", userController.uploadLicense);
 
+// get logged in as
+router.get("/:userId/logged-in-as", userController.getLoggedInAsById);
+
+// Switch logged in as (customer <-> owner)
+router.put("/:userId/logged-in-as", userController.updateLoggedInAsById);
+
 module.exports = router;

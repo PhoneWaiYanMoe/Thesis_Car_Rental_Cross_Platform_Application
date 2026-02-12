@@ -489,6 +489,64 @@ class UserController {
     }
   }
 
+  // get /users/:userId/logged-in-as get logged in as by userId
+  async getLoggedInAsById(req, res, next) {
+    try {
+      const { userId } = req.params;
+
+      const result = await pool.query(
+        `SELECT *
+         FROM users
+         WHERE user_id = $1`,
+        [userId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Don't return password hash
+      const user = result.rows[0];
+      delete user.password_hash;
+
+      res.json({ logged_in_as: user.logged_in_as });
+    } catch (error) {
+      console.error("Get user's logged in as status by ID error:", error);
+      next(error);
+    }
+  }
+
+  // put /users/:userId/logged-in-as update logged in as by userId
+  async updateLoggedInAsById(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { logged_in_as } = req.body;
+
+      if (!["customer", "owner"].includes(logged_in_as)) {
+        return res.status(400).json({
+          error: "Invalid logged_in_as value. Must be 'customer' or 'owner'.",
+        });
+      }
+
+      const result = await pool.query(
+        `UPDATE users
+         SET logged_in_as = $1, updated_at = NOW()
+         WHERE user_id = $2
+         RETURNING logged_in_as`,
+        [logged_in_as, userId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ message: "Logged in as updated successfully", logged_in_as: result.rows[0].logged_in_as });
+    } catch (error) {
+      console.error("Update user's logged in as status by ID error:", error);
+      next(error);
+    }
+  }
+
   /**
    * PUT /users/:userId/role
    * Change user role (customer to owner)

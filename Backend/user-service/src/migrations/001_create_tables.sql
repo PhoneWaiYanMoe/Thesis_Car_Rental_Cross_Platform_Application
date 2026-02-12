@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     role VARCHAR(20) NOT NULL CHECK (role IN ('customer', 'owner', 'admin', 'support')),
+    logged_in_as VARCHAR(20) DEFAULT 'customer',
     is_verified BOOLEAN DEFAULT FALSE,
     avatar_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
