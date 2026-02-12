@@ -40,8 +40,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // REST API routes
-app.use("/api/v1/chat/conversations", conversationRoutes);
-app.use("/api/v1/chat", messageRoutes);
+app.use("/chat/conversations", conversationRoutes);
+app.use("/chat", messageRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -93,7 +93,7 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`Chat Service running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log(`REST API: http://localhost:${PORT}/api/v1/chat`);
+      console.log(`REST API: http://localhost:${PORT}/chat`);
       console.log(`WebSocket: ws://localhost:${PORT}`);
     });
   } catch (error) {

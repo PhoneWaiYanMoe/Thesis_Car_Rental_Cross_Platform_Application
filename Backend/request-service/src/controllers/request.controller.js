@@ -126,12 +126,21 @@ class RequestController {
         currentUserId: req.user.userId,
         search: req.query.search,
         sortBy: req.query.sortBy,
+        handledByMe: req.query.handledByMe === "true" || false,
         page: parseInt(req.query.page) || 1,
         limit: parseInt(req.query.limit) || 20,
       };
 
-      const result = await requestService.getRequests(filters);
-
+      let result;
+      if (filters.handledByMe) {
+        result = await requestService.getUserRequests(
+        req.user.userId,
+        filters,
+      );
+      } else {
+        result = await requestService.getRequests(filters);
+      }
+      
       res.json(successResponse(result));
     } catch (error) {
       next(error);

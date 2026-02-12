@@ -56,6 +56,7 @@ CREATE INDEX idx_user_verifications_user ON user_verifications(user_id);
 CREATE TABLE IF NOT EXISTS bookings (
     booking_id UUID PRIMARY KEY,
     customer_id UUID NOT NULL, -- User who books (role=customer)
+    owner_id UUID NOT NULL,    -- Vehicle owner (role=owner)
     vehicle_id UUID NOT NULL REFERENCES vehicles(vehicle_id),
     
     -- Timeline

@@ -118,14 +118,19 @@ export default function BookingList() {
 
   const statusCounts = {
     all: bookings.length,
-    pending_payment: bookings.filter((b) => b.status === "pending_payment").length,
+    pending_payment: bookings.filter((b) => b.status === "pending_payment")
+      .length,
     pending: bookings.filter((b) => b.status === "pending").length,
     completed: bookings.filter((b) => b.status === "completed").length,
-    completed_with_charge: bookings.filter((b) => b.status === "completed_with_charge").length,
+    completed_with_charge: bookings.filter(
+      (b) => b.status === "completed_with_charge",
+    ).length,
     booking: bookings.filter((b) => b.status === "booking").length,
     picked_up: bookings.filter((b) => b.status === "picked_up").length,
-    return_submitted: bookings.filter((b) => b.status === "return_submitted").length,
-    dispute_opened: bookings.filter((b) => b.status === "dispute_opened").length,
+    return_submitted: bookings.filter((b) => b.status === "return_submitted")
+      .length,
+    dispute_opened: bookings.filter((b) => b.status === "dispute_opened")
+      .length,
     under_review: bookings.filter((b) => b.status === "under_review").length,
     cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
@@ -198,15 +203,11 @@ export default function BookingList() {
             }`}
           >
             {tab.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filterStatus === tab.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-[#717685]"
-              }`}
-            >
-              {statusCounts[tab.id]}
-            </span>
+            {filterStatus === tab.id && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                {tab.id === "" ? statusCounts.all : statusCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>

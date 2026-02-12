@@ -30,7 +30,7 @@ exports.requireOwner = (req, res, next) => {
 };
 
 exports.requireAdmin = (req, res, next) => {
-  if (req.user.role !== "admin" && req.user.role !== "customer-support") {
+  if (req.user.role !== "admin" && req.user.role !== "support") {
     return res.status(403).json({ 
       error: "Access denied. Admin or Customer Support role required.",
       requiredRole: "admin",

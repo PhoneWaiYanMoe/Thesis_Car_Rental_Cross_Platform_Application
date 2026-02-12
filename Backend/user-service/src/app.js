@@ -104,7 +104,7 @@ async function startServer() {
 
     // Start HTTP server
     const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ User Service HTTP running on port ${PORT}`);
       console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
     });

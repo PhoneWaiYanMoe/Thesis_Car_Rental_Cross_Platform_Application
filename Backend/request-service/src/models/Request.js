@@ -231,7 +231,7 @@ class Request {
   }
 
   static async findByUserId(userId, filters = {}) {
-    let query = "SELECT * FROM requests WHERE user_id = $1";
+    let query = "SELECT * FROM requests WHERE handled_by = $1";
     const values = [userId];
     let paramCount = 2;
 
@@ -258,7 +258,7 @@ class Request {
 
     const result = await pool.query(query, values);
 
-    let countQuery = "SELECT COUNT(*) FROM requests WHERE user_id = $1";
+    let countQuery = "SELECT COUNT(*) FROM requests WHERE handled_by = $1";
     const countValues = [userId];
     let countParamCount = 2;
 

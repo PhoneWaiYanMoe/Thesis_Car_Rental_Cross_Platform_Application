@@ -65,7 +65,7 @@ export default function RequestList() {
       if (filterStatus !== "all") filters.status = filterStatus;
       if (filterCategory !== "all") filters.category = filterCategory;
       if (filterHandler === "me") {
-        filters.handledBy = user?.username || user?.email;
+        filters.handledByMe = true;
       } else if (filterHandler !== "all") {
         filters.handledBy = filterHandler;
       }
@@ -189,15 +189,11 @@ export default function RequestList() {
             }`}
           >
             {tab.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filterStatus === tab.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-[#717685]"
-              }`}
-            >
-              {statusCounts[tab.id]}
-            </span>
+            {filterStatus === tab.id && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                {tab.id === "" ? statusCounts.all : statusCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -214,7 +210,6 @@ export default function RequestList() {
             >
               <option value="title">Title</option>
               <option value="id">ID</option>
-              <option value="customerId">Customer ID</option>
             </select>
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
@@ -288,7 +283,7 @@ export default function RequestList() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white"
               >
                 <option value="all">All Handlers</option>
-                <option value="me">My Requests</option>
+                <option value="me">Handled by Me</option>
               </select>
             </div>
           </div>
@@ -392,11 +387,17 @@ export default function RequestList() {
                         </div>
 
                         <div className="flex items-center gap-3 text-sm text-[#717685] mb-2 flex-wrap">
-                          <span className="font-medium text-xs">Request ID : {req.id}</span>
+                          <span className="font-medium text-xs">
+                            Request ID : {req.id}
+                          </span>
                           <span>•</span>
-                          <span className="text-xs">Category : {req.category}</span>
+                          <span className="text-xs">
+                            Category : {req.category}
+                          </span>
                           <span>•</span>
-                          <span className="text-xs">Requester Email : {req.userEmail}</span>
+                          <span className="text-xs">
+                            Requester Email : {req.userEmail}
+                          </span>
                         </div>
 
                         {/* <p className="text-sm text-[#717685] line-clamp-1">
