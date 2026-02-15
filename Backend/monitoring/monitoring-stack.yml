@@ -121,12 +121,11 @@ services:
           memory: 128M
   # ==================== CADVISOR ====================
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    image: gcr.io/cadvisor/cadvisor:v0.46.0
     command:
       - '--housekeeping_interval=30s'
       - '--docker_only=true'
       - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
-      - '--url_base_prefix=/cadvisor'
     ports:
       - target: 8080
         published: 8080
@@ -140,17 +139,16 @@ services:
     networks:
       - wiz-network
     deploy:
-      mode: global  # Deploy on ALL nodes
+      mode: global
       resources:
         limits:
           cpus: '0.3'
           memory: 256M
       restart_policy:
-        condition: on-failure  
+        condition: on-failure
         delay: 10s
         max_attempts: 3
     privileged: true
-
   # ==================== ALERTMANAGER ====================
   alertmanager:
     image: prom/alertmanager:latest
