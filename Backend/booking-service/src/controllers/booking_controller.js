@@ -386,7 +386,7 @@ class BookingController {
 
         await client.query(
           `INSERT INTO bookings (
-            booking_id, customer_id, vehicle_id,
+            booking_id, customer_id, vehicle_id, owner_id,
             start_date, end_date, duration_days,
             pickup_location, dropoff_location,
             driver_required, insurance_coverage,
@@ -394,11 +394,12 @@ class BookingController {
             deposit_amount, remaining_payment,
             payment_method_id, additional_notes,
             status, payment_expiry, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW())`,
           [
             bookingId,
             userId,
             vehicleId,
+            vehicleOwnerId,
             startDate,
             endDate,
             days,

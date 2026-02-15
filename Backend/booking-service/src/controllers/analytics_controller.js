@@ -324,6 +324,143 @@ class AnalyticsController {
       next(error);
     }
   }
+
+  // Analytics for owner & customer (JWT-based)
+  async getBookingAnalyticsOwner(req, res, next) {
+    try {
+      const userId = req.user.userId;
+
+      const { range = "all", startDate, endDate } = req.query;
+
+      let dateFilter = "";
+      const params = [];
+      let idx = 1;
+
+      // ---- Time range handling ----
+      switch (range) {
+        case "today":
+          dateFilter = `AND created_at >= CURRENT_DATE`;
+          break;
+
+        case "this_week":
+          dateFilter = `AND created_at >= date_trunc('week', CURRENT_DATE)`;
+          break;
+
+        case "this_month":
+          dateFilter = `AND created_at >= date_trunc('month', CURRENT_DATE)`;
+          break;
+
+        case "this_year":
+          dateFilter = `AND created_at >= date_trunc('year', CURRENT_DATE)`;
+          break;
+
+        case "custom":
+          if (!startDate || !endDate) {
+            return res.status(400).json({
+              error: "startDate and endDate are required for custom range",
+            });
+          }
+          dateFilter = `AND created_at BETWEEN $${idx} AND $${idx + 1}`;
+          params.push(startDate, endDate);
+          idx += 2;
+          break;
+
+        case "all":
+        default:
+          // no filter
+          break;
+      }
+
+      // ---- BOOKINGS AS CUSTOMER ----
+      const customerQuery = `
+      SELECT
+        COUNT(*) AS total_bookings,
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_bookings,
+        COALESCE(SUM(total_amount) FILTER (WHERE status = 'completed'), 0) AS completed_revenue
+      FROM bookings
+      WHERE customer_id = $${idx}
+      ${dateFilter}
+    `;
+      params.push(userId);
+      idx++;
+
+      const customerResult = await pool.query(customerQuery, params);
+      const customerStats = customerResult.rows[0];
+
+      // ---- GET OWNER VEHICLES (via gRPC) ----
+      let ownerVehicleIds = [];
+      try {
+        const vehicles = await vehicleGrpcClient.getOwnerVehicles(userId);
+        ownerVehicleIds = vehicles.map((v) => v.vehicle_id);
+      } catch (err) {
+        return res.status(503).json({
+          error: "Vehicle service unavailable",
+        });
+      }
+
+      if (ownerVehicleIds.length === 0) {
+        // Owner has no vehicles — return zeroed analytics safely
+        return res.json({
+          range,
+          customer: {
+            totalBookings: Number(customerStats.total_bookings),
+            completedBookings: Number(customerStats.completed_bookings),
+            completedRevenue: Number(customerStats.completed_revenue),
+          },
+          owner: {
+            totalBookings: 0,
+            completedBookings: 0,
+            completedRevenue: 0,
+            expectedRevenue: 0,
+            activeBookings: 0,
+            cancelledBookings: 0,
+            pendingToAccept: 0,
+          },
+        });
+      }
+
+      // ---- BOOKINGS AS OWNER ----
+      const ownerQuery = `
+      SELECT
+        COUNT(*) AS total_bookings,
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_bookings,
+        COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_bookings,
+        COUNT(*) FILTER (WHERE status = 'pending') AS pending_to_accept,
+        COUNT(*) AS active_bookings,
+        COALESCE(SUM(total_amount) FILTER (WHERE status = 'completed'), 0) AS completed_revenue,
+        COALESCE(SUM(total_amount) FILTER (WHERE status != 'completed'), 0) AS expected_revenue
+      FROM bookings
+      WHERE vehicle_id = ANY($${idx})
+      ${dateFilter}
+    `;
+      params.push(ownerVehicleIds);
+
+      const ownerResult = await pool.query(ownerQuery, params);
+      const ownerStats = ownerResult.rows[0];
+
+      // ---- FINAL RESPONSE ----
+      res.json({
+        range,
+        customer: {
+          totalBookings: Number(customerStats.total_bookings),
+          completedBookings: Number(customerStats.completed_bookings),
+          completedRevenue: Number(customerStats.completed_revenue),
+        },
+        owner: {
+          totalBookings: Number(ownerStats.total_bookings),
+          completedBookings: Number(ownerStats.completed_bookings),
+          completedRevenue: Number(ownerStats.completed_revenue),
+          expectedRevenue: Number(ownerStats.expected_revenue),
+          activeBookings: Number(ownerStats.active_bookings),
+          cancelledBookings: Number(ownerStats.cancelled_bookings),
+          pendingToAccept: Number(ownerStats.pending_to_accept),
+        },
+      });
+    } catch (error) {
+      console.error("Booking analytics error:", error);
+      next(error);
+    }
+  }
 }
 
 module.exports = new AnalyticsController();

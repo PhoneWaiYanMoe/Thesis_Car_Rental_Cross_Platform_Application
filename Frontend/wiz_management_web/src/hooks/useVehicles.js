@@ -21,13 +21,21 @@ export const useVehicles = () => {
 
       // Add filters to query params
       if (filters.status) params.append("status", filters.status);
-      if (filters.ownerId) params.append("ownerId", filters.ownerId);
+      // if (filters.vehicleId) params.append("vehicleId", filters.vehicleId);
+      // if (filters.ownerId) params.append("ownerId", filters.ownerId);
       if (filters.vehicleType)
         params.append("vehicleType", filters.vehicleType);
       if (filters.page) params.append("page", filters.page);
       if (filters.limit) params.append("limit", filters.limit);
-      if (filters.search) params.append("search", filters.search);
-      if (filters.searchBy) params.append("searchBy", filters.searchBy);
+      if (filters.searchBy === "vehicleId") {
+        params.append("vehicleId", filters.search);
+      } else if (filters.searchBy === "ownerId") {
+        params.append("ownerId", filters.search);
+      }
+      else {
+        params.append("searchBy", filters.searchBy);
+        if (filters.search) params.append("search", filters.search);
+      }
 
       const url = `${API_ENDPOINTS.VEHICLES.BASE}/admin/vehicles${params.toString() ? "?" + params.toString() : ""}`;
       const response = await apiClient.get(url);

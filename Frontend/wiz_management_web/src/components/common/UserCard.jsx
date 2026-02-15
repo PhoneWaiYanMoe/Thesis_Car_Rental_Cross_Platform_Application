@@ -84,8 +84,8 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
           </div>
           {user.type === "owner" && (
             <div>
-              <p className="text-sm text-[#717685]">Cars</p>
-              <p className="font-bold text-[#131A34]">{user.totalCars || 0}</p>
+              <p className="text-sm text-[#717685]">Rentals</p>
+              <p className="font-bold text-[#131A34]">{user.totalRentals || 0}</p>
             </div>
           )}
           <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />

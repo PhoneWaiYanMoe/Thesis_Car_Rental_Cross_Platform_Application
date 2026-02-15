@@ -497,7 +497,7 @@ export default function UserDetail() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#717685]">Verified</span>
+                <span className="text-[#717685]">License Verified</span>
                 <span className="font-semibold text-[#131A34]">
                   {user.verified ? "Yes" : "No"}
                 </span>

@@ -1,0 +1,294 @@
+// lib/screens/Analytics/services/analytics_api_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:wiz/services/local_storage_service.dart';
+
+class AnalyticsApiService {
+  static const String baseUrl = 'http://localhost:3009'; // analytics-service
+  // static const String baseUrl = 'http://10.0.2.2:3009'; // For Android emulator
+
+  final _localStorageService = LocalStorageService();
+
+  // Get auth token
+  Future<String?> _getAuthToken() async {
+    try {
+      final token = await _localStorageService.getToken();
+      return token;
+    } catch (e) {
+      print('❌ Error getting auth token: $e');
+      return null;
+    }
+  }
+
+  /// Get owner dashboard analytics
+  /// timeRange: 1d, 7d, 30d, 90d, 365d, all, custom
+  Future<Map<String, dynamic>> getOwnerDashboard({
+    String timeRange = '30d',
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        return {'success': false, 'error': 'Authentication required'};
+      }
+
+      final queryParams = <String, String>{'timeRange': timeRange};
+
+      if (timeRange == 'custom' && startDate != null && endDate != null) {
+        queryParams['startDate'] = startDate.toIso8601String();
+        queryParams['endDate'] = endDate.toIso8601String();
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/analytics/owner/dashboard',
+      ).replace(queryParameters: queryParams);
+
+      print('📊 Fetching analytics: $uri');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📥 Analytics response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Analytics data loaded successfully');
+        return {'success': true, 'data': data['data']};
+      } else if (response.statusCode == 401) {
+        return {'success': false, 'error': 'Unauthorized - Please login again'};
+      } else if (response.statusCode == 403) {
+        return {'success': false, 'error': 'Owner role required'};
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': errorData['error'] ?? 'Failed to load analytics',
+        };
+      }
+    } catch (e) {
+      print('❌ Analytics API error: $e');
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
+  }
+
+  /// Get customer analytics (for when user rents cars)
+  Future<Map<String, dynamic>> getCustomerAnalytics({
+    String timeRange = '30d',
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        return {'success': false, 'error': 'Authentication required'};
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/analytics/customer/summary',
+      ).replace(queryParameters: {'timeRange': timeRange});
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data['data']};
+      } else {
+        return {'success': false, 'error': 'Failed to load customer analytics'};
+      }
+    } catch (e) {
+      print('❌ Customer analytics error: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+}
+
+// ==================== MODELS ====================
+
+class AnalyticsDashboard {
+  final VehicleAnalytics vehicles;
+  final BookingAnalytics bookings;
+  final RevenueAnalytics revenue;
+  final ReviewAnalytics reviews;
+  final String timeRange;
+
+  AnalyticsDashboard({
+    required this.vehicles,
+    required this.bookings,
+    required this.revenue,
+    required this.reviews,
+    required this.timeRange,
+  });
+
+  factory AnalyticsDashboard.fromJson(Map<String, dynamic> json) {
+    return AnalyticsDashboard(
+      vehicles: VehicleAnalytics.fromJson(json['vehicles'] ?? {}),
+      bookings: BookingAnalytics.fromJson(json['bookings'] ?? {}),
+      revenue: RevenueAnalytics.fromJson(json['revenue'] ?? {}),
+      reviews: ReviewAnalytics.fromJson(json['reviews'] ?? {}),
+      timeRange: json['timeRange'] ?? '30d',
+    );
+  }
+}
+
+class VehicleAnalytics {
+  final int totalVehicles;
+  final int activeVehicles;
+  final int rentedVehicles;
+  final int availableVehicles;
+  final double averageRating;
+  final int totalRentals;
+  final double utilizationRate;
+
+  VehicleAnalytics({
+    required this.totalVehicles,
+    required this.activeVehicles,
+    required this.rentedVehicles,
+    required this.availableVehicles,
+    required this.averageRating,
+    required this.totalRentals,
+    required this.utilizationRate,
+  });
+
+  factory VehicleAnalytics.fromJson(Map<String, dynamic> json) {
+    return VehicleAnalytics(
+      totalVehicles: json['totalVehicles'] ?? 0,
+      activeVehicles: json['activeVehicles'] ?? 0,
+      rentedVehicles: json['rentedVehicles'] ?? 0,
+      availableVehicles: json['availableVehicles'] ?? 0,
+      averageRating: (json['averageRating'] ?? 0).toDouble(),
+      totalRentals: json['totalRentals'] ?? 0,
+      utilizationRate: (json['utilizationRate'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class BookingAnalytics {
+  final int totalBookings;
+  final int activeBookings;
+  final int completedBookings;
+  final int cancelledBookings;
+  final double acceptanceRate;
+  final double averageDuration;
+  final List<TrendData> trend;
+
+  BookingAnalytics({
+    required this.totalBookings,
+    required this.activeBookings,
+    required this.completedBookings,
+    required this.cancelledBookings,
+    required this.acceptanceRate,
+    required this.averageDuration,
+    required this.trend,
+  });
+
+  factory BookingAnalytics.fromJson(Map<String, dynamic> json) {
+    return BookingAnalytics(
+      totalBookings: json['totalBookings'] ?? 0,
+      activeBookings: json['activeBookings'] ?? 0,
+      completedBookings: json['completedBookings'] ?? 0,
+      cancelledBookings: json['cancelledBookings'] ?? 0,
+      acceptanceRate: (json['acceptanceRate'] ?? 0).toDouble(),
+      averageDuration: (json['averageDuration'] ?? 0).toDouble(),
+      trend:
+          (json['trend'] as List<dynamic>?)
+              ?.map((t) => TrendData.fromJson(t))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class RevenueAnalytics {
+  final int totalRevenue;
+  final int pendingRevenue;
+  final int completedRevenue;
+  final int refundedAmount;
+  final int averageBookingValue;
+  final double growth;
+  final List<TrendData> trend;
+
+  RevenueAnalytics({
+    required this.totalRevenue,
+    required this.pendingRevenue,
+    required this.completedRevenue,
+    required this.refundedAmount,
+    required this.averageBookingValue,
+    required this.growth,
+    required this.trend,
+  });
+
+  factory RevenueAnalytics.fromJson(Map<String, dynamic> json) {
+    return RevenueAnalytics(
+      totalRevenue: json['totalRevenue'] ?? 0,
+      pendingRevenue: json['pendingRevenue'] ?? 0,
+      completedRevenue: json['completedRevenue'] ?? 0,
+      refundedAmount: json['refundedAmount'] ?? 0,
+      averageBookingValue: json['averageBookingValue'] ?? 0,
+      growth: (json['growth'] ?? 0).toDouble(),
+      trend:
+          (json['trend'] as List<dynamic>?)
+              ?.map((t) => TrendData.fromJson(t))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class ReviewAnalytics {
+  final double averageRating;
+  final int totalReviews;
+  final int vehicleReviews;
+  final int ownerReviews;
+  final Map<String, int> ratingDistribution;
+
+  ReviewAnalytics({
+    required this.averageRating,
+    required this.totalReviews,
+    required this.vehicleReviews,
+    required this.ownerReviews,
+    required this.ratingDistribution,
+  });
+
+  factory ReviewAnalytics.fromJson(Map<String, dynamic> json) {
+    final distribution = json['ratingDistribution'] as Map<String, dynamic>?;
+    final ratingMap = <String, int>{};
+
+    if (distribution != null) {
+      distribution.forEach((key, value) {
+        ratingMap[key] = value as int? ?? 0;
+      });
+    }
+
+    return ReviewAnalytics(
+      averageRating: (json['averageRating'] ?? 0).toDouble(),
+      totalReviews: json['totalReviews'] ?? 0,
+      vehicleReviews: json['vehicleReviews'] ?? 0,
+      ownerReviews: json['ownerReviews'] ?? 0,
+      ratingDistribution: ratingMap,
+    );
+  }
+}
+
+class TrendData {
+  final String period;
+  final int value;
+
+  TrendData({required this.period, required this.value});
+
+  factory TrendData.fromJson(Map<String, dynamic> json) {
+    return TrendData(
+      period: json['period'] ?? '',
+      value: json['value'] ?? json['count'] ?? json['revenue'] ?? 0,
+    );
+  }
+}

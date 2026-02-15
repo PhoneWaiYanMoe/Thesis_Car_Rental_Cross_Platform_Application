@@ -15,6 +15,7 @@ class UserController {
         page = 1,
         limit = 20,
         search = "",
+        searchBy = "",
         role = "",
         status = "",
         sortBy = "created_at",
@@ -23,39 +24,61 @@ class UserController {
         includeSupport = "false",
       } = req.query;
 
-      // Build WHERE clause
       const conditions = [];
       const params = [];
       let paramCount = 1;
 
       // Exclude admin and support unless explicitly requested
       if (includeAdmin === "false" && includeSupport === "false") {
-        conditions.push(`role NOT IN ('admin', 'support')`);
+        conditions.push(`u.role NOT IN ('admin', 'support')`);
       } else if (includeAdmin === "false") {
-        conditions.push(`role != 'admin'`);
+        conditions.push(`u.role != 'admin'`);
       } else if (includeSupport === "false") {
-        conditions.push(`role != 'support'`);
+        conditions.push(`u.role != 'support'`);
       }
 
-      // Search by name, email, or ID
+      // Search logic
       if (search && search.trim() !== "") {
-        conditions.push(
-          `(full_name ILIKE $${paramCount} OR email ILIKE $${paramCount} OR user_id::text = $${paramCount})`,
-        );
-        params.push(`%${search}%`);
-        paramCount++;
+        switch (searchBy) {
+          case "fullName":
+            conditions.push(`u.full_name ILIKE $${paramCount}`);
+            params.push(`%${search}%`);
+            paramCount++;
+            break;
+
+          case "email":
+            conditions.push(`u.email ILIKE $${paramCount}`);
+            params.push(`%${search}%`);
+            paramCount++;
+            break;
+
+          case "id":
+            conditions.push(`u.user_id::text = $${paramCount}`);
+            params.push(search);
+            paramCount++;
+            break;
+
+          default:
+            conditions.push(
+              `(u.full_name ILIKE $${paramCount}
+              OR u.email ILIKE $${paramCount}
+              OR u.user_id::text = $${paramCount})`,
+            );
+            params.push(`%${search}%`);
+            paramCount++;
+        }
       }
 
       // Filter by role
       if (role && role.trim() !== "") {
-        conditions.push(`role = $${paramCount}`);
+        conditions.push(`u.role = $${paramCount}`);
         params.push(role);
         paramCount++;
       }
 
       // Filter by status
       if (status && status.trim() !== "") {
-        conditions.push(`status = $${paramCount}`);
+        conditions.push(`u.status = $${paramCount}`);
         params.push(status);
         paramCount++;
       }
@@ -76,43 +99,44 @@ class UserController {
         : "created_at";
       const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
-      // Get total count
+      // Total count
       const countResult = await pool.query(
-        `SELECT COUNT(*) FROM users ${whereClause}`,
+        `SELECT COUNT(*) FROM users u ${whereClause}`,
         params,
       );
-      const total = parseInt(countResult.rows[0].count);
+      const total = parseInt(countResult.rows[0].count, 10);
 
-      // Get users with statistics
-      params.push(parseInt(limit));
-      params.push((parseInt(page) - 1) * parseInt(limit));
+      // Pagination
+      params.push(parseInt(limit, 10));
+      params.push((parseInt(page, 10) - 1) * parseInt(limit, 10));
 
+      // Main query
       const result = await pool.query(
         `SELECT 
-          u.user_id,
-          u.email,
-          u.full_name,
-          u.phone,
-          u.role,
-          u.status,
-          u.license_status,
-          u.owner_status,
-          u.is_verified,
-          u.avatar_url,
-          u.created_at,
-          u.updated_at,
-          s.total_bookings_as_customer,
-          s.completed_bookings_as_customer,
-          s.total_rentals_as_owner,
-          s.average_rating_as_customer,
-          s.average_rating_as_owner,
-          s.total_spent,
-          s.total_earned
-         FROM users u
-         LEFT JOIN user_statistics s ON u.user_id = s.user_id
-         ${whereClause}
-         ORDER BY u.${sortColumn} ${order}
-         LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
+        u.user_id,
+        u.email,
+        u.full_name,
+        u.phone,
+        u.role,
+        u.status,
+        u.license_status,
+        u.owner_status,
+        u.is_verified,
+        u.avatar_url,
+        u.created_at,
+        u.updated_at,
+        s.total_bookings_as_customer,
+        s.completed_bookings_as_customer,
+        s.total_rentals_as_owner,
+        s.average_rating_as_customer,
+        s.average_rating_as_owner,
+        s.total_spent,
+        s.total_earned
+      FROM users u
+      LEFT JOIN user_statistics s ON u.user_id = s.user_id
+      ${whereClause}
+      ORDER BY u.${sortColumn} ${order}
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
         params,
       );
 
@@ -120,9 +144,9 @@ class UserController {
         users: result.rows,
         pagination: {
           total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(total / parseInt(limit)),
+          page: parseInt(page, 10),
+          limit: parseInt(limit, 10),
+          totalPages: Math.ceil(total / parseInt(limit, 10)),
         },
       });
     } catch (error) {
@@ -141,6 +165,7 @@ class UserController {
         page = 1,
         limit = 20,
         search = "",
+        searchBy = "",
         status = "",
         sortBy = "created_at",
         sortOrder = "DESC",
@@ -153,24 +178,45 @@ class UserController {
       }
 
       // 2. Build WHERE clause (ONLY admin + support)
-      const conditions = [`role IN ('support', 'admin')`];
+      const conditions = [`users.role IN ('support', 'admin')`];
       const params = [];
       let paramCount = 1;
 
-      // Search (name, email, user_id)
+      // Search logic
       if (search && search.trim() !== "") {
-        conditions.push(
-          `(full_name ILIKE $${paramCount} 
-          OR email ILIKE $${paramCount} 
-          OR user_id::text = $${paramCount})`,
-        );
-        params.push(`%${search}%`);
-        paramCount++;
+        switch (searchBy) {
+          case "fullName":
+            conditions.push(`users.full_name ILIKE $${paramCount}`);
+            params.push(`%${search}%`);
+            paramCount++;
+            break;
+
+          case "email":
+            conditions.push(`users.email ILIKE $${paramCount}`);
+            params.push(`%${search}%`);
+            paramCount++;
+            break;
+
+          case "id":
+            conditions.push(`users.user_id::text = $${paramCount}`);
+            params.push(search);
+            paramCount++;
+            break;
+
+          default:
+            conditions.push(
+              `(users.full_name ILIKE $${paramCount}
+              OR users.email ILIKE $${paramCount}
+              OR users.user_id::text = $${paramCount})`,
+            );
+            params.push(`%${search}%`);
+            paramCount++;
+        }
       }
 
-      // Filter by status (NOTE: admin usually has NULL status)
+      // Filter by status (admin may have NULL)
       if (status && status.trim() !== "") {
-        conditions.push(`status = $${paramCount}`);
+        conditions.push(`users.status = $${paramCount}`);
         params.push(status);
         paramCount++;
       }
@@ -179,7 +225,6 @@ class UserController {
 
       // 3. Validate sort column
       const allowedSortColumns = ["full_name", "email", "status", "created_at"];
-
       const sortColumn = allowedSortColumns.includes(sortBy)
         ? sortBy
         : "created_at";
@@ -201,19 +246,19 @@ class UserController {
       const usersResult = await pool.query(
         `
       SELECT 
-        user_id,
-        email,
-        full_name,
-        phone,
-        role,
-        status,
-        is_verified,
-        avatar_url,
-        created_at,
-        updated_at
+        users.user_id,
+        users.email,
+        users.full_name,
+        users.phone,
+        users.role,
+        users.status,
+        users.is_verified,
+        users.avatar_url,
+        users.created_at,
+        users.updated_at
       FROM users
       ${whereClause}
-      ORDER BY ${sortColumn} ${order}
+      ORDER BY users.${sortColumn} ${order}
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
       `,
         params,
@@ -233,9 +278,6 @@ class UserController {
       const users = usersResult.rows.map((user) => {
         const perf = analyticsMap[String(user.user_id)];
 
-        // const isAdmin = user.role === "admin";
-        console.log('User:', user.user_id, 'name:', user.full_name, 'Performance:', perf);
-
         return {
           id: user.user_id,
           email: user.email,
@@ -248,12 +290,12 @@ class UserController {
           joinedDate: user.created_at,
 
           // Analytics
-          totalHandled: (perf?.totalHandled ?? 0),
-          totalApproved: (perf?.approved ?? 0),
-          totalDenied: (perf?.denied ?? 0),
-          avgResponseTime: (perf?.avgResponseTime ?? null),
-          approvalRate: (perf?.approvalRate ?? 0),
-          byCategory: (perf?.byCategory ?? {}),
+          totalHandled: perf?.totalHandled ?? 0,
+          totalApproved: perf?.approved ?? 0,
+          totalDenied: perf?.denied ?? 0,
+          avgResponseTime: perf?.avgResponseTime ?? null,
+          approvalRate: perf?.approvalRate ?? 0,
+          byCategory: perf?.byCategory ?? {},
         };
       });
 
@@ -443,6 +485,64 @@ class UserController {
       res.json({ user });
     } catch (error) {
       console.error("Get user by ID error:", error);
+      next(error);
+    }
+  }
+
+  // get /users/:userId/logged-in-as get logged in as by userId
+  async getLoggedInAsById(req, res, next) {
+    try {
+      const { userId } = req.params;
+
+      const result = await pool.query(
+        `SELECT *
+         FROM users
+         WHERE user_id = $1`,
+        [userId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Don't return password hash
+      const user = result.rows[0];
+      delete user.password_hash;
+
+      res.json({ logged_in_as: user.logged_in_as });
+    } catch (error) {
+      console.error("Get user's logged in as status by ID error:", error);
+      next(error);
+    }
+  }
+
+  // put /users/:userId/logged-in-as update logged in as by userId
+  async updateLoggedInAsById(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { logged_in_as } = req.body;
+
+      if (!["customer", "owner"].includes(logged_in_as)) {
+        return res.status(400).json({
+          error: "Invalid logged_in_as value. Must be 'customer' or 'owner'.",
+        });
+      }
+
+      const result = await pool.query(
+        `UPDATE users
+         SET logged_in_as = $1, updated_at = NOW()
+         WHERE user_id = $2
+         RETURNING logged_in_as`,
+        [logged_in_as, userId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ message: "Logged in as updated successfully", logged_in_as: result.rows[0].logged_in_as });
+    } catch (error) {
+      console.error("Update user's logged in as status by ID error:", error);
       next(error);
     }
   }

@@ -29,4 +29,11 @@ router.get(
   (req, res, next) => analyticsController.getVehicleStats(req, res, next),
 );
 
+router.get(
+  "/bookings/owner/analytics",
+  authenticate,
+  requireOwner,
+  (req, res, next) => analyticsController.getBookingAnalyticsOwner(req, res, next),
+);
+
 module.exports = router;

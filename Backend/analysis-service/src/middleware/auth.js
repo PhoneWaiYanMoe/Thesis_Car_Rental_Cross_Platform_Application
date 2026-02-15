@@ -32,7 +32,7 @@ const requireRole = (...allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role) && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Insufficient permissions",

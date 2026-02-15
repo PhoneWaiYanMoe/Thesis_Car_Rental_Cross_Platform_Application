@@ -45,7 +45,7 @@ export default function CarManagement() {
 
       if (filterStatus !== "all") filters.status = filterStatus;
       if (filterType !== "all") filters.vehicleType = filterType;
-      if (ownerId) filters.ownerId = ownerId;
+      // if (ownerId) filters.ownerId = ownerId;
       if (searchTerm && searchBy) {
         filters.search = searchTerm;
         filters.searchBy = searchBy;
@@ -139,15 +139,11 @@ export default function CarManagement() {
             }`}
           >
             {tab.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filterStatus === tab.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-[#717685]"
-              }`}
-            >
-              {statusCounts[tab.id]}
-            </span>
+            {filterStatus === tab.id && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                {tab.id === "" ? statusCounts.all : statusCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -162,10 +158,9 @@ export default function CarManagement() {
               onChange={(e) => setSearchBy(e.target.value)}
               className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white font-medium text-[#131A34]"
             >
-              <option value="name">Name</option>
-              <option value="id">ID</option>
+              <option value="name">Name or License Plate</option>
+              <option value="vehicleId">ID</option>
               <option value="ownerId">Owner ID</option>
-              <option value="licensePlate">License Plate</option>
             </select>
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />

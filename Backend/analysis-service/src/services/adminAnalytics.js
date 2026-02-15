@@ -100,11 +100,14 @@ class AdminAnalyticsService {
    */
   async getVehicleStats(timeRange, token) {
     try {
-      // This will call: GET /analytics/vehicles/stats
-      const stats = await vehicleService.get("/analytics/vehicles/stats", {
-        params: { timeRange },
-        token,
-      });
+      // This will call: GET /vehicles/analytics/vehicles/stats
+      const stats = await vehicleService.get(
+        "/vehicles/analytics/vehicles/stats",
+        {
+          params: { timeRange },
+          token,
+        },
+      );
 
       return {
         total: stats.total || 0,
@@ -233,13 +236,10 @@ class AdminAnalyticsService {
    */
   async getUserGrowthAnalytics(filters = {}, token) {
     try {
-      const analytics = await userService.get(
-        "/analytics/users/growth",
-        {
-          params: { ...filters },
-          token,
-        },
-      );
+      const analytics = await userService.get("/analytics/users/growth", {
+        params: { ...filters },
+        token,
+      });
 
       return {
         growth: analytics.growth || [],

@@ -23,10 +23,14 @@ export default function StaffManagement() {
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchBy, setSearchBy] = useState("fullName"); // fullName, email, id
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("DESC");
   const [showFilters, setShowFilters] = useState(false);
+
+  const userTypes = ["all", "customer", "owner"];
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +88,10 @@ export default function StaffManagement() {
       // Only add search if there's a value
       if (searchTerm.trim()) {
         params.search = searchTerm.trim();
+      }
+
+      if (searchBy) {
+        params.searchBy = searchBy;
       }
 
       // Only add status filter if selected
@@ -364,15 +372,11 @@ export default function StaffManagement() {
             }`}
           >
             {tab.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filterStatus === tab.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-[#717685]"
-              }`}
-            >
-              {tab.id === "" ? statusCounts.all : statusCounts[tab.id] || 0}
-            </span>
+            {filterStatus === tab.id && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                {tab.id === "" ? statusCounts.all : statusCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -382,6 +386,15 @@ export default function StaffManagement() {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 flex gap-2">
+            <select
+              value={searchBy}
+              onChange={(e) => setSearchBy(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white font-medium text-[#131A34]"
+            >
+              <option value="fullName">Name</option>
+              <option value="email">Email</option>
+              <option value="id">ID</option>
+            </select>
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#717685]" />
               <input
@@ -389,7 +402,7 @@ export default function StaffManagement() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search by name, email, or ID..."
+                placeholder={`Search by ${searchBy}...`}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none transition-all"
               />
             </div>
@@ -401,50 +414,40 @@ export default function StaffManagement() {
             </button>
           </div>
 
-          {/* Filter Button */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-6 py-3 border border-gray-200 rounded-xl hover:bg-[#F8F9FF] transition-all font-semibold text-[#131A34]"
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-6 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white font-semibold text-[#131A34]"
           >
-            <Filter className="w-5 h-5" />
-            Sort
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${
-                showFilters ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+            <option value="name">Sort by Name</option>
+            <option value="joined">Sort by Join Date</option>
+            <option value="bookings">Sort by Bookings</option>
+            <option value="rentals">Sort by Rentals</option>
+          </select>
         </div>
 
-        {/* Sort Options */}
+        {/* Advanced Filters */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-4 pt-4 border-t border-gray-100">
             <div>
               <label className="block text-sm font-semibold text-[#131A34] mb-2">
-                Sort By
+                User Type
               </label>
               <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white"
               >
-                <option value="full_name">Name</option>
-                <option value="email">Email</option>
-                <option value="created_at">Join Date</option>
-                <option value="status">Status</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#131A34] mb-2">
-                Order
-              </label>
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#6679C0] focus:ring-2 focus:ring-[#6679C0]/20 focus:outline-none bg-white"
-              >
-                <option value="ASC">Ascending</option>
-                <option value="DESC">Descending</option>
+                {userTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type === "all"
+                      ? "All Types"
+                      : type === "customer"
+                        ? "Customers"
+                        : "Car Owners"}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -662,26 +665,26 @@ export default function StaffManagement() {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
+      {!loading && !error && staff.length > 0 && (
         <div className="mt-6 flex items-center justify-center gap-2">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34]
+                 hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Previous
           </button>
+
           <span className="px-4 py-2 text-[#717685] font-medium">
-            Page {currentPage} of {pagination.totalPages}
+            Page {currentPage}
           </span>
+
           <button
-            onClick={() =>
-              setCurrentPage((prev) =>
-                Math.min(pagination.totalPages, prev + 1),
-              )
-            }
-            disabled={currentPage === pagination.totalPages}
-            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34] hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            disabled={staff.length < itemsPerPage}
+            className="px-4 py-2 border border-gray-200 rounded-xl font-semibold text-[#131A34]
+                 hover:bg-[#F8F9FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Next
           </button>

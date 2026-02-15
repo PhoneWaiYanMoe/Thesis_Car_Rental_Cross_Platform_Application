@@ -23,6 +23,7 @@ export const useRequests = () => {
       if (filters.status) params.append("status", filters.status);
       if (filters.category) params.append("category", filters.category);
       if (filters.handledBy) params.append("handledBy", filters.handledBy);
+      if (filters.handledByMe) params.append("handledByMe", filters.handledByMe);
       if (filters.page) params.append("page", filters.page);
       if (filters.limit) params.append("limit", filters.limit);
       if (filters.search) params.append("search", filters.search);

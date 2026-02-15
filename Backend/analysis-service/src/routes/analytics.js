@@ -25,7 +25,10 @@ router.get(
         });
       }
 
-      const stats = await adminAnalytics.getDashboardStats(timeRange, req.headers.authorization);
+      const stats = await adminAnalytics.getDashboardStats(
+        timeRange,
+        req.headers.authorization,
+      );
 
       // Cache for 5 minutes
       setCached(cacheKey, stats, 300);
@@ -52,7 +55,10 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getBookingAnalytics(filters, req.headers.authorization);
+      const analytics = await adminAnalytics.getBookingAnalytics(
+        filters,
+        req.headers.authorization,
+      );
 
       res.json({
         success: true,
@@ -76,7 +82,10 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getRevenueAnalytics(filters, req.headers.authorization);
+      const analytics = await adminAnalytics.getRevenueAnalytics(
+        filters,
+        req.headers.authorization,
+      );
 
       res.json({
         success: true,
@@ -100,7 +109,10 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const analytics = await adminAnalytics.getUserGrowthAnalytics(filters, req.headers.authorization);
+      const analytics = await adminAnalytics.getUserGrowthAnalytics(
+        filters,
+        req.headers.authorization,
+      );
 
       res.json({
         success: true,
@@ -124,7 +136,10 @@ router.get(
   async (req, res) => {
     try {
       const filters = req.query;
-      const performance = await adminAnalytics.getStaffPerformance(filters, req.headers.authorization);
+      const performance = await adminAnalytics.getStaffPerformance(
+        filters,
+        req.headers.authorization,
+      );
 
       res.json({
         success: true,
@@ -163,7 +178,11 @@ router.get(
         });
       }
 
-      const stats = await ownerAnalytics.getOwnerDashboard(ownerId, timeRange, req.headers.authorization);
+      const stats = await ownerAnalytics.getOwnerDashboard(
+        ownerId,
+        timeRange,
+        req.headers.authorization,
+      );
 
       // Cache for 5 minutes
       setCached(cacheKey, stats, 300);
@@ -197,7 +216,7 @@ router.get(
         vehicleId,
         ownerId,
         timeRange,
-        req.headers.authorization
+        req.headers.authorization,
       );
 
       res.json({
@@ -235,7 +254,7 @@ router.get(
       const comparison = await ownerAnalytics.getVehicleComparison(
         ownerId,
         timeRange,
-        req.headers.authorization
+        req.headers.authorization,
       );
 
       res.json({

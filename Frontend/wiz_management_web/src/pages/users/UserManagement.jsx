@@ -123,15 +123,11 @@ export default function UserManagement() {
             }`}
           >
             {tab.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filterStatus === tab.id
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-100 text-[#717685]"
-              }`}
-            >
-              {statusCounts[tab.id]}
-            </span>
+            {filterStatus === tab.id && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                {tab.id === "" ? statusCounts.all : statusCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>

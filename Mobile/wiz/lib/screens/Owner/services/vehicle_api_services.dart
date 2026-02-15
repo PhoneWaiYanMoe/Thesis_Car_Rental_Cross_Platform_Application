@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class VehicleApiService {
-  static const String baseUrl = 'http://10.0.2.2:3002';
+  // static const String baseUrl = 'http://10.0.2.2:3002';
+  static const String baseUrl = 'http://localhost:3002';
   final _localStorageService = LocalStorageService();
 
   // Get auth token
