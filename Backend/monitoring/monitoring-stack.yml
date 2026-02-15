@@ -95,11 +95,13 @@ services:
   # ==================== NODE EXPORTER ====================
   node-exporter:
     image: prom/node-exporter:latest
+    hostname: "{{.Node.Hostname}}"
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    pid: host
     ports:
       - target: 9100
         published: 9100
@@ -111,12 +113,11 @@ services:
     networks:
       - wiz-network
     deploy:
-      mode: global  # Deploy on ALL nodes
+      mode: global
       resources:
         limits:
           cpus: '0.2'
           memory: 128M
-
   # # ==================== CADVISOR ====================
   # cadvisor:
   #   image: gcr.io/cadvisor/cadvisor:v0.47.0
