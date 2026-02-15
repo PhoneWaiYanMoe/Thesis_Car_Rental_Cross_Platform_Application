@@ -20,10 +20,13 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'node-exporter'
-    dns_sd_configs:
-      - names: ['tasks.node-exporter']
-        type: 'A'
-        port: 9100
+    static_configs:
+      - targets:
+          - '10.104.0.2:9100'   
+          - '10.104.0.5:9100'   
+          - '10.104.0.6:9100'   
+        labels:
+          job: 'node-exporter'
 
   # - job_name: 'cadvisor'
   #   dns_sd_configs:
