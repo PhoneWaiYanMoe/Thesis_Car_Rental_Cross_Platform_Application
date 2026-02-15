@@ -145,6 +145,10 @@ services:
         limits:
           cpus: '0.3'
           memory: 256M
+    restart_policy:
+        condition: on-failure  
+        delay: 10s
+        max_attempts: 3
     privileged: true
 
   # ==================== ALERTMANAGER ====================
