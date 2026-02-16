@@ -52,7 +52,7 @@ filebeat.inputs:
 
 # Output to Logstash
 output.logstash:
-  hosts: ["elk_logstash:5044"]
+  hosts: ["10.104.0.2:5044"]
   timeout: 30
   max_retries: 3
   backoff.init: 1s
