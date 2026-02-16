@@ -93,7 +93,7 @@ services:
     image: docker.elastic.co/logstash/logstash:8.11.0
     environment:
       - XPACK_MONITORING_ENABLED=false
-      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+      - LS_JAVA_OPTS=-Xms256m -Xmx384m
       - LOG_LEVEL=info
       - HTTP_HOST=0.0.0.0
       - HTTP_PORT=9600
@@ -118,7 +118,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 768M  
       restart_policy:
         condition: on-failure
         delay: 15s
