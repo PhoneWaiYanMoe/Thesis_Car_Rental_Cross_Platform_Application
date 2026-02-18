@@ -1,3 +1,6 @@
+const { Sequelize } = require("sequelize");
+require("dotenv").config();
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -24,3 +27,18 @@ const sequelize = new Sequelize(
     },
   },
 );
+
+const connectDB = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Chat Service: Database connected successfully");
+
+    await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
+    console.log("Chat Service: Database synced");
+  } catch (error) {
+    console.error("Chat Service: Database connection failed:", error);
+    process.exit(1);
+  }
+};
+
+module.exports = { sequelize, connectDB };
