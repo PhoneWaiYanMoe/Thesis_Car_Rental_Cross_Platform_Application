@@ -132,21 +132,16 @@ services:
         delay: 10s
       restart_policy:
         condition: on-failure
-        delay: 5s
-        max_attempts: 5
       resources:
         limits:
           cpus: '0.5'
           memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 120s
+      test: ["CMD", "node", "-e", "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # ==================== LOCATION SERVICE ====================
   location-service:
