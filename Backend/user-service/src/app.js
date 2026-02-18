@@ -15,7 +15,7 @@ const path = require("path");
 const passport = require("./config/passport");
 const { connectRabbitMQ } = require("./config/rabbitmq");
 const eventConsumer = require("./services/event_consumer");
-const seedAdmin = require("./seed/admin_seed");
+// const seedAdmin = require("./seed/admin_seed");     // ← commented out or remove if not needed at startup
 
 // Routes
 const authRoutes = require("./routes/auth_routes");
@@ -28,7 +28,6 @@ const analyticsRoutes = require("./routes/analytics_routes");
 const publicDeviceRoutes = require("./routes/public_device_routes");
 
 const errorHandler = require("./middleware/errorHandler");
-const { runMigrations } = require("./utils/migrationRunner");
 const UserGrpcServer = require("./grpc/user_grpc_server");
 
 const app = express();
@@ -85,14 +84,17 @@ app.use(errorHandler);
 // Initialize gRPC server
 let grpcServer = null;
 
-// START SERVER WITH MIGRATIONS AND GRPC
+// START SERVER (NO MIGRATIONS HERE ANYMORE)
 async function startServer() {
   try {
-    console.log("📄 Running database migrations...");
-    await runMigrations();
+    // ────────────────────────────────────────────────
+    // Migrations & seeding are now run MANUALLY / in CI/CD
+    // ────────────────────────────────────────────────
+    // console.log("📄 Running database migrations...");
+    // await runMigrations();
 
-    console.log("📄 Seeding admin user...");
-    await seedAdmin();
+    // console.log("📄 Seeding admin user...");
+    // await seedAdmin();
 
     // Connect to RabbitMQ
     console.log("📄 Connecting to RabbitMQ...");
