@@ -71,18 +71,18 @@ services:
           - node.role == manager
       restart_policy:
         condition: on-failure
-        delay: 10s              
-        max_attempts: 5         
+        delay: 10s
+        max_attempts: 5
       resources:
         limits:
-          cpus: '0.75'          
-          memory: 1024M       
+          cpus: '0.75'
+          memory: 1024M
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 15s            
-      timeout: 10s          
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 60s       
+      start_period: 60s
 
   # ==================== USER SERVICE ====================
   user-service:
@@ -410,7 +410,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
-  
+
   # ==================== ANALYTICS SERVICE ====================
   analytics-service:
     image: 206.189.147.242:5000/wiz-analytics-service:latest
@@ -489,6 +489,52 @@ services:
           memory: 256M
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ==================== CHAT SERVICE ====================
+  chat-service:
+    image: 206.189.147.242:5000/wiz-chat-service:latest
+    ports:
+      - "3011:3011"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=wiz_chat
+      - DB_SSL=${DB_SSL}
+      - PORT=3011
+      - NODE_ENV=${NODE_ENV}
+      - BASE_URL=${BASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - ONLINE_STATUS_TIMEOUT=300
+      - TYPING_TIMEOUT=3
+      - SOCKET_PING_TIMEOUT=60000
+      - SOCKET_PING_INTERVAL=25000
+    networks:
+      - wiz-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
