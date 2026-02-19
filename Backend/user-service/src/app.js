@@ -3,9 +3,7 @@ const dotenv = require("dotenv");
 
 const env = process.env.NODE_ENV || "local";
 
-dotenv.config({
-  path: `.env.${env}`,
-});
+dotenv.config({ path: `.env.${env}`, override: false });
 
 const express = require("express");
 const cors = require("cors");
@@ -106,7 +104,7 @@ async function startServer() {
 
     // Start HTTP server
     const PORT = process.env.PORT || 3001;
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ User Service HTTP running on port ${PORT}`);
       console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
     });
