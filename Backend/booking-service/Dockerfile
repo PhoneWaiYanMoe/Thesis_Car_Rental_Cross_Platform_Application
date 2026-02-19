@@ -25,7 +25,7 @@ CMD ["npm", "run", "dev"]
 # ==================== PROD ====================
 FROM base AS production
 
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 COPY . .
 
