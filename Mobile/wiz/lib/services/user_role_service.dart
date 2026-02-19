@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class UserRoleService {
-  static const String baseUrl = 'http://localhost:3001'; // user-service
+  // static const String baseUrl = 'http://localhost:3001'; // user-service
+  static const String baseUrl = 'http://206.189.147.242';
   // static const String baseUrl = 'http://10.0.2.2:3001'; // For Android emulator
 
   final _localStorageService = LocalStorageService();
@@ -48,20 +49,14 @@ class UserRoleService {
       final token = await _getAuthToken();
 
       if (token == null) {
-        return {
-          'success': false,
-          'error': 'Authentication required. Please login again.',
-        };
+        return {'success': false, 'error': 'Authentication required. Please login again.'};
       }
 
       print('Upgrading user $userId to owner...');
 
       final response = await http.put(
         Uri.parse('$baseUrl/users/$userId/role'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
         body: jsonEncode({'newRole': 'owner'}),
       );
 
@@ -75,26 +70,16 @@ class UserRoleService {
         // Update local storage with new role
         await _updateLocalRole(data['user']);
 
-        return {
-          'success': true,
-          'message': data['message'] ?? 'Role updated successfully',
-          'user': data['user'],
-        };
+        return {'success': true, 'message': data['message'] ?? 'Role updated successfully', 'user': data['user']};
       } else if (response.statusCode == 401) {
         return {'success': false, 'error': 'Unauthorized. Please login again.'};
       } else if (response.statusCode == 403) {
-        return {
-          'success': false,
-          'error': 'You do not have permission to perform this action.',
-        };
+        return {'success': false, 'error': 'You do not have permission to perform this action.'};
       } else if (response.statusCode == 404) {
         return {'success': false, 'error': 'User not found.'};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['error'] ?? 'Failed to upgrade role',
-        };
+        return {'success': false, 'error': errorData['error'] ?? 'Failed to upgrade role'};
       }
     } catch (e) {
       print('Upgrade to owner error: $e');
@@ -144,10 +129,7 @@ class UserRoleService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/users/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -155,10 +137,7 @@ class UserRoleService {
         return {'success': true, 'user': data['user']};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['error'] ?? 'Failed to get user profile',
-        };
+        return {'success': false, 'error': errorData['error'] ?? 'Failed to get user profile'};
       }
     } catch (e) {
       print('❌ Get user profile error: $e');

@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 
 class AuthApiService {
   // static const String baseUrl = 'http://10.0.2.2:3001';
-  static const String baseUrl = 'http://localhost:3001';
+  // static const String baseUrl = 'http://localhost:3001';
+   static const String baseUrl = 'http://206.189.147.242'; 
 
   Future<Map<String, dynamic>> register({
     required String email,

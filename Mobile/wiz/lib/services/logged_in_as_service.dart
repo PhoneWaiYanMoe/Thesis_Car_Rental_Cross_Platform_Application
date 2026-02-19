@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class LoggedInAsService {
-  static const String baseUrl = 'http://localhost:3001'; // user-service
+  // static const String baseUrl = 'http://localhost:3001'; // user-service
   // static const String baseUrl = 'http://10.0.2.2:3001'; // For Android emulator
+   static const String baseUrl = 'http://206.189.147.242'; 
 
   final _localStorageService = LocalStorageService();
 

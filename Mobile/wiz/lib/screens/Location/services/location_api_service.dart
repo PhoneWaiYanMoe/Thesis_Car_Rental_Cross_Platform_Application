@@ -6,7 +6,8 @@ import 'package:wiz/services/local_storage_service.dart';
 class LocationApiService {
   // ✅ CHANGE THIS TO YOUR BACKEND URL
   // static const String baseUrl = 'http://10.0.2.2:3003';
-  static const String baseUrl = 'http://localhost:3003';
+  //static const String baseUrl = 'http://localhost:3003';
+   static const String baseUrl = 'http://206.189.147.242'; 
   final _localStorageService = LocalStorageService();
 
   // Get auth token from local storage

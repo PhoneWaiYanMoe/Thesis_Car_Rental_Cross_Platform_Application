@@ -7,7 +7,8 @@ import 'package:http_parser/http_parser.dart';
 
 class MediaApiService {
   // static const String baseUrl = 'http://10.0.2.2:3008'; // media-service
-  static const String baseUrl = 'http://localhost:3008'; // media-service
+  // static const String baseUrl = 'http://localhost:3008'; // media-service
+   static const String baseUrl = 'http://206.189.147.242'; 
   final _localStorageService = LocalStorageService();
 
   // Get auth token

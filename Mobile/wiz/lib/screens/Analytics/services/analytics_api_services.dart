@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class AnalyticsApiService {
-  static const String baseUrl = 'http://localhost:3009'; // analytics-service
+  //static const String baseUrl = 'http://localhost:3009'; // analytics-service
   // static const String baseUrl = 'http://10.0.2.2:3009'; // For Android emulator
+  static const String baseUrl = 'http://206.189.147.242'; // analytics-service
 
   final _localStorageService = LocalStorageService();
 
@@ -40,18 +41,13 @@ class AnalyticsApiService {
         queryParams['endDate'] = endDate.toIso8601String();
       }
 
-      final uri = Uri.parse(
-        '$baseUrl/analytics/owner/dashboard',
-      ).replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/analytics/owner/dashboard').replace(queryParameters: queryParams);
 
       print('📊 Fetching analytics: $uri');
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       print('📥 Analytics response: ${response.statusCode}');
@@ -66,10 +62,7 @@ class AnalyticsApiService {
         return {'success': false, 'error': 'Owner role required'};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['error'] ?? 'Failed to load analytics',
-        };
+        return {'success': false, 'error': errorData['error'] ?? 'Failed to load analytics'};
       }
     } catch (e) {
       print('❌ Analytics API error: $e');
@@ -78,25 +71,18 @@ class AnalyticsApiService {
   }
 
   /// Get customer analytics (for when user rents cars)
-  Future<Map<String, dynamic>> getCustomerAnalytics({
-    String timeRange = '30d',
-  }) async {
+  Future<Map<String, dynamic>> getCustomerAnalytics({String timeRange = '30d'}) async {
     try {
       final token = await _getAuthToken();
       if (token == null) {
         return {'success': false, 'error': 'Authentication required'};
       }
 
-      final uri = Uri.parse(
-        '$baseUrl/analytics/customer/summary',
-      ).replace(queryParameters: {'timeRange': timeRange});
+      final uri = Uri.parse('$baseUrl/analytics/customer/summary').replace(queryParameters: {'timeRange': timeRange});
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -199,11 +185,7 @@ class BookingAnalytics {
       cancelledBookings: json['cancelledBookings'] ?? 0,
       acceptanceRate: (json['acceptanceRate'] ?? 0).toDouble(),
       averageDuration: (json['averageDuration'] ?? 0).toDouble(),
-      trend:
-          (json['trend'] as List<dynamic>?)
-              ?.map((t) => TrendData.fromJson(t))
-              .toList() ??
-          [],
+      trend: (json['trend'] as List<dynamic>?)?.map((t) => TrendData.fromJson(t)).toList() ?? [],
     );
   }
 }
@@ -235,11 +217,7 @@ class RevenueAnalytics {
       refundedAmount: json['refundedAmount'] ?? 0,
       averageBookingValue: json['averageBookingValue'] ?? 0,
       growth: (json['growth'] ?? 0).toDouble(),
-      trend:
-          (json['trend'] as List<dynamic>?)
-              ?.map((t) => TrendData.fromJson(t))
-              .toList() ??
-          [],
+      trend: (json['trend'] as List<dynamic>?)?.map((t) => TrendData.fromJson(t)).toList() ?? [],
     );
   }
 }
@@ -286,9 +264,6 @@ class TrendData {
   TrendData({required this.period, required this.value});
 
   factory TrendData.fromJson(Map<String, dynamic> json) {
-    return TrendData(
-      period: json['period'] ?? '',
-      value: json['value'] ?? json['count'] ?? json['revenue'] ?? 0,
-    );
+    return TrendData(period: json['period'] ?? '', value: json['value'] ?? json['count'] ?? json['revenue'] ?? 0);
   }
 }
