@@ -1,5 +1,4 @@
 const { Sequelize } = require("sequelize");
-
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -9,6 +8,12 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 5432,
     dialect: "postgres",
     logging: process.env.NODE_ENV === "development" ? console.log : false,
+    dialectOptions: {
+      ssl:
+        process.env.DB_SSL === "require"
+          ? { rejectUnauthorized: false }
+          : false,
+    },
     pool: {
       max: 10,
       min: 0,
@@ -17,5 +22,4 @@ const sequelize = new Sequelize(
     },
   },
 );
-
 module.exports = sequelize;
