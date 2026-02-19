@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
-      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db,wiz_analytics, wiz_chat
+      POSTGRES_MULTIPLE_DATABASES: wiz_user,wiz_location,wiz_booking,wiz_vehicle,wiz_payment,wiz_media_db,wiz_request_db,wiz_analytics,wiz_chat
     ports:
       - "5432:5432"
     volumes:
@@ -42,22 +42,12 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mongosh",
-          "--port",
-          "27020",
-          "--quiet",
-          "--eval",
-          "db.adminCommand('ping').ok",
-        ]
+      test: ["CMD", "mongosh", "--port", "27020", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
 
-  # ==================== REDIS (Shared Cache) ====================
   redis:
     image: redis:7-alpine
     container_name: wiz-redis
@@ -74,13 +64,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: wiz-rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672" # AMQP
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-admin123}
@@ -93,9 +84,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   # ==================== USER SERVICE ====================
   user-service:
-    build: ./user-service
+    build:
+      context: ./user-service
+      target: development
     container_name: wiz-user-service
     restart: unless-stopped
     ports:
@@ -109,7 +103,7 @@ services:
       - DB_NAME=wiz_user
       - PORT=3001
       - GRPC_PORT=50053
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3001
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
@@ -141,13 +135,7 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
-        ]
+      test: ["CMD", "node", "-e", "require('net').connect(50053,'localhost').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -155,7 +143,9 @@ services:
 
   # ==================== LOCATION SERVICE ====================
   location-service:
-    build: ./location-service
+    build:
+      context: ./location-service
+      target: development
     container_name: wiz-location-service
     restart: unless-stopped
     ports:
@@ -169,7 +159,7 @@ services:
       - DB_NAME=wiz_location
       - PORT=3003
       - GRPC_PORT=50051
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3003
       - JWT_SECRET=${JWT_SECRET}
       - RATE_LIMIT_WINDOW_MS=900000
@@ -184,7 +174,9 @@ services:
 
   # ==================== VEHICLE SERVICE ====================
   vehicle-service:
-    build: ./vehicle-service
+    build:
+      context: ./vehicle-service
+      target: development
     container_name: wiz-vehicle-service
     restart: unless-stopped
     ports:
@@ -198,7 +190,7 @@ services:
       - DB_NAME=wiz_vehicle
       - PORT=3002
       - GRPC_PORT=50055
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3002
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
@@ -217,7 +209,9 @@ services:
 
   # ==================== PAYMENT SERVICE ====================
   payment-service:
-    build: ./payment-service
+    build:
+      context: ./payment-service
+      target: development
     container_name: wiz-payment-service
     restart: unless-stopped
     ports:
@@ -231,7 +225,7 @@ services:
       - DB_NAME=wiz_payment
       - PORT=3006
       - GRPC_PORT=50056
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3006
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
@@ -246,8 +240,8 @@ services:
       - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
       - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
       - VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNPAY_RETURN_URL=https://master-albacore-urgently.ngrok-free.app/payment/webhook/vnpay
-      - FRONTEND_URL=https://master-albacore-urgently.ngrok-free.app
+      - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - ENCRYPTION_IV=${ENCRYPTION_IV}
     depends_on:
@@ -259,20 +253,17 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
-        ]
+      test: ["CMD", "node", "-e", "require('net').connect(50056,'localhost').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+
   # ==================== BOOKING SERVICE ====================
   booking-service:
-    build: ./booking-service
+    build:
+      context: ./booking-service
+      target: development
     container_name: wiz-booking-service
     restart: unless-stopped
     ports:
@@ -286,7 +277,7 @@ services:
       - DB_NAME=wiz_booking
       - PORT=3004
       - GRPC_PORT=50052
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3004
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=wiz-location-service:50051
@@ -318,7 +309,9 @@ services:
 
   # ==================== REVIEW SERVICE ====================
   review-service:
-    build: ./review-service
+    build:
+      context: ./review-service
+      target: development
     container_name: wiz-review-service
     restart: unless-stopped
     ports:
@@ -330,7 +323,7 @@ services:
       - MONGODB_PASSWORD=${MONGODB_PASSWORD:-wiz_password}
       - PORT=3005
       - GRPC_PORT=50054
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3005
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
       - BOOKING_SERVICE_GRPC_URL=wiz-booking-service:50052
@@ -353,14 +346,16 @@ services:
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
-    build: ./notification-service
+    build:
+      context: ./notification-service
+      target: development
     container_name: wiz-notification-service
     restart: unless-stopped
     ports:
       - "3007:3007"
     environment:
       - PORT=3007
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       - USER_SERVICE_URL=http://user-service:3001
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
@@ -385,15 +380,7 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3007/health",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3007/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -401,7 +388,9 @@ services:
 
   # ==================== MEDIA SERVICE ====================
   media-service:
-    build: ./media-service
+    build:
+      context: ./media-service
+      target: development
     container_name: wiz-media-service
     restart: unless-stopped
     ports:
@@ -413,7 +402,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_media_db
       - PORT=3008
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3008
       - JWT_SECRET=${JWT_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
@@ -430,22 +419,17 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3008/health",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3008/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
+  # ==================== ANALYTICS SERVICE ====================
   analytics-service:
-    build: ./analysis-service
+    build:
+      context: ./analysis-service
+      target: development
     container_name: wiz-analysis-service
     restart: unless-stopped
     ports:
@@ -457,7 +441,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_analytics
       - PORT=3009
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3009
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=wiz-user-service:50053
@@ -478,15 +462,7 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3009/health",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3009/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -494,7 +470,9 @@ services:
 
   # ==================== REQUEST SERVICE ====================
   request-service:
-    build: ./request-service
+    build:
+      context: ./request-service
+      target: development
     container_name: wiz-request-service
     restart: unless-stopped
     ports:
@@ -506,7 +484,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_request_db
       - PORT=3010
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3010
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
@@ -523,15 +501,7 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3010/health",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3010/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -539,7 +509,9 @@ services:
 
   # ==================== CHAT SERVICE ====================
   chat-service:
-    build: ./chat-service
+    build:
+      context: ./chat-service
+      target: development
     container_name: wiz-chat-service
     restart: unless-stopped
     ports:
@@ -551,7 +523,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=wiz_chat
       - PORT=3011
-      - NODE_ENV=docker
+      - NODE_ENV=local
       - BASE_URL=http://localhost:3011
       - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
@@ -574,15 +546,7 @@ services:
     networks:
       - wiz-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3011/health",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3011/health"]
       interval: 10s
       timeout: 5s
       retries: 5

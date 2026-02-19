@@ -1,5 +1,14 @@
 version: "3.8"
 
+# =====================================================================
+# PRODUCTION SWARM STACK
+# Build images first (on manager or CI):
+#   docker build --target production -t 206.189.147.242:5000/wiz-user-service:latest ./user-service
+#   ... (repeat per service)
+# Deploy:
+#   docker stack deploy -c docker-stack.yml wiz
+# =====================================================================
+
 services:
   # ==================== NGINX REVERSE PROXY ====================
   nginx:
@@ -20,8 +29,8 @@ services:
         max_attempts: 3
       resources:
         limits:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 10s
@@ -31,7 +40,7 @@ services:
   # ==================== REDIS ====================
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
@@ -55,6 +64,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==================== RABBITMQ ====================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
@@ -85,8 +95,10 @@ services:
       start_period: 60s
 
   # ==================== USER SERVICE ====================
+  # Critical path: handles auth on every request — keep 3 replicas min
   user-service:
     image: 206.189.147.242:5000/wiz-user-service:latest
+    # To build: docker build --target production -t 206.189.147.242:5000/wiz-user-service:latest ./user-service
     ports:
       - "3001:3001"
     environment:
@@ -98,7 +110,7 @@ services:
       - DB_SSL=${DB_SSL}
       - PORT=3001
       - GRPC_PORT=50053
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
@@ -123,25 +135,35 @@ services:
     networks:
       - wiz-network
     deploy:
-      replicas: 2
+      replicas: 3
       placement:
         constraints:
           - node.role == worker
       update_config:
         parallelism: 1
+        delay: 15s
+        failure_action: rollback
+        order: start-first       # start new replica before killing old = zero downtime
+      rollback_config:
+        parallelism: 1
         delay: 10s
       restart_policy:
         condition: on-failure
+        delay: 5s
+        max_attempts: 3
       resources:
         limits:
-          cpus: '0.5'
+          cpus: '0.75'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(50053, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('net').connect(50053,'localhost').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 120s
+      start_period: 60s
 
   # ==================== LOCATION SERVICE ====================
   location-service:
@@ -157,7 +179,7 @@ services:
       - DB_SSL=${DB_SSL}
       - PORT=3003
       - GRPC_PORT=50051
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - RATE_LIMIT_WINDOW_MS=900000
@@ -169,12 +191,19 @@ services:
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ==================== VEHICLE SERVICE ====================
   vehicle-service:
@@ -190,7 +219,7 @@ services:
       - DB_SSL=${DB_SSL}
       - PORT=3002
       - GRPC_PORT=50055
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=user-service:50053
@@ -198,16 +227,23 @@ services:
     networks:
       - wiz-network
     deploy:
-      replicas: 2
+      replicas: 3
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.5'
+          cpus: '0.75'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # ==================== PAYMENT SERVICE ====================
   payment-service:
@@ -223,7 +259,7 @@ services:
       - DB_SSL=${DB_SSL}
       - PORT=3006
       - GRPC_PORT=50056
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
@@ -249,14 +285,21 @@ services:
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.5'
+          cpus: '0.75'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(50056, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('net').connect(50056,'localhost').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -276,7 +319,7 @@ services:
       - DB_SSL=${DB_SSL}
       - PORT=3004
       - GRPC_PORT=50052
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
@@ -289,16 +332,23 @@ services:
     networks:
       - wiz-network
     deploy:
-      replicas: 2
+      replicas: 3
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.5'
+          cpus: '0.75'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # ==================== REVIEW SERVICE ====================
   review-service:
@@ -311,7 +361,7 @@ services:
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - PORT=3005
       - GRPC_PORT=50054
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
@@ -324,12 +374,19 @@ services:
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -338,7 +395,7 @@ services:
       - "3007:3007"
     environment:
       - PORT=3007
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - RABBITMQ_URL=${RABBITMQ_URL}
       - USER_SERVICE_URL=http://user-service:3001
       - FRONTEND_URL=${FRONTEND_URL}
@@ -382,7 +439,7 @@ services:
       - DB_NAME=wiz_media_db
       - DB_SSL=${DB_SSL}
       - PORT=3008
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
@@ -398,14 +455,18 @@ services:
       placement:
         constraints:
           - node.role == worker
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
       restart_policy:
         condition: on-failure
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3008/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3008/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -424,7 +485,7 @@ services:
       - DB_NAME=wiz_analytics
       - DB_SSL=${DB_SSL}
       - PORT=3009
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=user-service:50053
@@ -448,7 +509,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3009/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3009/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -467,7 +528,7 @@ services:
       - DB_NAME=wiz_request_db
       - DB_SSL=${DB_SSL}
       - PORT=3010
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=${RABBITMQ_URL}
@@ -488,13 +549,14 @@ services:
           cpus: '0.3'
           memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
       start_period: 40s
 
-  # ==================== CHAT SERVICE ====================
+  # ==================== CHAT SERVICE (WebSocket) ====================
+  # Note: keep replicas: 1 unless you add sticky sessions / Redis pub-sub coordination
   chat-service:
     image: 206.189.147.242:5000/wiz-chat-service:latest
     ports:
@@ -507,7 +569,7 @@ services:
       - DB_NAME=wiz_chat
       - DB_SSL=${DB_SSL}
       - PORT=3011
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - BASE_URL=${BASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
@@ -534,7 +596,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3011/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5

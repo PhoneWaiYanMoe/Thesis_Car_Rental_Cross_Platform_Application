@@ -1,27 +1,37 @@
+# ==================== BASE ====================
+FROM node:22-slim AS base
 
-FROM node:20-alpine
-
-# Install dependencies for native modules (bcrypt, etc.)
-RUN apk add --no-cache python3 make g++
-
-# Create app directory
 WORKDIR /app
 
-# Copy package files first (better layer caching)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production
+# ==================== DEV ====================
+FROM base AS development
 
-# Copy application source code
+RUN npm ci
+
 COPY . .
 
-# Expose chat service port
 EXPOSE 3011
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+CMD ["npm", "run", "dev"]
 
-# Start application
+# ==================== PROD ====================
+FROM base AS production
+
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3011
+
+HEALTHCHECK --interval=15s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3011/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+
 CMD ["npm", "start"]

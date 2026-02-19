@@ -1,4 +1,5 @@
-FROM node:22-slim
+# ==================== BASE ====================
+FROM node:22-slim AS base
 
 WORKDIR /app
 
@@ -9,10 +10,28 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm install
+
+# ==================== DEV ====================
+FROM base AS development
+
+RUN npm ci
 
 COPY . .
 
-EXPOSE 3004
+EXPOSE 3004 50052
 
 CMD ["npm", "run", "dev"]
+
+# ==================== PROD ====================
+FROM base AS production
+
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3004 50052
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+  CMD node -e "require('net').connect(50052,'localhost').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+
+CMD ["npm", "start"]
