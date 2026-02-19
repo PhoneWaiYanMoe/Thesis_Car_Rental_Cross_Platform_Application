@@ -3,7 +3,9 @@ const dotenv = require("dotenv");
 
 const env = process.env.NODE_ENV || "local";
 
-dotenv.config({ path: `.env.${env}`, override: false });
+dotenv.config({
+  path: `.env.${env}`,
+});
 
 const express = require("express");
 const cors = require("cors");
