@@ -40,7 +40,7 @@ services:
   # ==================== REDIS ====================
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis_data:/data
     networks:
@@ -136,6 +136,7 @@ services:
       - wiz-network
     deploy:
       replicas: 3
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -188,6 +189,7 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -228,6 +230,7 @@ services:
       - wiz-network
     deploy:
       replicas: 3
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -282,6 +285,7 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -333,6 +337,7 @@ services:
       - wiz-network
     deploy:
       replicas: 3
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -371,6 +376,7 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -410,10 +416,12 @@ services:
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
       - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     networks:
       - wiz-network
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -425,6 +433,12 @@ services:
         limits:
           cpus: '0.3'
           memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # ==================== MEDIA SERVICE ====================
   media-service:
@@ -452,6 +466,7 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -499,6 +514,7 @@ services:
       - wiz-network
     deploy:
       replicas: 2
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -539,6 +555,7 @@ services:
       - wiz-network
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -584,6 +601,7 @@ services:
       - wiz-network
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
