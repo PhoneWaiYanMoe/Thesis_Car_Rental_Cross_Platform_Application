@@ -136,7 +136,6 @@ services:
       - wiz-network
     deploy:
       replicas: 3
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -189,7 +188,6 @@ services:
       - wiz-network
     deploy:
       replicas: 2
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -230,7 +228,6 @@ services:
       - wiz-network
     deploy:
       replicas: 3
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -285,7 +282,6 @@ services:
       - wiz-network
     deploy:
       replicas: 2
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -337,7 +333,6 @@ services:
       - wiz-network
     deploy:
       replicas: 3
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -376,7 +371,6 @@ services:
       - wiz-network
     deploy:
       replicas: 2
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -421,7 +415,6 @@ services:
       - wiz-network
     deploy:
       replicas: 1
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -466,7 +459,6 @@ services:
       - wiz-network
     deploy:
       replicas: 2
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -514,7 +506,6 @@ services:
       - wiz-network
     deploy:
       replicas: 2
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -555,7 +546,6 @@ services:
       - wiz-network
     deploy:
       replicas: 1
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
@@ -601,7 +591,6 @@ services:
       - wiz-network
     deploy:
       replicas: 1
-      endpoint_mode: dnsrr
       placement:
         constraints:
           - node.role == worker
