@@ -6,8 +6,8 @@ import 'package:wiz/services/media_api_service.dart';
 
 class BookingApiService {
   // static const String baseUrl = 'http://10.0.2.2:3004'; // booking-service
- // static const String baseUrl = 'http://localhost:3004'; // booking-service
-   static const String baseUrl = 'http://206.189.147.242'; 
+  // static const String baseUrl = 'http://localhost:3004'; // booking-service
+  static const String baseUrl = 'http://206.189.147.242';
 
   final _localStorageService = LocalStorageService();
   final _mediaApiService = MediaApiService();
@@ -515,6 +515,40 @@ class BookingApiService {
       }
     } catch (e) {
       print('❌ Sign contract error: $e');
+      rethrow;
+    }
+  }
+
+  /// Owner signs the contract (uses owner endpoint)
+  Future<void> ownerSignContract({
+    required String bookingId,
+    required String signedContractFileId,
+    required bool agreedToTerms,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) throw Exception('Authentication required');
+
+      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'};
+      final body = jsonEncode({'signedContractFileId': signedContractFileId, 'agreedToTerms': agreedToTerms});
+
+      print('📝 Owner signing contract for booking: $bookingId');
+
+      final response = await http
+          .post(Uri.parse('$baseUrl/bookings/owner/$bookingId/sign-contract'), headers: headers, body: body)
+          .timeout(const Duration(seconds: 30));
+
+      print('📥 Owner sign response: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('✅ Owner signed contract successfully');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to sign contract');
+      }
+    } catch (e) {
+      print('❌ Owner sign contract error: $e');
       rethrow;
     }
   }

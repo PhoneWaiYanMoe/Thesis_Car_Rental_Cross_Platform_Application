@@ -551,6 +551,100 @@ class ContractController {
     }
   }
 
+  
+  async ownerSignContract(req, res, next) {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const { id } = req.params;
+      const userId = req.user.userId;
+      const { signedContractFileId, agreedToTerms } = req.body;
+
+      if (!agreedToTerms) {
+        return res.status(400).json({ error: "You must agree to the terms" });
+      }
+
+      if (!signedContractFileId) {
+        return res.status(400).json({
+          error: "signedContractFileId is required",
+        });
+      }
+
+      // Get booking (no customer_id filter — owner is signing)
+      const bookingResult = await client.query(
+        `SELECT * FROM bookings WHERE booking_id = $1`,
+        [id]
+      );
+
+      if (bookingResult.rows.length === 0) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      const booking = bookingResult.rows[0];
+
+      // Verify ownership via gRPC
+      const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
+      try {
+        const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+          booking.vehicle_id,
+          userId
+        );
+        if (!ownershipCheck.is_owner) {
+          return res.status(403).json({ error: "You don't own this vehicle" });
+        }
+      } catch (error) {
+        return res.status(503).json({ error: "Could not verify vehicle ownership" });
+      }
+
+      if (booking.status !== "booking") {
+        return res.status(400).json({
+          error: `Cannot sign contract. Current status: ${booking.status}`,
+        });
+      }
+
+      if (!booking.deposit_paid) {
+        return res.status(400).json({
+          error: "Deposit must be paid before signing contract",
+        });
+      }
+
+      // Check if contract exists to sign
+      if (!booking.platform_contract_url && !booking.owner_contract_url) {
+        return res.status(400).json({
+          error: "No contract available to sign.",
+        });
+      }
+
+      // Save owner signature
+      await client.query(
+        `UPDATE bookings 
+         SET owner_signed_contract_url = $1,
+             owner_contract_signed_at = NOW(),
+             updated_at = NOW()
+         WHERE booking_id = $2`,
+        [signedContractFileId, id]
+      );
+
+      await client.query("COMMIT");
+
+      console.log(`✅ Owner signed contract for booking: ${id}`);
+
+      res.json({
+        message: "Contract signed successfully as owner.",
+        bookingStatus: "booking",
+        ownerSignedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Owner sign contract error:", error);
+      next(error);
+    } finally {
+      client.release();
+    }
+  }
+
   // ==================== 5. PREVIEW CONTRACT BEFORE SIGNING ====================
 
   async previewContract(req, res, next) {

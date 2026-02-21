@@ -4,9 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class FavoritesApiService {
-  // static const String baseUrl = 'http://10.0.2.2:3001'; // user-service
-  // static const String baseUrl = 'http://localhost:3001'; // user-service
-   static const String baseUrl = 'http://206.189.147.242'; 
+  // Local: hit user-service directly (port 3001, no nginx prefix needed)
+  // static const String _base = 'http://10.0.2.2:3001/favorites';
+  // static const String _base = 'http://localhost:3001/favorites';
+
+  // Prod: goes through nginx → location /favorites → wiz_user-service:3001
+  static const String _base = 'http://206.189.147.242/favorites';
 
   final LocalStorageService _storage = LocalStorageService();
 
@@ -16,11 +19,11 @@ class FavoritesApiService {
       final token = await _storage.getToken();
       if (token == null) throw Exception('Not authenticated');
 
-      final uri = Uri.parse(
-        '$baseUrl/favorites',
-      ).replace(queryParameters: {'page': page.toString(), 'limit': limit.toString()});
+      final uri = Uri.parse(_base).replace(
+        queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+      );
 
-      print('🔍 Fetching favorites...');
+      print('🔍 Fetching favorites from: $uri');
 
       final response = await http.get(
         uri,
@@ -34,7 +37,7 @@ class FavoritesApiService {
       } else if (response.statusCode == 401) {
         throw Exception('Session expired. Please login again.');
       } else {
-        print('❌ Get favorites failed: ${response.statusCode}');
+        print('❌ Get favorites failed: ${response.statusCode} ${response.body}');
         throw Exception('Failed to get favorites: ${response.statusCode}');
       }
     } catch (e) {
@@ -50,12 +53,15 @@ class FavoritesApiService {
       if (token == null) throw Exception('Not authenticated');
 
       print('➕ Adding vehicle to favorites: $vehicleId');
+      print('   POST $_base');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/favorites'),
+        Uri.parse(_base),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
         body: jsonEncode({'vehicleId': vehicleId}),
       );
+
+      print('📥 addFavorite ${response.statusCode}: ${response.body}');
 
       if (response.statusCode == 201) {
         print('✅ Vehicle added to favorites');
@@ -64,7 +70,7 @@ class FavoritesApiService {
         throw Exception('Session expired. Please login again.');
       } else {
         final data = jsonDecode(response.body);
-        throw Exception(data['error'] ?? 'Failed to add favorite');
+        throw Exception(data['error'] ?? data['message'] ?? 'Failed to add favorite');
       }
     } catch (e) {
       print('❌ Add favorite error: $e');
@@ -79,11 +85,14 @@ class FavoritesApiService {
       if (token == null) throw Exception('Not authenticated');
 
       print('➖ Removing vehicle from favorites: $vehicleId');
+      print('   DELETE $_base/$vehicleId');
 
       final response = await http.delete(
-        Uri.parse('$baseUrl/favorites/$vehicleId'),
+        Uri.parse('$_base/$vehicleId'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       );
+
+      print('📥 removeFavorite ${response.statusCode}: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ Vehicle removed from favorites');
@@ -92,7 +101,7 @@ class FavoritesApiService {
         throw Exception('Session expired. Please login again.');
       } else {
         final data = jsonDecode(response.body);
-        throw Exception(data['error'] ?? 'Failed to remove favorite');
+        throw Exception(data['error'] ?? data['message'] ?? 'Failed to remove favorite');
       }
     } catch (e) {
       print('❌ Remove favorite error: $e');
@@ -107,7 +116,7 @@ class FavoritesApiService {
       if (token == null) return false;
 
       final response = await http.get(
-        Uri.parse('$baseUrl/favorites/check/$vehicleId'),
+        Uri.parse('$_base/check/$vehicleId'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       );
 
@@ -129,7 +138,7 @@ class FavoritesApiService {
       if (token == null) return 0;
 
       final response = await http.get(
-        Uri.parse('$baseUrl/favorites/count'),
+        Uri.parse('$_base/count'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       );
 
@@ -220,10 +229,14 @@ class Pagination {
   Pagination({required this.total, required this.page, required this.limit});
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
-    return Pagination(total: json['total'] ?? 0, page: json['page'] ?? 1, limit: json['limit'] ?? 20);
+    return Pagination(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 20,
+    );
   }
 
-  int get totalPages => (total / limit).ceil();
+  int get totalPages => limit > 0 ? (total / limit).ceil() : 0;
   bool get hasNextPage => page < totalPages;
   bool get hasPreviousPage => page > 1;
 }
