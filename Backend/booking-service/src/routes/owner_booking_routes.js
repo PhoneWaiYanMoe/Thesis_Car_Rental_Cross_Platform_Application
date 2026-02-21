@@ -2,6 +2,8 @@
 const express = require("express");
 const router = express.Router();
 const ownerBookingController = require("../controllers/owner_booking_controller");
+const contractController = require("../controllers/contract_controller");
+
 const { authenticate } = require("../middleware/auth");
 
 // All routes require authentication
