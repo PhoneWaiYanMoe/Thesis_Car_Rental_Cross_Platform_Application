@@ -3,6 +3,7 @@ const pool = require("../config/database");
 const vehicleGrpcClient = require("../grpc/vehicle_grpc_client");
 const userGrpcClient = require("../grpc/user_grpc_client");
 const eventPublisher = require("../utils/eventPublisher");
+const contractController = require("./contract_controller");
 
 class OwnerBookingController {
   async getOwnerBookings(req, res, next) {
@@ -80,12 +81,12 @@ class OwnerBookingController {
       }
 
       const filteredBookings = result.rows.filter((row) =>
-        ownerVehicles.has(row.vehicle_id)
+        ownerVehicles.has(row.vehicle_id),
       );
 
       const countResult = await pool.query(
         `SELECT COUNT(*) FROM bookings WHERE vehicle_id = ANY($1)`,
-        [Array.from(ownerVehicles)]
+        [Array.from(ownerVehicles)],
       );
 
       res.json({
@@ -135,7 +136,7 @@ class OwnerBookingController {
 
       const bookingResult = await client.query(
         `SELECT * FROM bookings WHERE booking_id = $1`,
-        [id]
+        [id],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -150,7 +151,7 @@ class OwnerBookingController {
       try {
         const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
           booking.vehicle_id,
-          userId
+          userId,
         );
 
         if (!ownershipCheck.is_owner) {
@@ -176,7 +177,7 @@ class OwnerBookingController {
              owner_approved_at = NOW(),
              updated_at = NOW()
          WHERE booking_id = $1`,
-        [id]
+        [id],
       );
 
       await client.query("COMMIT");
@@ -185,31 +186,69 @@ class OwnerBookingController {
 
       // ✅ Fetch info for notification
       let vehicle, customerInfo;
-      try {
-        vehicle = await vehicleGrpcClient.getVehicleInfo(booking.vehicle_id);
-        customerInfo = await userGrpcClient.getUserProfile(booking.customer_id);
+      const freshBooking = (
+        await pool.query("SELECT * FROM bookings WHERE booking_id = $1", [id])
+      ).rows[0];
 
-        // ✅ Publish booking accepted event
-        const updatedBooking = {
-          ...booking,
-          status: "booking",
-          owner_approved_at: new Date(),
-        };
-        await eventPublisher.bookingAcceptedByOwner(
-          updatedBooking,
-          vehicle,
-          customerInfo
+      try {
+        const vehicleInfo = await vehicleGrpcClient.getVehicleInfo(
+          booking.vehicle_id,
         );
+        const customerProfile = await userGrpcClient.getUserProfile(
+          booking.customer_id,
+        );
+        const ownerProfile = await userGrpcClient.getUserProfile(userId);
+
+        const axios = require("axios");
+        const FormData = require("form-data");
+        const PDFDocument = require("pdfkit");
+
+        // Generate PDF inline
+        const pdfBuffer = await contractController.generatePlatformContract(
+          freshBooking,
+          vehicleInfo,
+          {
+            full_name: customerProfile.full_name,
+            email: customerProfile.email,
+            license_number: "N/A",
+          },
+          { full_name: ownerProfile.full_name, email: ownerProfile.email },
+        );
+
+        const mediaServiceUrl =
+          process.env.MEDIA_SERVICE_URL || "http://media-service:3008";
+        const formData = new FormData();
+        formData.append("file", pdfBuffer, {
+          filename: `contract_${id}.pdf`,
+          contentType: "application/pdf",
+        });
+        formData.append("ownerId", id);
+        formData.append("ownerType", "REQUEST");
+        formData.append("type", "contract");
+
+        const uploadResponse = await axios.post(
+          `${mediaServiceUrl}/upload`,
+          formData,
+          {
+            headers: formData.getHeaders(),
+          },
+        );
+
+        const contractFileId = uploadResponse.data.fileId;
+
+        await pool.query(
+          `UPDATE bookings SET platform_contract_url = $1, contract_generated_at = NOW(), updated_at = NOW() WHERE booking_id = $2`,
+          [contractFileId, id],
+        );
+
         console.log(
-          `📧 Booking accepted notification sent to ${customerInfo.email}`
+          `✅ Contract auto-generated for booking: ${id} → fileId: ${contractFileId}`,
         );
-      } catch (error) {
+      } catch (contractErr) {
         console.warn(
-          "⚠️  Could not send acceptance notification:",
-          error.message
+          `⚠️  Could not auto-generate contract (non-fatal): ${contractErr.message}`,
         );
       }
-
       res.json({
         message: "Booking accepted successfully",
         bookingStatus: "booking",
@@ -255,7 +294,7 @@ class OwnerBookingController {
 
       const bookingResult = await client.query(
         `SELECT * FROM bookings WHERE booking_id = $1`,
-        [id]
+        [id],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -270,7 +309,7 @@ class OwnerBookingController {
       try {
         const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
           booking.vehicle_id,
-          userId
+          userId,
         );
 
         if (!ownershipCheck.is_owner) {
@@ -306,7 +345,7 @@ class OwnerBookingController {
            refund_status = $3,
            updated_at = NOW()
        WHERE booking_id = $4`,
-        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
+        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id],
       );
 
       await client.query("COMMIT");
@@ -318,12 +357,12 @@ class OwnerBookingController {
           booking.start_date,
           booking.end_date,
           id,
-          "remove"
+          "remove",
         );
         console.log(`✅ Removed unavailability after owner rejection: ${id}`);
       } catch (error) {
         console.error(
-          `⚠️  Could not remove unavailability after rejection: ${error.message}`
+          `⚠️  Could not remove unavailability after rejection: ${error.message}`,
         );
       }
 
@@ -346,15 +385,15 @@ class OwnerBookingController {
           updatedBooking,
           vehicle,
           customerInfo,
-          reason
+          reason,
         );
         console.log(
-          `📧 Booking rejection notification sent to ${customerInfo.email}`
+          `📧 Booking rejection notification sent to ${customerInfo.email}`,
         );
       } catch (error) {
         console.warn(
           "⚠️  Could not send rejection notification:",
-          error.message
+          error.message,
         );
       }
 
@@ -414,7 +453,7 @@ class OwnerBookingController {
 
       const bookingResult = await client.query(
         `SELECT * FROM bookings WHERE booking_id = $1`,
-        [id]
+        [id],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -429,7 +468,7 @@ class OwnerBookingController {
       try {
         const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
           booking.vehicle_id,
-          userId
+          userId,
         );
 
         if (!ownershipCheck.is_owner) {
@@ -468,7 +507,7 @@ class OwnerBookingController {
           odometerReading,
           newStatus,
           id,
-        ]
+        ],
       );
 
       await client.query("COMMIT");
@@ -478,11 +517,11 @@ class OwnerBookingController {
         try {
           await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
           console.log(
-            `✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`
+            `✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`,
           );
         } catch (error) {
           console.error(
-            `⚠️  Could not increment total rentals: ${error.message}`
+            `⚠️  Could not increment total rentals: ${error.message}`,
           );
         }
 
@@ -493,7 +532,7 @@ class OwnerBookingController {
             booking.start_date,
             booking.end_date,
             id,
-            "remove"
+            "remove",
           );
           console.log(`✅ Removed completed booking from unavailability`);
         } catch (error) {
@@ -504,7 +543,7 @@ class OwnerBookingController {
         let customerInfo;
         try {
           customerInfo = await userGrpcClient.getUserProfile(
-            booking.customer_id
+            booking.customer_id,
           );
 
           // ✅ Publish booking completed event
@@ -515,18 +554,18 @@ class OwnerBookingController {
           };
           await eventPublisher.bookingCompleted(updatedBooking, customerInfo);
           console.log(
-            `📧 Booking completed notification sent to ${customerInfo.email}`
+            `📧 Booking completed notification sent to ${customerInfo.email}`,
           );
         } catch (error) {
           console.warn(
             "⚠️  Could not send completion notification:",
-            error.message
+            error.message,
           );
         }
       }
 
       console.log(
-        `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`
+        `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`,
       );
 
       res.json({

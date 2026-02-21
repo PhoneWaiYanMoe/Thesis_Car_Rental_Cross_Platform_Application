@@ -1119,86 +1119,54 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   Future<void> _handleSignContract(BookingDetailsResponse booking) async {
-    try {
-      await _bookingApiService.getContract(booking.id);
-
-      final result = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
-      );
-
-      if (result == true) {
-        _loadBookingDetails();
-      }
-    } catch (e) {
-      final shouldGenerate = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: AppStyles.surface(context),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('Generate Contract', style: AppStyles.h2(context)),
-          content: Text(
-            'The rental contract hasn\'t been generated yet. Would you like to generate it now?',
-            style: AppStyles.body(context),
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text('Preparing contract...', style: AppStyles.body(context)),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: AppStyles.primaryButtonStyle(context),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('Generate', style: AppStyles.button),
-            ),
-          ],
         ),
-      );
+      ),
+    );
 
-      if (shouldGenerate == true) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text('Generating contract...', style: AppStyles.body(context)),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    try {
+      // Try to get existing contract first
+      try {
+        await _bookingApiService.getContract(booking.id);
+      } catch (e) {
+        // Contract not generated yet — generate it
+        await _bookingApiService.generateContract(booking.id);
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // dismiss loading
+
+        final result = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
         );
 
-        try {
-          await _bookingApiService.generateContract(booking.id);
-
-          if (mounted) {
-            Navigator.pop(context);
-
-            final result = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
-            );
-
-            if (result == true) {
-              _loadBookingDetails();
-            }
-          }
-        } catch (generateError) {
-          if (mounted) {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to generate contract: $generateError'), backgroundColor: Colors.red),
-            );
-          }
+        if (result == true) {
+          _loadBookingDetails();
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // dismiss loading
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load contract: $e'), backgroundColor: Colors.red));
       }
     }
   }

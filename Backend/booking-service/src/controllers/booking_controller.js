@@ -6,7 +6,6 @@ const paymentGrpcClient = require("../grpc/payment_grpc_client");
 const userGrpcClient = require("../grpc/user_grpc_client");
 const eventPublisher = require("../utils/eventPublisher");
 
-
 class BookingController {
   // ==================== HELPER FUNCTIONS ====================
 
@@ -15,7 +14,7 @@ class BookingController {
     startDate,
     endDate,
     bookingId,
-    action = "add"
+    action = "add",
   ) {
     try {
       const response = await vehicleGrpcClient.syncUnavailability(
@@ -23,15 +22,15 @@ class BookingController {
         startDate,
         endDate,
         bookingId,
-        action
+        action,
       );
       console.log(
-        `✅ Vehicle unavailability ${action}: ${vehicleId} (${startDate} to ${endDate})`
+        `✅ Vehicle unavailability ${action}: ${vehicleId} (${startDate} to ${endDate})`,
       );
       return response;
     } catch (error) {
       console.error(
-        `⚠️  Could not sync vehicle unavailability: ${error.message}`
+        `⚠️  Could not sync vehicle unavailability: ${error.message}`,
       );
       return null;
     }
@@ -121,7 +120,7 @@ class BookingController {
 
       const result = await pool.query(
         `SELECT * FROM user_verifications WHERE user_id = $1`,
-        [userId]
+        [userId],
       );
 
       if (result.rows.length === 0) {
@@ -238,7 +237,7 @@ class BookingController {
           rightSelfie,
           true,
           true,
-        ]
+        ],
       );
 
       console.log(`✅ Verification saved for user: ${userId}`);
@@ -279,7 +278,7 @@ class BookingController {
       // Check verification
       const verificationResult = await client.query(
         `SELECT * FROM user_verifications WHERE user_id = $1 AND is_verified = true`,
-        [userId]
+        [userId],
       );
 
       if (verificationResult.rows.length === 0) {
@@ -345,7 +344,7 @@ class BookingController {
         const availability = await vehicleGrpcClient.checkAvailability(
           vehicleId,
           startDate,
-          endDate
+          endDate,
         );
         if (!availability.is_available) {
           return res.status(400).json({
@@ -375,7 +374,7 @@ class BookingController {
           userId,
           deposit,
           provider,
-          paymentMethodId
+          paymentMethodId,
         );
 
         console.log(`✅ Payment intent created: ${paymentIntent.intent_id}`);
@@ -416,13 +415,13 @@ class BookingController {
             additionalNotes,
             "pending_payment",
             paymentExpiry,
-          ]
+          ],
         );
 
         await client.query("COMMIT");
 
         console.log(
-          `✅ Booking created with 30min payment window: ${bookingId}`
+          `✅ Booking created with 30min payment window: ${bookingId}`,
         );
 
         // ✅ Fetch customer info for notification
@@ -440,17 +439,17 @@ class BookingController {
         // ✅ Publish booking.created event (notification will be sent)
         const bookingForEvent = await client.query(
           "SELECT * FROM bookings WHERE booking_id = $1",
-          [bookingId]
+          [bookingId],
         );
 
         if (bookingForEvent.rows.length > 0) {
           await eventPublisher.bookingCreated(
             bookingForEvent.rows[0],
             vehicle,
-            customerInfo
+            customerInfo,
           );
           console.log(
-            `📧 Booking created notification sent to ${customerInfo.email}`
+            `📧 Booking created notification sent to ${customerInfo.email}`,
           );
         }
 
@@ -548,9 +547,8 @@ class BookingController {
       let vehicles = {};
 
       try {
-        const vehiclesList = await vehicleGrpcClient.getVehiclesInfo(
-          vehicleIds
-        );
+        const vehiclesList =
+          await vehicleGrpcClient.getVehiclesInfo(vehicleIds);
         vehiclesList.forEach((v) => {
           vehicles[v.vehicle_id] = v;
         });
@@ -560,7 +558,7 @@ class BookingController {
 
       const countResult = await pool.query(
         "SELECT COUNT(*) FROM bookings WHERE customer_id = $1",
-        [userId]
+        [userId],
       );
 
       const now = new Date();
@@ -643,7 +641,7 @@ class BookingController {
 
       const result = await pool.query(
         `SELECT b.* FROM bookings b WHERE b.booking_id = $1`,
-        [id]
+        [id],
       );
 
       if (result.rows.length === 0) {
@@ -659,7 +657,11 @@ class BookingController {
         vehicle = { name: "Unknown Vehicle", owner_id: null };
       }
 
-      if (booking.customer_id !== userId && vehicle.owner_id !== userId && userRole !== "admin") {
+      if (
+        booking.customer_id !== userId &&
+        vehicle.owner_id !== userId &&
+        userRole !== "admin"
+      ) {
         return res.status(403).json({ error: "Access denied" });
       }
 
@@ -725,8 +727,7 @@ class BookingController {
       const canSignContract =
         booking.status === "booking" &&
         booking.deposit_paid &&
-        !booking.contract_signed_at &&
-        isAfterBookingDay;
+        !booking.contract_signed_at;
       const needsFinalPayment =
         booking.status === "booking" &&
         booking.contract_signed_at &&
@@ -842,7 +843,7 @@ class BookingController {
 
       const bookingResult = await client.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -880,7 +881,7 @@ class BookingController {
              contract_signed_at = NOW(),
              updated_at = NOW()
          WHERE booking_id = $2`,
-        [signature, id]
+        [signature, id],
       );
 
       await client.query("COMMIT");
@@ -900,15 +901,15 @@ class BookingController {
           updatedBooking,
           vehicle,
           customerInfo,
-          ownerInfo
+          ownerInfo,
         );
         console.log(
-          `📧 Contract signed notification sent to ${ownerInfo.email}`
+          `📧 Contract signed notification sent to ${ownerInfo.email}`,
         );
       } catch (error) {
         console.warn(
           "⚠️  Could not send contract notification:",
-          error.message
+          error.message,
         );
       }
 
@@ -959,7 +960,7 @@ class BookingController {
 
       const bookingResult = await client.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -976,8 +977,7 @@ class BookingController {
 
       if (!booking.deposit_paid) {
         return res.status(400).json({
-          error:
-            "Deposit must be paid before pickup",
+          error: "Deposit must be paid before pickup",
         });
       }
 
@@ -993,7 +993,7 @@ class BookingController {
       }
 
       console.log(
-        `✅ Storing ${pickupPhotos.length} photo IDs from media service`
+        `✅ Storing ${pickupPhotos.length} photo IDs from media service`,
       );
 
       await client.query(
@@ -1005,7 +1005,7 @@ class BookingController {
            status = 'picked_up',
            updated_at = NOW()
        WHERE booking_id = $4`,
-        [JSON.stringify(pickupPhotos), odometerReading, notes, id]
+        [JSON.stringify(pickupPhotos), odometerReading, notes, id],
       );
 
       await client.query("COMMIT");
@@ -1030,10 +1030,10 @@ class BookingController {
           updatedBooking,
           vehicle,
           customerInfo,
-          ownerInfo
+          ownerInfo,
         );
         console.log(
-          `📧 Pickup confirmed notification sent to ${ownerInfo.email}`
+          `📧 Pickup confirmed notification sent to ${ownerInfo.email}`,
         );
       } catch (error) {
         console.warn("⚠️  Could not send pickup notification:", error.message);
@@ -1084,7 +1084,7 @@ class BookingController {
 
       const bookingResult = await client.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -1105,7 +1105,7 @@ class BookingController {
       }
 
       console.log(
-        `✅ Storing ${returnPhotos.length} return photo IDs from media service`
+        `✅ Storing ${returnPhotos.length} return photo IDs from media service`,
       );
 
       await client.query(
@@ -1117,13 +1117,13 @@ class BookingController {
            status = 'return_submitted',
            updated_at = NOW()
        WHERE booking_id = $4`,
-        [JSON.stringify(returnPhotos), odometerReading, notes, id]
+        [JSON.stringify(returnPhotos), odometerReading, notes, id],
       );
 
       await client.query("COMMIT");
 
       console.log(
-        `✅ Return submitted for booking: ${id} (status: return_submitted)`
+        `✅ Return submitted for booking: ${id} (status: return_submitted)`,
       );
       console.log(`✅ Stored return photo IDs: ${returnPhotos.join(", ")}`);
 
@@ -1151,7 +1151,7 @@ class BookingController {
 
       const bookingResult = await pool.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -1191,7 +1191,7 @@ class BookingController {
           userId,
           booking.remaining_payment,
           provider,
-          paymentMethodId
+          paymentMethodId,
         );
 
         console.log(`✅ Final payment intent created for booking: ${id}`);
@@ -1234,7 +1234,7 @@ class BookingController {
 
       const bookingResult = await client.query(
         "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
-        [id, userId]
+        [id, userId],
       );
 
       if (bookingResult.rows.length === 0) {
@@ -1281,7 +1281,7 @@ class BookingController {
              refund_status = $3,
              updated_at = NOW()
          WHERE booking_id = $4`,
-        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id]
+        [reason, refundAmount, refundAmount > 0 ? "processing" : "none", id],
       );
 
       await client.query("COMMIT");
@@ -1293,10 +1293,10 @@ class BookingController {
           booking.start_date,
           booking.end_date,
           id,
-          "remove"
+          "remove",
         );
         console.log(
-          `✅ Removed unavailability after customer cancellation: ${id}`
+          `✅ Removed unavailability after customer cancellation: ${id}`,
         );
       } catch (error) {
         console.error(`⚠️  Could not remove unavailability: ${error.message}`);
@@ -1310,7 +1310,7 @@ class BookingController {
             userId,
             refundAmount,
             "customer_cancellation",
-            reason
+            reason,
           );
           console.log(`✅ Refund initiated: ${refundAmount} VND`);
         } catch (error) {
@@ -1335,15 +1335,15 @@ class BookingController {
         await eventPublisher.bookingCancelled(
           updatedBooking,
           customerInfo,
-          ownerInfo
+          ownerInfo,
         );
         console.log(
-          `📧 Booking cancelled notifications sent to customer and owner`
+          `📧 Booking cancelled notifications sent to customer and owner`,
         );
       } catch (error) {
         console.warn(
           "⚠️  Could not send cancellation notification:",
-          error.message
+          error.message,
         );
       }
 
