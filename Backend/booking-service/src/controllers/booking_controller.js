@@ -789,7 +789,11 @@ class BookingController {
           contract: booking.contract_signed_at
             ? {
                 signedAt: booking.contract_signed_at,
-                url: `https://cdn.com/contracts/${booking.booking_id}.pdf`,
+                signedContractUrl: booking.signed_contract_url || null,
+                platformContractUrl: booking.platform_contract_url || null,
+                ownerSignedAt: booking.owner_contract_signed_at || null,
+                ownerSignedContractUrl:
+                  booking.owner_signed_contract_url || null,
               }
             : null,
           cancellationReason: booking.cancellation_reason || null,
