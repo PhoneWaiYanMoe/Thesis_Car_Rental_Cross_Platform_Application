@@ -303,12 +303,6 @@ class BookingController {
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      if (start <= now) {
-        return res
-          .status(400)
-          .json({ error: "Start date must be in the future" });
-      }
-
       const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       if (days <= 0) {
         return res
