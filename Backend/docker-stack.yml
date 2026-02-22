@@ -327,6 +327,7 @@ services:
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
+      - VEHICLE_SERVICE_URL=http://vehicle-service:3002
       - MEDIA_SERVICE_URL=http://media-service:3008
       - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
