@@ -499,6 +499,12 @@ services:
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
       - BOOKING_SERVICE_GRPC_URL=booking-service:50052
       - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
+      - BOOKING_SERVICE_URL=http://booking-service:3004
+      - VEHICLE_SERVICE_URL=http://vehicle-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3006
+      - REVIEW_SERVICE_URL=http://review-service:3005
+      - USER_SERVICE_URL=http://user-service:3001
+      - REQUEST_SERVICE_URL=http://request-service:3010
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
