@@ -27,7 +27,7 @@ class PaymentService {
     type,
     provider,
     paymentMethodId = null,
-    clientIp = "127.0.0.1",
+    extraMeta = {},
   ) {
     const client = await pool.connect();
 
@@ -117,6 +117,8 @@ class PaymentService {
         bookingId,
         userId,
         type,
+        ownerId: extraMeta.ownerId || null,
+        vehicleId: extraMeta.vehicleId || null,
       };
 
       if (MOCK_MODE) {

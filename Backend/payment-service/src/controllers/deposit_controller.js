@@ -1,5 +1,5 @@
-const paymentService = require('../services/payment_service');
-const bookingGrpcClient = require('../grpc/booking_grpc_client');
+const paymentService = require("../services/payment_service");
+const bookingGrpcClient = require("../grpc/booking_grpc_client");
 
 class DepositController {
   async createDepositIntent(req, res, next) {
@@ -11,11 +11,16 @@ class DepositController {
       const booking = await bookingGrpcClient.getBookingDetails(bookingId);
 
       if (booking.customer_id !== userId) {
-        return res.status(403).json({ error: 'Not authorized for this booking' });
+        return res
+          .status(403)
+          .json({ error: "Not authorized for this booking" });
       }
 
       // Allow deposit payment when status is 'pending_payment' (new booking) or 'pending' (retry)
-      if (booking.status !== 'pending_payment' && booking.status !== 'pending') {
+      if (
+        booking.status !== "pending_payment" &&
+        booking.status !== "pending"
+      ) {
         return res.status(400).json({
           error: `Cannot process deposit. Booking status: ${booking.status}. Expected: pending_payment or pending`,
         });
@@ -24,7 +29,7 @@ class DepositController {
       // Check if deposit is already paid
       if (booking.deposit_paid) {
         return res.status(400).json({
-          error: 'Deposit has already been paid for this booking',
+          error: "Deposit has already been paid for this booking",
         });
       }
 
@@ -33,22 +38,23 @@ class DepositController {
         bookingId,
         userId,
         booking.deposit_amount,
-        'deposit',
+        "deposit",
         provider,
-        paymentMethodId
+        paymentMethodId,
+        { ownerId: booking.owner_id, vehicleId: booking.vehicle_id },
       );
 
       res.status(201).json({
         intentId: result.intentId || result.orderId,
         clientSecret: result.clientSecret,
         amount: booking.deposit_amount,
-        currency: 'VND',
+        currency: "VND",
         status: result.status,
         provider: provider,
         paymentUrl: result.paymentUrl, // For VNPay
       });
     } catch (error) {
-      console.error('Create deposit intent error:', error);
+      console.error("Create deposit intent error:", error);
       next(error);
     }
   }
@@ -62,11 +68,11 @@ class DepositController {
       // Implementation depends on provider-specific confirmation
 
       res.json({
-        message: 'Deposit confirmation received',
+        message: "Deposit confirmation received",
         intentId,
       });
     } catch (error) {
-      console.error('Confirm deposit error:', error);
+      console.error("Confirm deposit error:", error);
       next(error);
     }
   }

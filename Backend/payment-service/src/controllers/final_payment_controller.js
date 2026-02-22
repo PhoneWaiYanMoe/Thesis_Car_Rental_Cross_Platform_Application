@@ -1,5 +1,5 @@
-const paymentService = require('../services/payment_service');
-const bookingGrpcClient = require('../grpc/booking_grpc_client');
+const paymentService = require("../services/payment_service");
+const bookingGrpcClient = require("../grpc/booking_grpc_client");
 
 class FinalPaymentController {
   async createFinalPaymentIntent(req, res, next) {
@@ -11,10 +11,12 @@ class FinalPaymentController {
       const booking = await bookingGrpcClient.getBookingDetails(bookingId);
 
       if (booking.customer_id !== userId) {
-        return res.status(403).json({ error: 'Not authorized for this booking' });
+        return res
+          .status(403)
+          .json({ error: "Not authorized for this booking" });
       }
 
-      if (booking.status !== 'booking') {
+      if (booking.status !== "booking") {
         return res.status(400).json({
           error: `Cannot process final payment. Booking status: ${booking.status}`,
         });
@@ -29,22 +31,23 @@ class FinalPaymentController {
         bookingId,
         userId,
         booking.remaining_payment,
-        'final_payment',
+        "final_payment",
         provider,
-        paymentMethodId
+        paymentMethodId,
+        { ownerId: booking.owner_id, vehicleId: booking.vehicle_id },
       );
 
       res.status(201).json({
         intentId: result.intentId || result.orderId,
         clientSecret: result.clientSecret,
         amount: booking.remaining_payment,
-        currency: 'VND',
+        currency: "VND",
         status: result.status,
         provider: provider,
         paymentUrl: result.paymentUrl, // For VNPay
       });
     } catch (error) {
-      console.error('Create final payment intent error:', error);
+      console.error("Create final payment intent error:", error);
       next(error);
     }
   }
@@ -54,11 +57,11 @@ class FinalPaymentController {
       const { intentId } = req.params;
 
       res.json({
-        message: 'Final payment confirmation received',
+        message: "Final payment confirmation received",
         intentId,
       });
     } catch (error) {
-      console.error('Confirm final payment error:', error);
+      console.error("Confirm final payment error:", error);
       next(error);
     }
   }
