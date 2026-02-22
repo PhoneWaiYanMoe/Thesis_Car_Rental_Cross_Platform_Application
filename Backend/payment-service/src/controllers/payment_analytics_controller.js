@@ -356,7 +356,7 @@ class AnalyticsController {
         completedRevenue: completedRevenue,
         refundedAmount: refundedAmount,
         averageBookingValue: parseFloat(
-          (stats.avg_booking_value || 0).toFixed(2),
+          parseFloat(stats.avg_booking_value || 0).toFixed(2),
         ),
         growth: parseFloat(growth.toFixed(2)),
         trend: trendData.rows.map((row) => ({
