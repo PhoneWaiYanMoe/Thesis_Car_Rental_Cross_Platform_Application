@@ -240,7 +240,9 @@ class AnalyticsController {
         completedBookings: parseInt(row.completed_bookings),
         cancelledBookings: parseInt(row.cancelled_bookings),
         acceptanceRate: parseFloat(acceptanceRate),
-        averageDuration: parseFloat((row.avg_duration || 0).toFixed(1)),
+        averageDuration: parseFloat(
+          parseFloat(row.avg_duration || 0).toFixed(1),
+        ),
         trend: trendData.rows.map((t) => ({
           date: t.date.toISOString().split("T")[0],
           bookings: parseInt(t.bookings),
