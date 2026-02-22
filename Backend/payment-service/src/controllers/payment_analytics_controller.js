@@ -424,7 +424,7 @@ class AnalyticsController {
       res.json({
         totalRevenue: parseInt(stats.total_revenue),
         averageBookingValue: parseFloat(
-          (stats.avg_booking_value || 0).toFixed(2),
+          parseFloat(stats.avg_booking_value || 0).toFixed(2),
         ),
         bookingCount: parseInt(stats.booking_count),
         trend: trendData.rows.map((row) => ({
