@@ -266,6 +266,9 @@ class TrendData {
   TrendData({required this.period, required this.value});
 
   factory TrendData.fromJson(Map<String, dynamic> json) {
-    return TrendData(period: json['period'] ?? '', value: json['value'] ?? json['count'] ?? json['revenue'] ?? 0);
+    return TrendData(
+      period: json['period'] ?? json['date'] ?? '', // API returns 'date' not 'period'
+      value: (json['value'] ?? json['total'] ?? json['count'] ?? json['revenue'] ?? 0) as int,
+    );
   }
 }
