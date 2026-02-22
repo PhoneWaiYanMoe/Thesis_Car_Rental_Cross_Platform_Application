@@ -66,24 +66,25 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       final booking = _bookingDetails!;
       Map<String, String> urls = {};
 
-      // ✅ FIX: Load contract media - contract.url is actually the fileId
-      if (booking.contract != null && booking.contract!.url.isNotEmpty) {
+      // ✅ FIX: Use signedContractUrl instead of url (old field no longer exists)
+      final contractFileId = booking.contract?.signedContractUrl ?? booking.contract?.platformContractUrl;
+      if (contractFileId != null && contractFileId.isNotEmpty) {
         try {
-          final contractFile = await _mediaApiService.getFileById(booking.contract!.url);
-          urls['contract'] = contractFile.url; // MediaFile has a url property
+          final contractFile = await _mediaApiService.getFileById(contractFileId);
+          urls['contract'] = contractFile.url;
           print('✅ Contract URL loaded: ${contractFile.url}');
         } catch (e) {
           print('❌ Failed to load contract: $e');
         }
       }
 
-      // ✅ FIX: Load pickup photos
+      // Load pickup photos
       if (booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty) {
         for (int i = 0; i < booking.pickupPhotos!.length; i++) {
           final photoId = booking.pickupPhotos![i];
           try {
             final photoFile = await _mediaApiService.getFileById(photoId);
-            urls['pickup_$i'] = photoFile.url; // MediaFile has a url property
+            urls['pickup_$i'] = photoFile.url;
             print('✅ Pickup photo $i URL loaded: ${photoFile.url}');
           } catch (e) {
             print('❌ Failed to load pickup photo $i: $e');
@@ -91,13 +92,13 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         }
       }
 
-      // ✅ FIX: Load return photos
+      // Load return photos
       if (booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty) {
         for (int i = 0; i < booking.returnPhotos!.length; i++) {
           final photoId = booking.returnPhotos![i];
           try {
             final photoFile = await _mediaApiService.getFileById(photoId);
-            urls['return_$i'] = photoFile.url; // MediaFile has a url property
+            urls['return_$i'] = photoFile.url;
             print('✅ Return photo $i URL loaded: ${photoFile.url}');
           } catch (e) {
             print('❌ Failed to load return photo $i: $e');
@@ -197,7 +198,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               _buildActionButtons(booking),
             ],
 
-            // ✅ FIX: Only show Rate & Review if canReview is true (not reviewed yet)
             if ((isReturnSubmitted || isCompleted) && !isCancelled && booking.actions.canReview) ...[
               const SizedBox(height: 16),
               _buildRateReviewSection(booking),
@@ -511,7 +511,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ FIXED: Payment steps with proper media display
   Widget _buildPaymentStepsCardWithMedia(BookingDetailsResponse booking) {
     return Card(
       color: AppStyles.surface(context),
@@ -540,7 +539,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsOwnerApproval,
             ),
 
-            // ✅ Step 3: Sign Contract with media
             _buildPaymentStepWithMedia(
               step: 3,
               title: 'Sign Contract',
@@ -550,7 +548,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               mediaWidget: booking.contract != null ? _buildContractMedia() : null,
             ),
 
-            // ✅ Step 4: Final Payment
             _buildPaymentStep(
               step: 4,
               title: 'Final Payment',
@@ -559,7 +556,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               isCurrent: booking.actions.needsFinalPayment,
             ),
 
-            // ✅ Step 5: Pickup Photos with media
             _buildPaymentStepWithMedia(
               step: 5,
               title: 'Pickup Photos',
@@ -571,7 +567,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                   : null,
             ),
 
-            // ✅ Step 6: Return Photos with media
             _buildPaymentStepWithMedia(
               step: 6,
               title: 'Return Photos',
@@ -662,12 +657,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ),
           ],
         ),
-
-        // ✅ Display media if step is completed
         if (isCompleted && mediaWidget != null) ...[
           Padding(padding: const EdgeInsets.only(left: 56, top: 12, bottom: 8), child: mediaWidget),
         ],
-
         if (!isLast)
           Padding(
             padding: const EdgeInsets.only(left: 19, top: 4, bottom: 4),
@@ -681,7 +673,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ FIXED: Contract media display
   Widget _buildContractMedia() {
     final contractUrl = _mediaUrls['contract'];
 
@@ -708,7 +699,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.description, color: Colors.green, size: 32),
+          const Icon(Icons.description, color: Colors.green, size: 32),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -719,29 +710,20 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                   style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  _bookingDetails!.contract!.signedAt != null
-                      ? _formatDateTime(_bookingDetails!.contract!.signedAt)
-                      : 'Signed',
-                  style: AppStyles.caption(context),
-                ),
+                Text(_formatDateTime(_bookingDetails!.contract!.signedAt), style: AppStyles.caption(context)),
               ],
             ),
           ),
           if (contractUrl != null)
             IconButton(
               icon: Icon(Icons.visibility, color: AppStyles.primary),
-              onPressed: () {
-                // Open contract in viewer
-                _showContractDialog(contractUrl);
-              },
+              onPressed: () => _showContractDialog(contractUrl),
             ),
         ],
       ),
     );
   }
 
-  // ✅ FIXED: Photo gallery display
   Widget _buildPhotoGallery(List<String> photoIds, String type) {
     if (_isLoadingMedia) {
       return Container(
@@ -757,13 +739,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       );
     }
 
-    // Filter available photo URLs
     List<String> availableUrls = [];
     for (int i = 0; i < photoIds.length; i++) {
       final url = _mediaUrls['${type}_$i'];
-      if (url != null) {
-        availableUrls.add(url);
-      }
+      if (url != null) availableUrls.add(url);
     }
 
     if (availableUrls.isEmpty) {
@@ -776,7 +755,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 20),
+            const Icon(Icons.check_circle, color: Colors.green, size: 20),
             const SizedBox(width: 8),
             Text(
               '${photoIds.length} photo(s) submitted',
@@ -792,7 +771,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 16),
+            const Icon(Icons.check_circle, color: Colors.green, size: 16),
             const SizedBox(width: 6),
             Text(
               '${availableUrls.length} photo(s) submitted',
@@ -806,54 +785,49 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: availableUrls.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => _showPhotoDialog(availableUrls, index),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      availableUrls[index],
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => _showPhotoDialog(availableUrls, index),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    availableUrls[index],
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
                       width: 80,
                       height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey.shade300,
-                          child: Icon(Icons.broken_image, color: Colors.grey),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey.shade200,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        );
-                      },
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey.shade200,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  // ✅ Photo viewer dialog
   void _showPhotoDialog(List<String> urls, int initialIndex) {
     showDialog(
       context: context,
@@ -865,41 +839,37 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             PageView.builder(
               itemCount: urls.length,
               controller: PageController(initialPage: initialIndex),
-              itemBuilder: (context, index) {
-                return InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: Center(
-                    child: Image.network(
-                      urls[index],
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline, color: Colors.white, size: 48),
-                              const SizedBox(height: 16),
-                              Text('Failed to load image', style: TextStyle(color: Colors.white)),
-                            ],
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: Colors.white,
-                          ),
-                        );
-                      },
+              itemBuilder: (context, index) => InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Center(
+                  child: Image.network(
+                    urls[index],
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.white, size: 48),
+                          SizedBox(height: 16),
+                          Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
                     ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ),
             ),
             Positioned(
               top: 40,
@@ -927,7 +897,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ Contract viewer dialog
   void _showContractDialog(String contractUrl) {
     showDialog(
       context: context,
@@ -946,7 +915,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
+                    const Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
                     Text('Contract PDF', style: AppStyles.h3(context)),
                     const SizedBox(height: 8),
@@ -955,7 +924,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                     ElevatedButton.icon(
                       style: AppStyles.primaryButtonStyle(context),
                       onPressed: () {
-                        // TODO: Open in browser or PDF viewer
                         ScaffoldMessenger.of(
                           context,
                         ).showSnackBar(SnackBar(content: Text('Contract URL: $contractUrl')));
@@ -973,7 +941,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // ✅ FIXED: Rate & Review Section (only shows when canReview is true)
   Widget _buildRateReviewSection(BookingDetailsResponse booking) {
     return Card(
       color: AppStyles.surface(context),
@@ -988,7 +955,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.star, color: Colors.amber, size: 24),
+                const Icon(Icons.star, color: Colors.amber, size: 24),
                 const SizedBox(width: 12),
                 Text('Share Your Experience', style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
               ],
@@ -1029,7 +996,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ),
           const SizedBox(height: 12),
         ],
-
         if (booking.actions.canSignContract) ...[
           SizedBox(
             width: double.infinity,
@@ -1042,7 +1008,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ),
           const SizedBox(height: 12),
         ],
-
         if (booking.actions.needsFinalPayment) ...[
           SizedBox(
             width: double.infinity,
@@ -1058,7 +1023,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ),
           const SizedBox(height: 12),
         ],
-
         if (booking.actions.canSubmitPickupPhotos) ...[
           SizedBox(
             width: double.infinity,
@@ -1071,7 +1035,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ),
           const SizedBox(height: 12),
         ],
-
         if (booking.actions.canSubmitReturnPhotos) ...[
           SizedBox(
             width: double.infinity,
@@ -1084,7 +1047,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ),
           const SizedBox(height: 12),
         ],
-
         if (booking.actions.canCancel) ...[
           SizedBox(
             width: double.infinity,
@@ -1103,7 +1065,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
   }
 
-  // Action Handlers
   Future<void> _handleDepositPayment(BookingDetailsResponse booking) async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -1112,14 +1073,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             StripePaymentScreen(bookingId: booking.id, paymentType: 'deposit', amount: booking.billing.deposit),
       ),
     );
-
-    if (result != null && result['success'] == true) {
-      _loadBookingDetails();
-    }
+    if (result != null && result['success'] == true) _loadBookingDetails();
   }
 
   Future<void> _handleSignContract(BookingDetailsResponse booking) async {
-    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1141,29 +1098,23 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     );
 
     try {
-      // Try to get existing contract first
       try {
         await _bookingApiService.getContract(booking.id);
       } catch (e) {
-        // Contract not generated yet — generate it
         await _bookingApiService.generateContract(booking.id);
       }
 
       if (mounted) {
-        Navigator.pop(context); // dismiss loading
-
+        Navigator.pop(context);
         final result = await Navigator.push<bool>(
           context,
           MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
         );
-
-        if (result == true) {
-          _loadBookingDetails();
-        }
+        if (result == true) _loadBookingDetails();
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // dismiss loading
+        Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to load contract: $e'), backgroundColor: Colors.red));
@@ -1179,10 +1130,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             StripePaymentScreen(bookingId: booking.id, paymentType: 'final', amount: booking.billing.remainingPayment),
       ),
     );
-
-    if (result != null && result['success'] == true) {
-      _loadBookingDetails();
-    }
+    if (result != null && result['success'] == true) _loadBookingDetails();
   }
 
   Future<void> _handleSubmitPickupPhotos(BookingDetailsResponse booking) async {
@@ -1212,10 +1160,7 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         'ownerId': booking.vehicle.ownerId,
       },
     );
-
-    if (result == true) {
-      _loadBookingDetails();
-    }
+    if (result == true) _loadBookingDetails();
   }
 
   Future<void> _handleCancelBooking(BookingDetailsResponse booking) async {
@@ -1262,7 +1207,6 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           bookingId: booking.id,
           reason: reasonController.text.isEmpty ? 'No reason provided' : reasonController.text,
         );
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Booking cancelled successfully'), backgroundColor: Colors.green),
@@ -1325,7 +1269,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} '
+        '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatPrice(int price) {

@@ -1055,6 +1055,8 @@ class BookingDetailsResponse {
   final DateTime? cancellationDate;
   final int? refundAmount;
   final String? refundStatus;
+  final String? ownerSignedContractUrl;
+  final DateTime? ownerContractSignedAt;
 
   BookingDetailsResponse({
     required this.id,
@@ -1076,6 +1078,8 @@ class BookingDetailsResponse {
     this.cancellationDate,
     this.refundAmount,
     this.refundStatus,
+    this.ownerSignedContractUrl,
+    this.ownerContractSignedAt,
   });
 
   factory BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
@@ -1128,6 +1132,10 @@ class BookingDetailsResponse {
           : null,
       refundAmount: _parseInt(json['refundAmount']),
       refundStatus: json['refundStatus']?.toString(),
+      ownerSignedContractUrl: json['ownerSignedContractUrl'],
+      ownerContractSignedAt: json['ownerContractSignedAt'] != null
+          ? DateTime.tryParse(json['ownerContractSignedAt'].toString())
+          : null,
     );
   }
 }
@@ -1198,18 +1206,32 @@ class InsuranceInfo {
 
 class ContractInfo {
   final DateTime signedAt;
-  final String url;
+  final String? signedContractUrl;
+  final String? platformContractUrl;
+  final DateTime? ownerSignedAt;
+  final String? ownerSignedContractUrl;
 
-  ContractInfo({required this.signedAt, required this.url});
+  ContractInfo({
+    required this.signedAt,
+    this.signedContractUrl,
+    this.platformContractUrl,
+    this.ownerSignedAt,
+    this.ownerSignedContractUrl,
+  });
+
+  bool get ownerHasSigned => ownerSignedAt != null;
 
   factory ContractInfo.fromJson(Map<String, dynamic> json) {
     try {
       return ContractInfo(
         signedAt: DateTime.parse(json['signedAt']?.toString() ?? DateTime.now().toIso8601String()),
-        url: json['url']?.toString() ?? '',
+        signedContractUrl: json['signedContractUrl']?.toString(),
+        platformContractUrl: json['platformContractUrl']?.toString(),
+        ownerSignedAt: json['ownerSignedAt'] != null ? DateTime.tryParse(json['ownerSignedAt'].toString()) : null,
+        ownerSignedContractUrl: json['ownerSignedContractUrl']?.toString(),
       );
     } catch (e) {
-      return ContractInfo(signedAt: DateTime.now(), url: '');
+      return ContractInfo(signedAt: DateTime.now());
     }
   }
 }

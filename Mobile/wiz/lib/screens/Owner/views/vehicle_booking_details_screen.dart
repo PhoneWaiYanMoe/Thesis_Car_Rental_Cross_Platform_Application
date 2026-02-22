@@ -42,6 +42,9 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
   Map<String, BookingDetailsResponse> _bookingDetails = {};
   Set<String> _loadingDetailsForBookings = {};
 
+  // Track bookings where owner has already signed this session
+  Set<String> _ownerSignedBookings = {};
+
   @override
   void initState() {
     super.initState();
@@ -108,7 +111,7 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
 
   Future<void> _loadMediaForBookings() async {
     for (var booking in _bookings) {
-      if (booking.status == 'return_submitted' || booking.status == 'completed') {
+      if (booking.status == 'return_submitted' || booking.status == 'completed' || booking.status == 'picked_up') {
         _loadBookingMedia(booking.id);
       }
     }
@@ -487,7 +490,7 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
                     onPressed: () => Navigator.pop(context, true),
                     style: AppStyles.primaryButtonStyle(context),
                     icon: const Icon(Icons.check, size: 18),
-                    label: const Text('Sign & Confirm'),
+                    label: const Text('Sign'),
                   ),
                 ],
               ),
@@ -566,6 +569,7 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Contract signed successfully!'), backgroundColor: Colors.green));
+        setState(() => _ownerSignedBookings.add(booking.id));
         _bookingDetails.remove(booking.id);
         _loadBookings();
       }
@@ -800,13 +804,19 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
               style: AppStyles.body(context).copyWith(color: AppStyles.primary, fontWeight: FontWeight.bold),
             ),
 
-            // Photos for return/completed
-            if ((booking.status == 'completed' || booking.status == 'return_submitted') && hasMedia) ...[
+            // Photos for return/completed/picked_up
+            if ((booking.status == 'completed' ||
+                    booking.status == 'return_submitted' ||
+                    booking.status == 'picked_up') &&
+                hasMedia) ...[
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 12),
               _buildReturnPhotosSection(booking.id, mediaUrls),
-            ] else if ((booking.status == 'completed' || booking.status == 'return_submitted') && isLoadingMedia) ...[
+            ] else if ((booking.status == 'completed' ||
+                    booking.status == 'return_submitted' ||
+                    booking.status == 'picked_up') &&
+                isLoadingMedia) ...[
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 12),
@@ -853,14 +863,10 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     );
   }
 
-  /// Builds the action section for 'booking' (confirmed) status.
-  /// Shows contract + owner sign button if contract exists.
-  /// Shows upload button if no contract yet.
   Widget _buildConfirmedBookingActions(OwnerBooking booking) {
     final isLoadingDetails = _loadingDetailsForBookings.contains(booking.id);
     final details = _bookingDetails[booking.id];
 
-    // Still loading details
     if (isLoadingDetails && details == null) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -878,9 +884,8 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     final hasContract = details?.contract != null;
 
     if (hasContract) {
-      // ── Contract exists: show it + owner sign button ──
       final contract = details!.contract!;
-      final contractUrl = contract.url;
+      final ownerAlreadySigned = contract.ownerHasSigned; // ← KEY CHECK
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,37 +927,32 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Signed: ${_formatDateTime(contract.signedAt)}', style: AppStyles.caption(context)),
-
-                // Customer signature preview (if URL is an image)
-                if (contractUrl.isNotEmpty && !contractUrl.endsWith('.pdf')) ...[
+                Text('Customer signed: ${_formatDateTime(contract.signedAt)}', style: AppStyles.caption(context)),
+                if (ownerAlreadySigned) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'You signed: ${_formatDateTime(contract.ownerSignedAt!)}',
+                    style: AppStyles.caption(context).copyWith(color: Colors.green),
+                  ),
+                ],
+                // Customer signature image preview
+                if (contract.signedContractUrl != null &&
+                    contract.signedContractUrl!.isNotEmpty &&
+                    !contract.signedContractUrl!.endsWith('.pdf')) ...[
                   const SizedBox(height: 12),
                   Text('Customer Signature:', style: AppStyles.caption(context).copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showPhotoDialog([contractUrl], 0, 'Customer Signature'),
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                        color: Colors.white,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          contractUrl,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) =>
-                              const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildSignaturePreview(contract.signedContractUrl!, 'Customer Signature'),
+                ],
+                // Owner signature image preview (if signed)
+                if (ownerAlreadySigned &&
+                    contract.ownerSignedContractUrl != null &&
+                    contract.ownerSignedContractUrl!.isNotEmpty &&
+                    !contract.ownerSignedContractUrl!.endsWith('.pdf')) ...[
+                  const SizedBox(height: 12),
+                  Text('Your Signature:', style: AppStyles.caption(context).copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  _buildSignaturePreview(contract.ownerSignedContractUrl!, 'Owner Signature'),
                 ],
               ],
             ),
@@ -960,26 +960,58 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
 
           const SizedBox(height: 12),
 
-          // Pickup photos if available
           if (details.pickupPhotos != null && details.pickupPhotos!.isNotEmpty) ...[
             _buildPickupPhotosFetcher(details.pickupPhotos!),
             const SizedBox(height: 12),
           ],
 
-          // Owner sign button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _handleOwnerSignContract(booking),
-              style: AppStyles.primaryButtonStyle(context),
-              icon: const Icon(Icons.draw, size: 20),
-              label: const Text('Sign Contract as Owner'),
+          // Show signed confirmation OR sign button
+          if (ownerAlreadySigned)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withOpacity(0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'You have signed this contract',
+                          style: AppStyles.body(context).copyWith(color: Colors.green, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Waiting for customer to pickup the vehicle.',
+                          style: AppStyles.caption(context).copyWith(color: Colors.green.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _handleOwnerSignContract(booking),
+                style: AppStyles.primaryButtonStyle(context),
+                icon: const Icon(Icons.draw, size: 20),
+                label: const Text('Sign Contract as Owner'),
+              ),
             ),
-          ),
         ],
       );
     } else {
-      // ── No contract yet: show upload option ──
+      // No contract yet
       return Column(
         children: [
           Container(
@@ -1016,6 +1048,32 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
         ],
       );
     }
+  }
+
+  Widget _buildSignaturePreview(String url, String label) {
+    return GestureDetector(
+      onTap: () => _showPhotoDialog([url], 0, label),
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   /// Inline pickup photos fetcher widget (uses FutureBuilder to resolve IDs → URLs)

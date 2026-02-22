@@ -41,7 +41,7 @@ class AnalyticsApiService {
         queryParams['endDate'] = endDate.toIso8601String();
       }
 
-      final uri = Uri.parse('$baseUrl/analytics/owner/dashboard').replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/api/analytics/owner/dashboard').replace(queryParameters: queryParams);
 
       print('📊 Fetching analytics: $uri');
 
@@ -78,7 +78,9 @@ class AnalyticsApiService {
         return {'success': false, 'error': 'Authentication required'};
       }
 
-      final uri = Uri.parse('$baseUrl/analytics/customer/summary').replace(queryParameters: {'timeRange': timeRange});
+      final uri = Uri.parse(
+        '$baseUrl/api/analytics/customer/summary',
+      ).replace(queryParameters: {'timeRange': timeRange});
 
       final response = await http.get(
         uri,
