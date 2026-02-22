@@ -356,11 +356,11 @@ class AnalyticsController {
         completedRevenue: completedRevenue,
         refundedAmount: refundedAmount,
         averageBookingValue: parseFloat(
-          parseFloat(stats.avg_booking_value || 0).toFixed(2),
+          parseFloat(parseFloat(stats.avg_booking_value || 0).toFixed(2)),
         ),
         growth: parseFloat(growth.toFixed(2)),
         trend: trendData.rows.map((row) => ({
-          date: row.date.toISOString().split("T")[0],
+          date: row.date instanceof Date ? row.date.toISOString().split("T")[0] : String(row.date).split("T")[0],
           deposits: parseInt(row.deposits),
           finalPayments: parseInt(row.final_payments),
           total: parseInt(row.total),
@@ -424,11 +424,11 @@ class AnalyticsController {
       res.json({
         totalRevenue: parseInt(stats.total_revenue),
         averageBookingValue: parseFloat(
-          parseFloat(stats.avg_booking_value || 0).toFixed(2),
+          parseFloat(parseFloat(stats.avg_booking_value || 0).toFixed(2)),
         ),
         bookingCount: parseInt(stats.booking_count),
         trend: trendData.rows.map((row) => ({
-          date: row.date.toISOString().split("T")[0],
+          date: row.date instanceof Date ? row.date.toISOString().split("T")[0] : String(row.date).split("T")[0],
           revenue: parseInt(row.revenue),
           bookings: parseInt(row.bookings),
         })),
