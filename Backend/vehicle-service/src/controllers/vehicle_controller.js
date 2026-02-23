@@ -47,7 +47,7 @@ class VehicleController {
 
       query += `
         FROM vehicles v
-        WHERE v.status = 'active'
+        WHERE v.status = 'active' AND v.verification_status = 'approved'
       `;
 
       const params = [];
@@ -137,9 +137,11 @@ class VehicleController {
 
       if (ownerIds.length > 0) {
         try {
-          console.log(`📞 Fetching info for ${ownerIds.length} owners via gRPC...`);
+          console.log(
+            `📞 Fetching info for ${ownerIds.length} owners via gRPC...`,
+          );
           const owners = await userGrpcClient.getUserProfiles(ownerIds);
-          
+
           ownerMap = owners.reduce((map, owner) => {
             map[owner.user_id] = {
               name: owner.full_name,
@@ -150,12 +152,16 @@ class VehicleController {
 
           console.log(`✅ Fetched ${owners.length} owner profiles`);
         } catch (error) {
-          console.error("⚠️ gRPC batch fetch failed – using default owner info:", error.message);
+          console.error(
+            "⚠️ gRPC batch fetch failed – using default owner info:",
+            error.message,
+          );
         }
       }
 
       // Count total
-      let countQuery = "SELECT COUNT(*) FROM vehicles WHERE status = 'active'";
+      let countQuery =
+        "SELECT COUNT(*) FROM vehicles WHERE status = 'active' AND verification_status = 'approved'";
       const countParams = [];
       let countParamIndex = 1;
 
@@ -276,7 +282,7 @@ class VehicleController {
            AND end_date >= CURRENT_DATE) as unavailable_periods
          FROM vehicles v
          WHERE v.vehicle_id = $1 AND v.status = 'active'`,
-        [id]
+        [id],
       );
 
       if (result.rows.length === 0) {
@@ -293,12 +299,17 @@ class VehicleController {
 
       try {
         console.log(`📞 Fetching owner info for user ${vehicle.owner_id}...`);
-        const ownerProfile = await userGrpcClient.getUserProfile(vehicle.owner_id);
+        const ownerProfile = await userGrpcClient.getUserProfile(
+          vehicle.owner_id,
+        );
         ownerName = ownerProfile.full_name;
         ownerAvatar = ownerProfile.avatar_url || ownerAvatar;
         console.log(`✅ Owner name: ${ownerName}`);
       } catch (error) {
-        console.error("⚠️ Failed to fetch owner info via gRPC – using defaults:", error.message);
+        console.error(
+          "⚠️ Failed to fetch owner info via gRPC – using defaults:",
+          error.message,
+        );
       }
 
       res.json({
@@ -361,7 +372,7 @@ class VehicleController {
 
       const vehicleResult = await pool.query(
         "SELECT vehicle_id, name, price_per_day FROM vehicles WHERE vehicle_id = $1 AND status = 'active'",
-        [id]
+        [id],
       );
 
       if (vehicleResult.rows.length === 0) {
@@ -378,7 +389,7 @@ class VehicleController {
            (start_date <= $3 AND end_date >= $3) OR
            (start_date >= $2 AND end_date <= $3)
          )`,
-        [id, startDate, endDate]
+        [id, startDate, endDate],
       );
 
       const isAvailable = unavailableResult.rows.length === 0;
