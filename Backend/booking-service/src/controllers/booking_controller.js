@@ -654,7 +654,8 @@ class BookingController {
       if (
         booking.customer_id !== userId &&
         vehicle.owner_id !== userId &&
-        userRole !== "admin"
+        userRole !== "admin" &&
+        userRole !== "support"
       ) {
         return res.status(403).json({ error: "Access denied" });
       }
