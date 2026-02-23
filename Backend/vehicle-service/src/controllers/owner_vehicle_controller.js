@@ -121,7 +121,7 @@ class OwnerVehicleController {
 
       // Set next verification due date (2 months from now)
       const nextVerificationDue = new Date();
-      nextVerificationDue.setMonth(nextVerificationDue.getMonth() + 2);
+      nextVerificationDue.setFullYear(nextVerificationDue.getFullYear() + 1);
 
       // ✅ NEW: Vehicle starts with 'unverified' status
       await client.query(
@@ -176,6 +176,7 @@ class OwnerVehicleController {
       await eventEmitter.emit("vehicle.created", {
         vehicleId,
         ownerId: userId,
+        ownerEmail: req.user.email,
         name,
         vehicleType,
         status: "active",
@@ -184,7 +185,7 @@ class OwnerVehicleController {
       });
 
       res.status(201).json({
-        message: "Vehicle created successfully",
+        message: "Vehicle created successfully. Vehicle is pending verification and will be available for rentals after admin approval.",
         vehicleId: vehicleId,
         status: "active",
         verificationStatus: "unverified",
@@ -533,6 +534,9 @@ class OwnerVehicleController {
       }
 
       updateFields.push(`updated_at = NOW()`);
+      updateFields.push(`verification_status = 'unverified'`); // Set to unverified on any update
+      updateFields.push(`verification_notes = 'Vehicle details updated, pending re-verification'`);
+      updateFields.push(`next_verification_due = NOW() + INTERVAL '1 year'`);
 
       values.push(id);
       const query = `
@@ -556,7 +560,7 @@ class OwnerVehicleController {
       });
 
       res.json({
-        message: "Vehicle updated successfully",
+        message: "Vehicle update request submitted successfully. Changes will be reflected after admin review.",
         vehicle: {
           id: result.rows[0].vehicle_id,
           name: result.rows[0].name,
@@ -621,11 +625,11 @@ class OwnerVehicleController {
         ownerId: userId,
         oldStatus,
         newStatus: "stopped",
-        reason: "Owner deleted vehicle",
+        reason: "Owner want to delete vehicle",
       });
 
       res.json({
-        message: "Vehicle deleted successfully",
+        message: "Vehicle delete request submitted successfully. Vehicle is now stopped and will not be available for rentals. Changes will be reflected after admin review.",
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -703,7 +707,7 @@ class OwnerVehicleController {
       console.log(`✅ ${photoUrls.length} photos uploaded for vehicle ${id}`);
 
       res.json({
-        message: "Photos uploaded successfully",
+        message: "Photos upload submitted successfully. Admin will review and approve the photos.",
         photoCount: photoUrls.length,
       });
     } catch (error) {

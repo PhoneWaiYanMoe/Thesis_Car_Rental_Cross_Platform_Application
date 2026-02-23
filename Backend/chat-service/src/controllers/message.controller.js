@@ -10,7 +10,7 @@ class MessageController {
         before: req.query.before,
       };
 
-      const result = await messageService.getMessages(id, req.user.id, filters);
+      const result = await messageService.getMessages(id, req.user.userId, filters);
 
       res.status(200).json({
         success: true,
@@ -51,7 +51,7 @@ class MessageController {
         });
       }
 
-      const message = await messageService.sendMessage(id, req.user.id, {
+      const message = await messageService.sendMessage(id, req.user.userId, {
         messageType,
         content,
         mediaFileId,
@@ -73,7 +73,7 @@ class MessageController {
   async markAsRead(req, res) {
     try {
       const { id } = req.params;
-      await messageService.markMessageAsRead(id, req.user.id);
+      await messageService.markMessageAsRead(id, req.user.userId);
 
       res.status(200).json({
         success: true,
@@ -91,7 +91,7 @@ class MessageController {
   async markAllAsRead(req, res) {
     try {
       const { id } = req.params;
-      const result = await messageService.markAllAsRead(id, req.user.id);
+      const result = await messageService.markAllAsRead(id, req.user.userId);
 
       res.status(200).json({
         success: true,
@@ -110,7 +110,7 @@ class MessageController {
   async deleteMessage(req, res) {
     try {
       const { id } = req.params;
-      await messageService.deleteMessage(id, req.user.id);
+      await messageService.deleteMessage(id, req.user.userId);
 
       res.status(200).json({
         success: true,

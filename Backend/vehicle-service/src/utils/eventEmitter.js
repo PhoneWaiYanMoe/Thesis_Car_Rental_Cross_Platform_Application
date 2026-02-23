@@ -76,7 +76,7 @@ class EventEmitter {
       }
 
       const eventPayload = {
-        event: eventType,
+        eventType: eventType,
         timestamp: new Date().toISOString(),
         service: "vehicle-service",
         data: data,

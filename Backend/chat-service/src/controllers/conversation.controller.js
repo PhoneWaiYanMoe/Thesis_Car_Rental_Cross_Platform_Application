@@ -11,7 +11,7 @@ class ConversationController {
       };
 
       const result = await conversationService.getUserConversations(
-        req.user.id,
+        req.user.userId,
         filters
       );
 
@@ -33,7 +33,7 @@ class ConversationController {
       const { id } = req.params;
       const conversation = await conversationService.getConversationById(
         id,
-        req.user.id
+        req.user.userId
       );
 
       res.status(200).json({
@@ -54,7 +54,7 @@ class ConversationController {
       const { id } = req.params;
       const { reason } = req.body;
 
-      await conversationService.blockConversation(id, req.user.id, reason);
+      await conversationService.blockConversation(id, req.user.userId, reason);
 
       res.status(200).json({
         success: true,
@@ -71,7 +71,7 @@ class ConversationController {
 
   async getTotalUnreadCount(req, res) {
     try {
-      const result = await conversationService.getTotalUnreadCount(req.user.id);
+      const result = await conversationService.getTotalUnreadCount(req.user.userId);
 
       res.status(200).json({
         success: true,

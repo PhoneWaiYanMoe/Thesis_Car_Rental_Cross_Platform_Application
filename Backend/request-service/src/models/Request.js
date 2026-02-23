@@ -39,6 +39,7 @@ class Request {
           'owner_verification',
           'vehicle_deactivation',
           'vehicle_reactivation',
+          'vehicle_register_confirmation',
           'user_account_deletion',
           'contract_issue',
           'insurance_claim',

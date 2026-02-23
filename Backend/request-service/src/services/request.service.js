@@ -95,6 +95,45 @@ class RequestService {
   }
 
   /**
+   * Create vehicle confirmation request (created by system after owner register a vehicle)
+   */
+  async createVehicleRegisterConfirmationRequest(eventData) {
+    const { vehicleId, ownerId, ownerEmail } = eventData;
+
+    const request = await Request.create({
+      userId: ownerId,
+      userEmail: ownerEmail,
+      ownerId,
+      vehicleId,
+      category: "vehicle_register_confirmation",
+      title: `Vehicle Registration Confirmation - Vehicle #${vehicleId}`,
+      description:
+        eventData.description || "Vehicle registration confirmation required",
+      priority: "high",
+    });
+
+    await RequestAction.create({
+      requestId: request.id,
+      performedBy: "system",
+      action: "request_created",
+      notes: "Auto-generated for vehicle registration confirmation",
+    });
+
+    await eventPublisher.publish("request.created", "request.created", {
+      requestId: request.id,
+      userId: request.user_id,
+      ownerId: request.owner_id,
+      vehicleId: request.vehicle_id,
+      category: request.category,
+      title: request.title,
+      priority: request.priority,
+      status: request.status,
+    });
+
+    return request;
+  }
+
+  /**
    * Create vehicle update request (from vehicle.updated event)
    */
   async createVehicleUpdateRequest(eventData) {
@@ -137,11 +176,11 @@ class RequestService {
    * Create yearly vehicle confirmation request
    */
   async createYearlyVehicleConfirmationRequest(eventData) {
-    const { vehicleId, ownerId, userId } = eventData;
+    const { vehicleId, ownerId, ownerEmail } = eventData;
 
     const request = await Request.create({
-      userId: userId || ownerId,
-      userEmail: eventData.userEmail,
+      userId: ownerId,
+      userEmail: ownerEmail,
       ownerId,
       vehicleId,
       category: "yearly_vehicle_confirmation",
@@ -426,6 +465,9 @@ class RequestService {
       user_account_deletion: `request.user_account_deletion_${action}`,
       vehicle_deactivation: `request.vehicle_deactivation_${action}`,
       vehicle_reactivation: `request.vehicle_reactivation_${action}`,
+      vehicle_register_confirmation: `request.vehicle_verification_${action}`,
+      yearly_vehicle_confirmation: `request.vehicle_verification_${action}`,
+      vehicle_update: `request.vehicle_verification_${action}`,
       owner_verification: `request.owner_verification_${action}`,
       user_license_verification: `request.user_license_verification_${action}`,
     };

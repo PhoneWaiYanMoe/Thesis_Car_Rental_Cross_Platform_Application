@@ -83,6 +83,19 @@ class EventConsumer {
           await this.handleContractSigned(data);
           break;
 
+        case "vehicle.created":
+          await requestService.createVehicleRegisterConfirmationRequest({
+            vehicleId: data.vehicleId,
+            ownerId: data.ownerId,
+            ownerEmail: data.ownerEmail,
+            description: `New vehicle registered: ${data.name} (ID: ${data.vehicleId})`,
+          });
+
+          console.log(
+            `✓ Created vehicle registration confirmation request for new vehicle: ${data.vehicleId}`,
+          );
+          break; 
+
         // Add more event handlers as needed
         default:
           console.log(`ℹ️ No handler for event type: ${eventType}`);
@@ -104,13 +117,13 @@ class EventConsumer {
         description: data.description || "Annual vehicle confirmation required",
       });
       console.log(
-        `✓ Created yearly vehicle confirmation request for vehicle: ${data.vehicleId}`,
+        `✓ Created vehicle confirmation request for vehicle: ${data.vehicleId}`,
       );
     } else {
       await requestService.createVehicleUpdateRequest({
         vehicleId: data.vehicleId,
         ownerId: data.ownerId,
-        userId: data.userId || data.ownerId,
+        userId: data.ownerId,
         userEmail: data.userEmail,
         updateType: data.updateType || "general",
         description: data.description,

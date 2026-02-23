@@ -280,9 +280,9 @@ class EventHandlers {
    */
   async handleEvent(event) {
     try {
-      console.log(`📨 Processing event: ${event.event}`);
+      console.log(`📨 Processing event: ${event.eventType}`);
 
-      switch (event.event) {
+      switch (event.eventType) {
         case "request.vehicle_deactivation_approved":
           await this.handleVehicleDeactivationApproved(event);
           break;
@@ -312,10 +312,10 @@ class EventHandlers {
           break;
 
         default:
-          console.log(`ℹ️ Unhandled event type: ${event.event}`);
+          console.log(`ℹ️ Unhandled event type: ${event.eventType}`);
       }
     } catch (error) {
-      console.error(`❌ Error handling event ${event.event}:`, error);
+      console.error(`❌ Error handling event ${event.eventType}:`, error);
     }
   }
 }
