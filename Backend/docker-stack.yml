@@ -224,6 +224,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - USER_SERVICE_GRPC_URL=user-service:50053
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
+      - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - wiz-network
     deploy:
