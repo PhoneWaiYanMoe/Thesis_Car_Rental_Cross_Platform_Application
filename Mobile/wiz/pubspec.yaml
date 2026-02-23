@@ -60,6 +60,8 @@ dependencies:
   flutter_stripe: ^11.3.0
 
   fl_chart: ^0.66.0
+  socket_io_client: ^2.0.3+1
+  intl: ^0.18.0
 
 
 

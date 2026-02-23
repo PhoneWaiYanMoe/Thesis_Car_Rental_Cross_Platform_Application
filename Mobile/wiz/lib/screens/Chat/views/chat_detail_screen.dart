@@ -1,14 +1,15 @@
-// Save as: Mobile/wiz/lib/screens/Chat/views/chat_detail_screen.dart
-
+// lib/screens/Chat/views/chat_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
-import 'package:wiz/screens/Chat/models/chat_data.dart';
-import 'package:wiz/screens/Chat/models/message_data.dart';
+import 'package:wiz/screens/Chat/models/conversation_model.dart';
+import 'package:wiz/screens/Chat/models/message_model.dart';
+import 'package:wiz/screens/Chat/services/chat_service.dart';
+import 'dart:async';
 
 class ChatDetailScreen extends StatefulWidget {
-  final ChatData chat;
+  final ConversationModel conversation;
 
-  const ChatDetailScreen({super.key, required this.chat});
+  const ChatDetailScreen({super.key, required this.conversation});
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -17,37 +18,162 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late List<MessageData> messages;
+  final ChatService _chatService = ChatService();
+
+  List<MessageModel> _messages = [];
+  bool _isLoading = false;
+  String? _currentUserId;
+  bool _isTyping = false;
+  String? _typingUserId;
+  Timer? _typingTimer;
+
+  StreamSubscription? _messageSubscription;
+  StreamSubscription? _typingSubscription;
+  StreamSubscription? _messageReadSubscription;
 
   @override
   void initState() {
     super.initState();
-    messages = MessageData.getSampleMessages(widget.chat.name);
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    // Get current user ID
+    _currentUserId = await _chatService.getCurrentUserId();
+
+    // Join conversation room
+    _chatService.joinConversation(widget.conversation.id);
+
+    // Load messages
+    await _loadMessages();
+
+    // Setup real-time listeners
+    _setupRealtimeListeners();
+
+    // Mark all as read when entering chat
+    await _chatService.markAllAsRead(widget.conversation.id);
+  }
+
+  void _setupRealtimeListeners() {
+    // Listen for new messages
+    _messageSubscription = _chatService.messageStream.listen((data) {
+      final message = MessageModel.fromJson(data['message']);
+
+      // Only add if it's for this conversation
+      if (message.conversationId == widget.conversation.id) {
+        setState(() {
+          _messages.add(message);
+        });
+
+        // Scroll to bottom
+        _scrollToBottom();
+
+        // Mark as read if not sent by me
+        if (message.senderId != _currentUserId) {
+          _chatService.markMessageAsRead(message.id);
+        }
+      }
+    });
+
+    // Listen for typing indicators
+    _typingSubscription = _chatService.typingStream.listen((data) {
+      if (data['conversationId'] == widget.conversation.id) {
+        setState(() {
+          _isTyping = data['isTyping'] ?? false;
+          _typingUserId = data['userId'];
+        });
+      }
+    });
+
+    // Listen for message read receipts
+    _messageReadSubscription = _chatService.messageReadStream.listen((data) {
+      if (data['conversationId'] == widget.conversation.id) {
+        // Update message read status
+        setState(() {
+          final messageIndex = _messages.indexWhere(
+            (m) => m.id == data['messageId'],
+          );
+          if (messageIndex != -1) {
+            _messages[messageIndex] = _messages[messageIndex].copyWith(
+              isRead: true,
+              readAt: DateTime.parse(data['readAt']),
+            );
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _loadMessages() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final messages = await _chatService.getMessages(widget.conversation.id);
+
+      if (mounted) {
+        setState(() {
+          _messages = messages;
+          _isLoading = false;
+        });
+
+        // Scroll to bottom after loading
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
+      }
+    }
   }
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
-    setState(() {
-      messages.add(
-        MessageData(
-          text: _messageController.text,
-          isSentByMe: true,
-          time: '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}PM',
-          isRead: false,
-        ),
-      );
-      _messageController.clear();
-    });
+    final content = _messageController.text.trim();
+    _messageController.clear();
 
-    // Scroll to bottom
-    Future.delayed(const Duration(milliseconds: 100), () {
+    // Stop typing indicator
+    _chatService.stopTyping(widget.conversation.id);
+
+    // Send message via socket
+    _chatService.sendMessage(
+      conversationId: widget.conversation.id,
+      messageType: 'text',
+      content: content,
+    );
+
+    // Note: Message will be added via messageStream listener
+  }
+
+  void _onTextChanged(String text) {
+    if (text.isNotEmpty && !_isTyping) {
+      // Start typing
+      _chatService.startTyping(widget.conversation.id);
+      setState(() => _isTyping = true);
+    }
+
+    // Reset typing timer
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      // Stop typing after 2 seconds of inactivity
+      _chatService.stopTyping(widget.conversation.id);
+      setState(() => _isTyping = false);
+    });
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-    });
+    }
   }
 
   @override
@@ -57,61 +183,135 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // Leave conversation room
+            _chatService.leaveConversation(widget.conversation.id);
+            Navigator.pop(context);
+          },
         ),
         title: Row(
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundImage: AssetImage(widget.chat.avatarAsset),
+              backgroundImage: AssetImage(widget.conversation.displayAvatar),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.chat.name, style: AppStyles.h3(context)),
-                Text(
-                  'Seen 1 hour ago',
-                  style: AppStyles.caption(context).copyWith(fontSize: 12),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.conversation.displayName,
+                    style: AppStyles.h3(context),
+                  ),
+                  // Typing or online status
+                  StreamBuilder<Map<String, dynamic>>(
+                    stream: _chatService.typingStream,
+                    builder: (context, snapshot) {
+                      final isTyping =
+                          snapshot.data?['conversationId'] ==
+                              widget.conversation.id &&
+                          snapshot.data?['isTyping'] == true &&
+                          snapshot.data?['userId'] != _currentUserId;
+
+                      if (isTyping) {
+                        return Text(
+                          'typing...',
+                          style: AppStyles.caption(context).copyWith(
+                            fontSize: 12,
+                            color: AppStyles.primary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        );
+                      }
+
+                      return StreamBuilder<Map<String, dynamic>>(
+                        stream: _chatService.onlineStatusStream,
+                        builder: (context, snapshot) {
+                          final isOnline =
+                              snapshot.data?['userId'] ==
+                                  widget.conversation.otherUserId &&
+                              snapshot.data?['status'] == 'online';
+
+                          return Text(
+                            isOnline ? 'Online' : 'Offline',
+                            style: AppStyles.caption(
+                              context,
+                            ).copyWith(fontSize: 12),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         backgroundColor: AppStyles.background(context),
         elevation: 0,
+        actions: [
+          // Connection indicator
+          StreamBuilder<bool>(
+            stream: _chatService.connectionStream,
+            initialData: false,
+            builder: (context, snapshot) {
+              final isConnected = snapshot.data ?? false;
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Icon(
+                  Icons.circle,
+                  color: isConnected ? Colors.green : Colors.red,
+                  size: 12,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
           // Messages list
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final showDate = index == 0 ||
-                    messages[index - 1].date != message.date;
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _messages.isEmpty
+                ? Center(
+                    child: Text(
+                      'No messages yet\nSay hi! 👋',
+                      style: AppStyles.caption(context),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final showDate =
+                          index == 0 ||
+                          _messages[index - 1].formattedDate !=
+                              message.formattedDate;
 
-                return Column(
-                  children: [
-                    // Date separator
-                    if (showDate)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          message.date,
-                          style: AppStyles.caption(context),
-                        ),
-                      ),
-                    
-                    // Message bubble
-                    _buildMessageBubble(message),
-                  ],
-                );
-              },
-            ),
+                      return Column(
+                        children: [
+                          // Date separator
+                          if (showDate)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Text(
+                                message.formattedDate,
+                                style: AppStyles.caption(context),
+                              ),
+                            ),
+
+                          // Message bubble
+                          _buildMessageBubble(message),
+                        ],
+                      );
+                    },
+                  ),
           ),
 
           // Message input
@@ -145,6 +345,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       ),
                     ),
                     style: AppStyles.body(context),
+                    onChanged: _onTextChanged,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -171,28 +373,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildMessageBubble(MessageData message) {
+  Widget _buildMessageBubble(MessageModel message) {
+    final isSentByMe = message.isSentByMe(_currentUserId ?? '');
+
     return Align(
-      alignment: message.isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!message.isSentByMe)
+          if (!isSentByMe)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: CircleAvatar(
                 radius: 16,
-                backgroundImage: AssetImage(widget.chat.avatarAsset),
+                backgroundImage: AssetImage(widget.conversation.displayAvatar),
               ),
             ),
-          
+
           Flexible(
             child: Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: message.isSentByMe
+                color: isSentByMe
                     ? AppStyles.primary
                     : AppStyles.surface(context),
                 borderRadius: BorderRadius.circular(16),
@@ -201,9 +405,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    message.text,
+                    message.displayContent,
                     style: AppStyles.body(context).copyWith(
-                      color: message.isSentByMe
+                      color: isSentByMe
                           ? Colors.white
                           : AppStyles.textPrimary(context),
                     ),
@@ -213,15 +417,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        message.time,
+                        message.formattedTime,
                         style: TextStyle(
                           fontSize: 11,
-                          color: message.isSentByMe
+                          color: isSentByMe
                               ? Colors.white70
                               : AppStyles.textSecondary(context),
                         ),
                       ),
-                      if (message.isSentByMe) ...[
+                      if (isSentByMe) ...[
                         const SizedBox(width: 4),
                         Icon(
                           message.isRead ? Icons.done_all : Icons.done,
@@ -244,6 +448,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _typingTimer?.cancel();
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _messageReadSubscription?.cancel();
+
+    // Leave conversation room
+    _chatService.leaveConversation(widget.conversation.id);
+
     super.dispose();
   }
 }

@@ -18,7 +18,8 @@ import 'package:wiz/screens/Booking/models/booking_data.dart';
 import 'package:wiz/screens/Cars/views/car_details_screen.dart';
 import 'package:wiz/screens/Cars/views/car_list_screen.dart';
 import 'package:wiz/screens/Cars/views/fav_cars_screen.dart';
-import 'package:wiz/screens/Chat/models/chat_data.dart';
+// import 'package:wiz/screens/Chat/models/chat_data.dart';
+import 'package:wiz/screens/Chat/models/conversation_model.dart';
 import 'package:wiz/screens/Chat/views/chat_detail_screen.dart';
 import 'package:wiz/screens/Chat/views/chat_list_screen.dart';
 import 'package:wiz/screens/Home/views/dateTime_screen.dart';
@@ -217,14 +218,22 @@ class AppRoutes {
       case chatList:
         return MaterialPageRoute(builder: (_) => const ChatListScreen());
 
+      // case chatDetail:
+      //   final args = settings.arguments as Map<String, dynamic>?;
+      //   if (args != null && args.containsKey('chat')) {
+      //     final chat = args['chat'] is ChatData
+      //         ? args['chat'] as ChatData
+      //         : throw ArgumentError('Invalid chat data');
+      //     return MaterialPageRoute(
+      //       builder: (_) => ChatDetailScreen(chat: chat),
+      //     );
+      //   }
+      //   return null;
       case chatDetail:
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null && args.containsKey('chat')) {
-          final chat = args['chat'] is ChatData
-              ? args['chat'] as ChatData
-              : throw ArgumentError('Invalid chat data');
+        final conversation = settings.arguments as ConversationModel?;
+        if (conversation != null) {
           return MaterialPageRoute(
-            builder: (_) => ChatDetailScreen(chat: chat),
+            builder: (_) => ChatDetailScreen(conversation: conversation),
           );
         }
         return null;
@@ -337,10 +346,10 @@ class AppRoutes {
     );
   }
 
-  static Future<dynamic> navigateToChatDetail(
-    BuildContext context,
-    ChatData chat,
-  ) {
-    return Navigator.pushNamed(context, chatDetail, arguments: {'chat': chat});
-  }
+  // static Future<dynamic> navigateToChatDetail(
+  //   BuildContext context,
+  //   ChatData chat,
+  // ) {
+  //   return Navigator.pushNamed(context, chatDetail, arguments: {'chat': chat});
+  // }
 }
