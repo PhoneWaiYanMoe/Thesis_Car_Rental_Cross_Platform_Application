@@ -284,16 +284,6 @@ class _CarListScreenState extends State<CarListScreen> {
           const SizedBox(height: 12),
         ],
 
-        // ✅ Show vehicles from searched area (if any)
-        if (!_showNoVehiclesMessage && _filteredCars.isNotEmpty)
-          ..._filteredCars.asMap().entries.map((entry) {
-            final car = entry.value; // ✅ Use car directly from filtered list
-            return BuildCarCard(
-              car: car, // ✅ CHANGED: Pass car object instead of index
-              tripData: widget.tripData,
-            );
-          }),
-
         // ✅ Show loading for alternative vehicles
         if (_isLoadingAlternatives)
           const Center(
@@ -525,7 +515,7 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   void _resetFilters() {
-    _priceRange = const RangeValues(300000, 2000000); // ✅ Match actual vehicle prices
+    RangeValues _priceRange = const RangeValues(0, 2000000);
     _selectedSeats = null;
     _selectedFuel = null;
     _selectedType = null;
