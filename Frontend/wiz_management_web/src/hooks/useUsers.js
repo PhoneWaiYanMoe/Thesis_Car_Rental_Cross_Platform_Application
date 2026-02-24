@@ -37,17 +37,19 @@ export const useUsers = () => {
         name: user.full_name,
         email: user.email,
         phone: user.phone,
-        type: user.role, // Backend uses 'role', frontend uses 'type'
+        type: user.role,
         role: user.role,
         status: user.status,
         avatarUrl: user.avatar_url,
         joinedDate: user.created_at,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
-        // Additional stats will be fetched separately if needed
-        totalBookings: 0,
-        totalCars: 0,
-        totalRentals: 0,
+        totalBookings: user.total_bookings_as_customer || 0,
+        completedBookings: user.completed_bookings_as_customer || 0,
+        totalCars: 0, // comes from vehicle service separately
+        totalRentals: user.total_rentals_as_owner || 0,
+        totalEarnings: parseFloat(user.total_earned) || 0,
+        totalSpent: parseFloat(user.total_spent) || 0,
       }));
 
       setUsers(mappedUsers);
@@ -294,10 +296,13 @@ export const useUsers = () => {
     setError(null);
 
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP, {
-        email,
-        code,
-      });
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP,
+        {
+          email,
+          code,
+        },
+      );
 
       return response.data;
     } catch (err) {

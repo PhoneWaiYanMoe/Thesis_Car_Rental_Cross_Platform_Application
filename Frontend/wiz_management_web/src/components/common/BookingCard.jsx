@@ -52,8 +52,7 @@ export default function BookingCard({ booking, basePath = "/admin/bookings" }) {
     }).format(amount);
   };
 
-  const badge = getStatusBadge(booking.status);
-
+const badge = getStatusBadge(booking.status) || { bg: "bg-gray-50", text: "text-gray-700", label: booking.status || "Unknown" };
   return (
     <div
       onClick={() => navigate(`${basePath}/${booking.id}`)}

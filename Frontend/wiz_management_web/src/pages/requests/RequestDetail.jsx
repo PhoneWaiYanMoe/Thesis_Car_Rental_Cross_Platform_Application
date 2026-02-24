@@ -177,10 +177,28 @@ export default function RequestDetail() {
     setShowConfirm(true);
   };
 
-  const handleDenyClick = () => {
-    setConfirmAction("deny");
-    setShowConfirm(true);
-  };
+const handleDenyClick = () => {
+  setShowDenialInput(true); // show the textarea first
+};
+
+const handleDenySubmit = async () => {
+  if (!denialReason.trim()) {
+    alert("Please provide a reason for denial");
+    return;
+  }
+  setSubmitting(true);
+  try {
+    await denyRequest(id, user.username || user.email, denialReason);
+    setShowDenialInput(false);
+    setDenialReason("");
+    await loadRequest();
+  } catch (err) {
+    console.error("Failed to deny request:", err);
+    alert("Failed to deny request");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleConfirm = async () => {
     setSubmitting(true);
@@ -576,22 +594,37 @@ export default function RequestDetail() {
 
           {/* denial input */}
           {showDenialInput &&
-            request.status === "pending" &&
-            canHandleRequests && (
-              <div className="bg-white rounded-2xl border border-red-200 p-6">
-                <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  Denial Reason Required
-                </h2>
-                <textarea
-                  value={denialReason}
-                  onChange={(e) => setDenialReason(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none"
-                  rows="5"
-                  placeholder="Please provide a clear explanation for denying this request. This message will be sent to the customer."
-                />
-              </div>
-            )}
+  request.status === "pending" &&
+  canHandleRequests && (
+    <div className="bg-white rounded-2xl border border-red-200 p-6">
+      <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
+        <AlertCircle className="w-5 h-5" />
+        Denial Reason Required
+      </h2>
+      <textarea
+        value={denialReason}
+        onChange={(e) => setDenialReason(e.target.value)}
+        className="w-full px-4 py-3 border border-red-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none"
+        rows="5"
+        placeholder="Please provide a clear explanation for denying this request. This message will be sent to the customer."
+      />
+      <div className="flex gap-3 mt-3">
+        <button
+          onClick={handleDenySubmit}
+          disabled={!denialReason.trim() || submitting}
+          className="px-6 py-2 bg-[#F95E5B] text-white rounded-xl font-semibold hover:bg-[#f73d39] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Denying..." : "Confirm Deny"}
+        </button>
+        <button
+          onClick={() => { setShowDenialInput(false); setDenialReason(""); }}
+          className="px-6 py-2 border border-gray-200 text-[#131A34] rounded-xl font-semibold hover:bg-gray-50 transition-all"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )}
 
           {/* Notes */}
           {request.notes && request.notes.length > 0 && (

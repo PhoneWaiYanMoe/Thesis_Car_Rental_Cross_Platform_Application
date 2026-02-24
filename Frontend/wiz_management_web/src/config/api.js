@@ -62,7 +62,7 @@ export const API_ENDPOINTS = {
   // Vehicle Service
   VEHICLES: {
     BASE: `${VEHICLE_SERVICE_URL}/vehicles`,
-    BY_ID: (id) => `${VEHICLE_SERVICE_URL}/vehicles/owner/${id}`,
+    BY_ID: (id) => `${VEHICLE_SERVICE_URL}/vehicles/${id}`,
     BY_OWNER: (ownerId) => `${VEHICLE_SERVICE_URL}/vehicles/owner/${ownerId}`,
     UPDATE_STATUS: (id) => `${VEHICLE_SERVICE_URL}/vehicles/${id}/status`,
   },
@@ -80,18 +80,19 @@ export const API_ENDPOINTS = {
 
   // Request Service
   REQUESTS: {
-    BASE: `${REQUEST_SERVICE_URL}/requests`,
-    BY_ID: (id) => `${REQUEST_SERVICE_URL}/requests/${id}`,
-    MY_REQUESTS: `${REQUEST_SERVICE_URL}/requests/my-requests`,
-    UPDATE_STATUS: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/status`,
-    APPROVE: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/approve`,
-    DENY: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/deny`,
-    PAUSE: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/pause`,
-    RESUME: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/resume`,
-    ADD_NOTE: (id) => `${REQUEST_SERVICE_URL}/requests/${id}/notes`,
+    BASE: `${REQUEST_SERVICE_URL}/api/v1/requests`,
+    BY_ID: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}`,
+    MY_REQUESTS: `${REQUEST_SERVICE_URL}/api/v1/requests/my-requests`,
+    UPDATE_STATUS: (id) =>
+      `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/status`,
+    APPROVE: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/approve`,
+    DENY: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/deny`,
+    PAUSE: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/pause`,
+    RESUME: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/resume`,
+    ADD_NOTE: (id) => `${REQUEST_SERVICE_URL}/api/v1/requests/${id}/notes`,
     METADATA: {
-      CATEGORIES: `${REQUEST_SERVICE_URL}/requests/metadata/categories`,
-      STATUSES: `${REQUEST_SERVICE_URL}/requests/metadata/statuses`,
+      CATEGORIES: `${REQUEST_SERVICE_URL}/api/v1/requests/metadata/categories`,
+      STATUSES: `${REQUEST_SERVICE_URL}/api/v1/requests/metadata/statuses`,
     },
     ANALYTICS: {
       STATS: `${REQUEST_SERVICE_URL}/analytics/requests/stats`,
@@ -118,15 +119,15 @@ export const API_ENDPOINTS = {
 
   // Analysis Service
   ANALYTICS: {
-    ADMIN_DASHBOARD: `${ANALYSIS_SERVICE_URL}/analytics/admin/dashboard`,
-    ADMIN_BOOKINGS: `${ANALYSIS_SERVICE_URL}/analytics/admin/bookings`,
-    ADMIN_REVENUE: `${ANALYSIS_SERVICE_URL}/analytics/admin/revenue`,
-    ADMIN_USERS: `${ANALYSIS_SERVICE_URL}/analytics/admin/users`,
-    ADMIN_STAFF_PERFORMANCE: `${ANALYSIS_SERVICE_URL}/analytics/admin/staff/performance`,
-    OWNER_DASHBOARD: `${ANALYSIS_SERVICE_URL}/analytics/owner/dashboard`,
+    ADMIN_DASHBOARD: `${ANALYSIS_SERVICE_URL}/api/analytics/admin/dashboard`,
+    ADMIN_BOOKINGS: `${ANALYSIS_SERVICE_URL}/api/analytics/admin/bookings`,
+    ADMIN_REVENUE: `${ANALYSIS_SERVICE_URL}/api/analytics/admin/revenue`,
+    ADMIN_USERS: `${ANALYSIS_SERVICE_URL}/api/analytics/admin/users`,
+    ADMIN_STAFF_PERFORMANCE: `${ANALYSIS_SERVICE_URL}/api/analytics/admin/staff/performance`,
+    OWNER_DASHBOARD: `${ANALYSIS_SERVICE_URL}/api/analytics/owner/dashboard`,
     OWNER_VEHICLE: (vehicleId) =>
-      `${ANALYSIS_SERVICE_URL}/analytics/owner/vehicle/${vehicleId}`,
-    OWNER_COMPARISON: `${ANALYSIS_SERVICE_URL}/analytics/owner/vehicles/comparison`,
+      `${ANALYSIS_SERVICE_URL}/api/analytics/owner/vehicle/${vehicleId}`,
+    OWNER_COMPARISON: `${ANALYSIS_SERVICE_URL}/api/analytics/owner/vehicles/comparison`,
   },
 };
 
