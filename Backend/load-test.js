@@ -169,15 +169,14 @@ function searchVehicles(token) {
   const dayAfter = new Date(today);
   dayAfter.setDate(today.getDate() + 3);
 
-  const params = new URLSearchParams({
-    startDate: tomorrow.toISOString().split("T")[0],
-    endDate: dayAfter.toISOString().split("T")[0],
-    page: "1",
-    limit: "10",
-  });
+  const startDate = tomorrow.toISOString().split("T")[0];
+  const endDate = dayAfter.toISOString().split("T")[0];
+
+  // Replace URLSearchParams with a simple string concat
+  const queryString = `startDate=${startDate}&endDate=${endDate}&page=1&limit=10`;
 
   const start = Date.now();
-  const res = http.get(`${BASE_URL}/vehicles/search?${params.toString()}`, {
+  const res = http.get(`${BASE_URL}/vehicles/search?${queryString}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   vehicleDuration.add(Date.now() - start);
