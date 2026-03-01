@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class ChatApiService {
-  static const String baseUrl = 'http://localhost:3011'; // chat-service
+  //static const String baseUrl = 'http://localhost:3011'; // chat-service
+  static const String baseUrl = 'http://206.189.147.242'; // Production URL
   // static const String baseUrl = 'http://10.0.2.2:3011'; // For Android emulator
 
   final _localStorageService = LocalStorageService();
@@ -40,18 +41,13 @@ class ChatApiService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse(
-        '$baseUrl/chat/conversations',
-      ).replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/chat/conversations').replace(queryParameters: queryParams);
 
       print('📋 Fetching conversations: $uri');
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       print('📥 Conversations response: ${response.statusCode}');
@@ -61,10 +57,7 @@ class ChatApiService {
         return {'success': true, 'data': data};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['message'] ?? 'Failed to load conversations',
-        };
+        return {'success': false, 'error': errorData['message'] ?? 'Failed to load conversations'};
       }
     } catch (e) {
       print('❌ Get conversations error: $e');
@@ -85,11 +78,7 @@ class ChatApiService {
         return {'success': false, 'error': 'Authentication required'};
       }
 
-      final queryParams = {
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (before != null) 'before': before,
-      };
+      final queryParams = {'page': page.toString(), 'limit': limit.toString(), if (before != null) 'before': before};
 
       final uri = Uri.parse(
         '$baseUrl/chat/conversations/$conversationId/messages',
@@ -99,10 +88,7 @@ class ChatApiService {
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       print('📥 Messages response: ${response.statusCode}');
@@ -112,10 +98,7 @@ class ChatApiService {
         return {'success': true, 'data': data};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['message'] ?? 'Failed to load messages',
-        };
+        return {'success': false, 'error': errorData['message'] ?? 'Failed to load messages'};
       }
     } catch (e) {
       print('❌ Get messages error: $e');
@@ -140,10 +123,7 @@ class ChatApiService {
 
       final response = await http.post(
         Uri.parse('$baseUrl/chat/conversations/$conversationId/messages'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
         body: jsonEncode({
           'messageType': messageType,
           if (content != null) 'content': content,
@@ -158,10 +138,7 @@ class ChatApiService {
         return {'success': true, 'data': data};
       } else {
         final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': errorData['message'] ?? 'Failed to send message',
-        };
+        return {'success': false, 'error': errorData['message'] ?? 'Failed to send message'};
       }
     } catch (e) {
       print('❌ Send message error: $e');
@@ -179,10 +156,7 @@ class ChatApiService {
 
       final response = await http.patch(
         Uri.parse('$baseUrl/chat/messages/$messageId/read'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -206,10 +180,7 @@ class ChatApiService {
 
       final response = await http.patch(
         Uri.parse('$baseUrl/chat/conversations/$conversationId/read-all'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -233,10 +204,7 @@ class ChatApiService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/chat/conversations/unread/count'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -252,10 +220,7 @@ class ChatApiService {
   }
 
   /// Block conversation
-  Future<Map<String, dynamic>> blockConversation(
-    String conversationId, {
-    String? reason,
-  }) async {
+  Future<Map<String, dynamic>> blockConversation(String conversationId, {String? reason}) async {
     try {
       final token = await _getAuthToken();
       if (token == null) {
@@ -264,10 +229,7 @@ class ChatApiService {
 
       final response = await http.post(
         Uri.parse('$baseUrl/chat/conversations/$conversationId/block'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
         body: jsonEncode({if (reason != null) 'reason': reason}),
       );
 

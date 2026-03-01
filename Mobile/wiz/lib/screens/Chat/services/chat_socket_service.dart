@@ -4,36 +4,27 @@ import 'package:wiz/services/local_storage_service.dart';
 import 'dart:async';
 
 class ChatSocketService {
-  static const String socketUrl = 'http://localhost:3011';
+  //static const String socketUrl = 'http://localhost:3011';
+  static const String socketUrl = 'http://206.189.147.242'; // Production URL
   // static const String socketUrl = 'http://10.0.2.2:3011'; // For Android emulator
 
   IO.Socket? _socket;
   final _localStorageService = LocalStorageService();
 
   // Stream controllers for real-time events
-  final _messageStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  final _typingStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  final _onlineStatusStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  final _messageReadStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  final _unreadCountStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
+  final _messageStreamController = StreamController<Map<String, dynamic>>.broadcast();
+  final _typingStreamController = StreamController<Map<String, dynamic>>.broadcast();
+  final _onlineStatusStreamController = StreamController<Map<String, dynamic>>.broadcast();
+  final _messageReadStreamController = StreamController<Map<String, dynamic>>.broadcast();
+  final _unreadCountStreamController = StreamController<Map<String, dynamic>>.broadcast();
   final _connectionStreamController = StreamController<bool>.broadcast();
 
   // Getters for streams
-  Stream<Map<String, dynamic>> get messageStream =>
-      _messageStreamController.stream;
-  Stream<Map<String, dynamic>> get typingStream =>
-      _typingStreamController.stream;
-  Stream<Map<String, dynamic>> get onlineStatusStream =>
-      _onlineStatusStreamController.stream;
-  Stream<Map<String, dynamic>> get messageReadStream =>
-      _messageReadStreamController.stream;
-  Stream<Map<String, dynamic>> get unreadCountStream =>
-      _unreadCountStreamController.stream;
+  Stream<Map<String, dynamic>> get messageStream => _messageStreamController.stream;
+  Stream<Map<String, dynamic>> get typingStream => _typingStreamController.stream;
+  Stream<Map<String, dynamic>> get onlineStatusStream => _onlineStatusStreamController.stream;
+  Stream<Map<String, dynamic>> get messageReadStream => _messageReadStreamController.stream;
+  Stream<Map<String, dynamic>> get unreadCountStream => _unreadCountStreamController.stream;
   Stream<bool> get connectionStream => _connectionStreamController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
@@ -56,9 +47,9 @@ class ChatSocketService {
             .setTransports(['websocket'])
             .disableAutoConnect()
             .setAuth({'token': token})
+            .setPath('/chat/socket.io/') // ← add this
             .build(),
       );
-
       _setupEventListeners();
       _socket!.connect();
     } catch (e) {

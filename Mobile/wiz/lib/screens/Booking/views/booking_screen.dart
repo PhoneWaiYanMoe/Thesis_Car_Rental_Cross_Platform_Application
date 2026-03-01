@@ -48,10 +48,7 @@ class _BookingScreenState extends State<BookingScreen> {
         AppRoutes.navigateAndReplace(
           context,
           AppRoutes.licenseUpload,
-          arguments: {
-            'fromBooking': true,
-            'bookingArguments': widget.arguments,
-          },
+          arguments: {'fromBooking': true, 'bookingArguments': widget.arguments},
         );
       });
       return;
@@ -119,7 +116,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     insuranceFee: insuranceFee,
                     total: total,
                     deposit: deposit,
-                    remaining: remaining, 
+                    remaining: remaining,
                     days: _bookingData.days,
                   ),
                   const SizedBox(height: 24),
@@ -357,21 +354,15 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       final car = _bookingData.car;
-      
+
       // Prepare pickup and dropoff locations
       Map<String, dynamic> pickupLocation = {};
       Map<String, dynamic> dropoffLocation = {};
 
       if (_bookingData.withDriver) {
         // For with driver mode, use pickup and destination
-        pickupLocation = {
-          'address': _bookingData.pickup ?? '',
-          'type': 'pickup',
-        };
-        dropoffLocation = {
-          'address': _bookingData.destination ?? '',
-          'type': 'dropoff',
-        };
+        pickupLocation = {'address': _bookingData.pickup ?? '', 'type': 'pickup'};
+        dropoffLocation = {'address': _bookingData.destination ?? '', 'type': 'dropoff'};
       } else {
         // For self-drive mode, use location
         final locationParts = (_bookingData.location ?? '').split(', ');
@@ -445,11 +436,8 @@ class _BookingScreenState extends State<BookingScreen> {
         final paymentResult = await Navigator.push<Map<String, dynamic>>(
           context,
           MaterialPageRoute(
-            builder: (context) => StripePaymentScreen(
-              bookingId: response.booking.id,
-              paymentType: 'deposit',
-              amount: depositAmount,
-            ),
+            builder: (context) =>
+                StripePaymentScreen(bookingId: response.booking.id, paymentType: 'deposit', amount: depositAmount),
           ),
         );
 
@@ -521,10 +509,7 @@ class _BookingScreenState extends State<BookingScreen> {
             backgroundColor: AppStyles.surface(context),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text('Booking Failed', style: AppStyles.h2(context)),
-            content: Text(
-              'Failed to create booking: ${e.toString()}',
-              style: AppStyles.body(context),
-            ),
+            content: Text('Failed to create booking: ${e.toString()}', style: AppStyles.body(context)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -536,5 +521,4 @@ class _BookingScreenState extends State<BookingScreen> {
       }
     }
   }
-
 }

@@ -24,7 +24,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _isLoading = false;
   String? _currentUserId;
   bool _isTyping = false;
-  String? _typingUserId;
   Timer? _typingTimer;
 
   StreamSubscription? _messageSubscription;
@@ -38,8 +37,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _initialize() async {
-    // Get current user ID
+    // Get current user ID FIRST before anything else
     _currentUserId = await _chatService.getCurrentUserId();
+    print('👤 Current user ID: $_currentUserId');
 
     // Join conversation room
     _chatService.joinConversation(widget.conversation.id);
@@ -47,7 +47,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // Load messages
     await _loadMessages();
 
-    // Setup real-time listeners
+    // Setup real-time listeners AFTER messages are loaded
     _setupRealtimeListeners();
 
     // Mark all as read when entering chat
@@ -60,27 +60,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       final message = MessageModel.fromJson(data['message']);
 
       // Only add if it's for this conversation
-      if (message.conversationId == widget.conversation.id) {
-        setState(() {
-          _messages.add(message);
-        });
+      if (message.conversationId != widget.conversation.id) return;
 
-        // Scroll to bottom
-        _scrollToBottom();
+      // FIX: Prevent duplicate messages by checking if message ID already exists
+      final alreadyExists = _messages.any((m) => m.id == message.id);
+      if (alreadyExists) {
+        print('⚠️ Duplicate message ignored: ${message.id}');
+        return;
+      }
 
-        // Mark as read if not sent by me
-        if (message.senderId != _currentUserId) {
-          _chatService.markMessageAsRead(message.id);
-        }
+      setState(() {
+        _messages.add(message);
+      });
+
+      // Scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+      // Mark as read if received from other user
+      if (message.senderId != _currentUserId) {
+        _chatService.markMessageAsRead(message.id);
       }
     });
 
     // Listen for typing indicators
     _typingSubscription = _chatService.typingStream.listen((data) {
-      if (data['conversationId'] == widget.conversation.id) {
+      if (data['conversationId'] == widget.conversation.id && data['userId'] != _currentUserId) {
         setState(() {
           _isTyping = data['isTyping'] ?? false;
-          _typingUserId = data['userId'];
         });
       }
     });
@@ -88,15 +94,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // Listen for message read receipts
     _messageReadSubscription = _chatService.messageReadStream.listen((data) {
       if (data['conversationId'] == widget.conversation.id) {
-        // Update message read status
         setState(() {
-          final messageIndex = _messages.indexWhere(
-            (m) => m.id == data['messageId'],
-          );
+          final messageIndex = _messages.indexWhere((m) => m.id == data['messageId']);
           if (messageIndex != -1) {
             _messages[messageIndex] = _messages[messageIndex].copyWith(
               isRead: true,
-              readAt: DateTime.parse(data['readAt']),
+              readAt: DateTime.tryParse(data['readAt'] ?? ''),
             );
           }
         });
@@ -116,53 +119,42 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _isLoading = false;
         });
 
-        // Scroll to bottom after loading
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
       }
     }
   }
 
   void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
     final content = _messageController.text.trim();
+    if (content.isEmpty) return;
+
     _messageController.clear();
 
     // Stop typing indicator
     _chatService.stopTyping(widget.conversation.id);
+    setState(() => _isTyping = false);
+    _typingTimer?.cancel();
 
-    // Send message via socket
-    _chatService.sendMessage(
-      conversationId: widget.conversation.id,
-      messageType: 'text',
-      content: content,
-    );
-
-    // Note: Message will be added via messageStream listener
+    // Send via socket — the server will broadcast new_message back to ALL
+    // members in the room (including sender), so we do NOT add locally here.
+    // The messageStream listener will add it when the server echoes it back.
+    _chatService.sendMessage(conversationId: widget.conversation.id, messageType: 'text', content: content);
   }
 
   void _onTextChanged(String text) {
-    if (text.isNotEmpty && !_isTyping) {
-      // Start typing
+    _typingTimer?.cancel();
+
+    if (text.isNotEmpty) {
       _chatService.startTyping(widget.conversation.id);
-      setState(() => _isTyping = true);
     }
 
-    // Reset typing timer
-    _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
-      // Stop typing after 2 seconds of inactivity
       _chatService.stopTyping(widget.conversation.id);
-      setState(() => _isTyping = false);
     });
   }
 
@@ -184,65 +176,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Leave conversation room
             _chatService.leaveConversation(widget.conversation.id);
             Navigator.pop(context);
           },
         ),
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: AssetImage(widget.conversation.displayAvatar),
-            ),
+            CircleAvatar(radius: 20, backgroundImage: AssetImage(widget.conversation.displayAvatar)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.conversation.displayName,
-                    style: AppStyles.h3(context),
-                  ),
+                  Text(widget.conversation.displayName, style: AppStyles.h3(context)),
                   // Typing or online status
-                  StreamBuilder<Map<String, dynamic>>(
-                    stream: _chatService.typingStream,
-                    builder: (context, snapshot) {
-                      final isTyping =
-                          snapshot.data?['conversationId'] ==
-                              widget.conversation.id &&
-                          snapshot.data?['isTyping'] == true &&
-                          snapshot.data?['userId'] != _currentUserId;
-
-                      if (isTyping) {
+                  if (_isTyping)
+                    Text(
+                      'typing...',
+                      style: AppStyles.caption(
+                        context,
+                      ).copyWith(fontSize: 12, color: AppStyles.primary, fontStyle: FontStyle.italic),
+                    )
+                  else
+                    StreamBuilder<Map<String, dynamic>>(
+                      stream: _chatService.onlineStatusStream,
+                      builder: (context, snapshot) {
+                        final isOnline =
+                            snapshot.data?['userId'] == widget.conversation.otherUserId &&
+                            snapshot.data?['status'] == 'online';
                         return Text(
-                          'typing...',
-                          style: AppStyles.caption(context).copyWith(
-                            fontSize: 12,
-                            color: AppStyles.primary,
-                            fontStyle: FontStyle.italic,
-                          ),
+                          isOnline ? 'Online' : 'Offline',
+                          style: AppStyles.caption(context).copyWith(fontSize: 12),
                         );
-                      }
-
-                      return StreamBuilder<Map<String, dynamic>>(
-                        stream: _chatService.onlineStatusStream,
-                        builder: (context, snapshot) {
-                          final isOnline =
-                              snapshot.data?['userId'] ==
-                                  widget.conversation.otherUserId &&
-                              snapshot.data?['status'] == 'online';
-
-                          return Text(
-                            isOnline ? 'Online' : 'Offline',
-                            style: AppStyles.caption(
-                              context,
-                            ).copyWith(fontSize: 12),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                      },
+                    ),
                 ],
               ),
             ),
@@ -251,19 +218,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         backgroundColor: AppStyles.background(context),
         elevation: 0,
         actions: [
-          // Connection indicator
           StreamBuilder<bool>(
             stream: _chatService.connectionStream,
-            initialData: false,
+            initialData: _chatService.isConnected,
             builder: (context, snapshot) {
               final isConnected = snapshot.data ?? false;
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: Icon(
-                  Icons.circle,
-                  color: isConnected ? Colors.green : Colors.red,
-                  size: 12,
-                ),
+                child: Icon(Icons.circle, color: isConnected ? Colors.green : Colors.red, size: 12),
               );
             },
           ),
@@ -289,24 +251,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
-                      final showDate =
-                          index == 0 ||
-                          _messages[index - 1].formattedDate !=
-                              message.formattedDate;
+                      final showDate = index == 0 || _messages[index - 1].formattedDate != message.formattedDate;
 
                       return Column(
                         children: [
-                          // Date separator
                           if (showDate)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Text(
-                                message.formattedDate,
-                                style: AppStyles.caption(context),
-                              ),
+                              child: Text(message.formattedDate, style: AppStyles.caption(context)),
                             ),
-
-                          // Message bubble
                           _buildMessageBubble(message),
                         ],
                       );
@@ -319,11 +272,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppStyles.background(context),
-              border: Border(
-                top: BorderSide(
-                  color: AppStyles.textSecondary(context).withOpacity(0.2),
-                ),
-              ),
+              border: Border(top: BorderSide(color: AppStyles.textSecondary(context).withOpacity(0.2))),
             ),
             child: Row(
               children: [
@@ -335,14 +284,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       hintStyle: AppStyles.caption(context),
                       filled: true,
                       fillColor: AppStyles.surface(context),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                     style: AppStyles.body(context),
                     onChanged: _onTextChanged,
@@ -354,15 +297,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   onTap: _sendMessage,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: AppStyles.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.send,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    decoration: const BoxDecoration(color: AppStyles.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.send, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -374,7 +310,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Widget _buildMessageBubble(MessageModel message) {
-    final isSentByMe = message.isSentByMe(_currentUserId ?? '');
+    // FIX: Guard against null currentUserId — default to empty string
+    // so messages won't incorrectly appear on the wrong side
+    final isSentByMe = _currentUserId != null && message.isSentByMe(_currentUserId!);
+    print('🔍 senderId=${message.senderId} currentUserId=$_currentUserId match=${message.senderId == _currentUserId}');
 
     return Align(
       alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -382,13 +321,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Avatar only for received messages
           if (!isSentByMe)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundImage: AssetImage(widget.conversation.displayAvatar),
-              ),
+              child: CircleAvatar(radius: 16, backgroundImage: AssetImage(widget.conversation.displayAvatar)),
             ),
 
           Flexible(
@@ -396,21 +333,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSentByMe
-                    ? AppStyles.primary
-                    : AppStyles.surface(context),
-                borderRadius: BorderRadius.circular(16),
+                color: isSentByMe ? AppStyles.primary : AppStyles.surface(context),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isSentByMe ? 16 : 4),
+                  bottomRight: Radius.circular(isSentByMe ? 4 : 16),
+                ),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Text(
                     message.displayContent,
-                    style: AppStyles.body(context).copyWith(
-                      color: isSentByMe
-                          ? Colors.white
-                          : AppStyles.textPrimary(context),
-                    ),
+                    style: AppStyles.body(
+                      context,
+                    ).copyWith(color: isSentByMe ? Colors.white : AppStyles.textPrimary(context)),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -420,9 +358,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         message.formattedTime,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSentByMe
-                              ? Colors.white70
-                              : AppStyles.textSecondary(context),
+                          color: isSentByMe ? Colors.white70 : AppStyles.textSecondary(context),
                         ),
                       ),
                       if (isSentByMe) ...[
@@ -430,7 +366,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         Icon(
                           message.isRead ? Icons.done_all : Icons.done,
                           size: 14,
-                          color: message.isRead ? Colors.blue : Colors.white70,
+                          color: message.isRead ? Colors.lightBlueAccent : Colors.white70,
                         ),
                       ],
                     ],
@@ -439,6 +375,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
           ),
+
+          // Spacer for sent messages (to push bubble left of send button area)
+          if (isSentByMe) const SizedBox(width: 8),
         ],
       ),
     );
@@ -452,10 +391,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
     _messageReadSubscription?.cancel();
-
-    // Leave conversation room
     _chatService.leaveConversation(widget.conversation.id);
-
     super.dispose();
   }
 }
