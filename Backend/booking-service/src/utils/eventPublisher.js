@@ -89,6 +89,8 @@ class EventPublisher {
     await this.publishEvent("booking.accepted_by_owner", {
       bookingId: booking.booking_id,
       customerId: booking.customer_id,
+      ownerId: booking.owner_id, 
+      vehicleId: booking.vehicle_id, 
       customerEmail: customerInfo.email,
       customerName: customerInfo.full_name,
       vehicleName: vehicleInfo.name,

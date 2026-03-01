@@ -249,6 +249,23 @@ class OwnerBookingController {
           `⚠️  Could not auto-generate contract (non-fatal): ${contractErr.message}`,
         );
       }
+      try {
+        const vehicleInfo = await vehicleGrpcClient.getVehicleInfo(
+          booking.vehicle_id,
+        );
+        const customerInfo = await userGrpcClient.getUserProfile(
+          booking.customer_id,
+        );
+        await eventPublisher.bookingAcceptedByOwner(
+          freshBooking,
+          vehicleInfo,
+          customerInfo,
+        );
+        console.log(`📧 Booking accepted event published for booking: ${id}`);
+      } catch (error) {
+        console.warn(`⚠️  Could not publish accepted event: ${error.message}`);
+      }
+
       res.json({
         message: "Booking accepted successfully",
         bookingStatus: "booking",
