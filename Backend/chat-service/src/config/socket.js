@@ -5,6 +5,7 @@ let io = null;
 
 const initializeSocket = (server) => {
   io = new Server(server, {
+    path : '/chat/socket.io',
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
