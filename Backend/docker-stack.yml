@@ -38,6 +38,8 @@ services:
       retries: 3
 
   # ==================== REDIS ====================
+  # ✅ FIXED: Removed placement constraint to allow Redis to run on any node
+  # This fixes the "ENOTFOUND redis" error for chat-service on worker nodes
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
@@ -47,9 +49,10 @@ services:
       - wiz-network
     deploy:
       replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
+      # ❌ REMOVED: placement constraint that was causing connection issues
+      # placement:
+      #   constraints:
+      #     - node.role == manager
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -325,7 +328,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - USER_SERVICE_GRPC_URL=user-service:50053
-      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
+      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:55055
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
       - VEHICLE_SERVICE_URL=http://vehicle-service:3002
