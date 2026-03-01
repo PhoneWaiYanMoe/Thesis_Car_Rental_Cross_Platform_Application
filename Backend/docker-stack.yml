@@ -328,7 +328,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - USER_SERVICE_GRPC_URL=user-service:50053
-      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:55055
+      - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
       - REVIEW_SERVICE_GRPC_URL=review-service:50054
       - PAYMENT_SERVICE_GRPC_URL=payment-service:50056
       - VEHICLE_SERVICE_URL=http://vehicle-service:3002
