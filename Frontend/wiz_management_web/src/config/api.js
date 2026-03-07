@@ -1,13 +1,13 @@
 // API Configuration
 
 // Base URLs for each service
-const ANALYSIS_SERVICE_URL = import.meta.env.VITE_ANALYSIS_SERVICE_URL;
-const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL;
-const VEHICLE_SERVICE_URL = import.meta.env.VITE_VEHICLE_SERVICE_URL;
-const BOOKING_SERVICE_URL = import.meta.env.VITE_BOOKING_SERVICE_URL;
-const REQUEST_SERVICE_URL = import.meta.env.VITE_REQUEST_SERVICE_URL;
-const REVIEW_SERVICE_URL = import.meta.env.VITE_REVIEW_SERVICE_URL;
-const PAYMENT_SERVICE_URL = import.meta.env.VITE_PAYMENT_SERVICE_URL;
+const ANALYSIS_SERVICE_URL = import.meta.env.VITE_ANALYSIS_SERVICE_URL || "";
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || "";
+const VEHICLE_SERVICE_URL = import.meta.env.VITE_VEHICLE_SERVICE_URL || "";
+const BOOKING_SERVICE_URL = import.meta.env.VITE_BOOKING_SERVICE_URL || "";
+const REQUEST_SERVICE_URL = import.meta.env.VITE_REQUEST_SERVICE_URL || "";
+const REVIEW_SERVICE_URL = import.meta.env.VITE_REVIEW_SERVICE_URL || "";
+const PAYMENT_SERVICE_URL = import.meta.env.VITE_PAYMENT_SERVICE_URL || "";
 
 export const API_ENDPOINTS = {
   // USER AUTHENTICATION - UPDATED
