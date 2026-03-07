@@ -1,0 +1,22 @@
+{
+  "rewrites": [
+    { "source": "/api/v1/requests/(.*)", "destination": "http://206.189.147.242/api/v1/requests/$1" },
+    { "source": "/admin/bookings/(.*)", "destination": "http://206.189.147.242/admin/bookings/$1" },
+    { "source": "/auth/(.*)", "destination": "http://206.189.147.242/auth/$1" },
+    { "source": "/analytics/(.*)", "destination": "http://206.189.147.242/analytics/$1" },
+    { "source": "/users/(.*)", "destination": "http://206.189.147.242/users/$1" },
+    { "source": "/profile/(.*)", "destination": "http://206.189.147.242/profile/$1" },
+    { "source": "/vehicles/(.*)", "destination": "http://206.189.147.242/vehicles/$1" },
+    { "source": "/bookings/(.*)", "destination": "http://206.189.147.242/bookings/$1" },
+    { "source": "/reviews/(.*)", "destination": "http://206.189.147.242/reviews/$1" },
+    { "source": "/payment/(.*)", "destination": "http://206.189.147.242/payment/$1" },
+    { "source": "/payments/(.*)", "destination": "http://206.189.147.242/payments/$1" },
+    { "source": "/notifications/(.*)", "destination": "http://206.189.147.242/notifications/$1" },
+    { "source": "/media/(.*)", "destination": "http://206.189.147.242/media/$1" },
+    { "source": "/locations/(.*)", "destination": "http://206.189.147.242/locations/$1" },
+    { "source": "/favorites/(.*)", "destination": "http://206.189.147.242/favorites/$1" },
+    { "source": "/api/(.*)", "destination": "http://206.189.147.242/api/$1" },
+
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
