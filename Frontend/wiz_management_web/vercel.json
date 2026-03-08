@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/(auth|users|vehicles|bookings|admin/bookings|reviews|payment|payments|analytics|profile|favorites|locations|media|notifications|api|api/v1/requests)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/v1/requests/(.*)", "destination": "http://206.189.147.242/api/v1/requests/$1" },
     { "source": "/admin/bookings/(.*)", "destination": "http://206.189.147.242/admin/bookings/$1" },
