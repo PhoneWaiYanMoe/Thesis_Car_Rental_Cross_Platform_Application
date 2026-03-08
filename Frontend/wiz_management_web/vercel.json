@@ -13,7 +13,7 @@
   "rewrites": [
     { "source": "/api/v1/requests/(.*)", "destination": "http://206.189.147.242/api/v1/requests/$1" },
     { "source": "/admin/bookings/(.*)", "destination": "http://206.189.147.242/admin/bookings/$1" },
-    { "source": "/admin/bookings", "destination": "http://206.189.147.242/bookings" },
+    { "source": "/admin/bookings", "destination": "http://206.189.147.242/admin/bookings" },
     { "source": "/auth/(.*)", "destination": "http://206.189.147.242/auth/$1" },
     { "source": "/analytics/(.*)", "destination": "http://206.189.147.242/analytics/$1" },
     { "source": "/users", "destination": "http://206.189.147.242/users" },
