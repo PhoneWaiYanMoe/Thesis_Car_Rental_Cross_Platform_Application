@@ -182,7 +182,7 @@ export const useBookings = () => {
         startDate: booking.startDate,
         endDate: booking.endDate,
         duration: calculateDuration(booking.startDate, booking.endDate),
-        total: booking.pricing?.totalPrice || 0,
+        total: booking.payment?.totalAmount || 0,
         createdDate: booking.createdAt,
       }));
     } catch (err) {

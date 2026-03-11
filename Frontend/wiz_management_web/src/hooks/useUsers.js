@@ -90,6 +90,14 @@ export const useUsers = () => {
         // License info if available
         licenseStatus: user.license_status,
         licenseInfo: user.license_url,
+        total_bookings_as_customer: user.total_bookings_as_customer || 0,
+        completed_bookings_as_customer: user.completed_bookings_as_customer || 0,
+        active_bookings_as_customer: user.active_bookings_as_customer || 0,
+        cancelled_bookings_as_customer: user.cancelled_bookings_as_customer || 0,
+        total_rentals_as_owner: user.total_rentals_as_owner || 0,
+        active_rentals_as_owner: user.active_rentals_as_owner || 0,
+        completed_rentals_as_owner: user.completed_rentals_as_owner || 0,
+        cancelled_rentals_as_owner: user.cancelled_rentals_as_owner || 0,
       };
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch user");

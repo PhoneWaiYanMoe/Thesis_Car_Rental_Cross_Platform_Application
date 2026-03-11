@@ -17,7 +17,7 @@ export default function StatCard({
         </div>
         <div className="flex-1">
           <p className="text-sm text-[#717685] mb-1">{label}</p>
-          <p className="text-3xl font-bold text-[#131A34]">{value}</p>
+          <p className="text-xl font-bold text-[#131A34]">{value}</p>
         </div>
       </div>
     </div>

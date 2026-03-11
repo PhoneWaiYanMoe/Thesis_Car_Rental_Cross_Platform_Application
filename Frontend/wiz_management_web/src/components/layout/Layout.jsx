@@ -31,7 +31,7 @@ export default function Layout({ children }) {
   const menuItems = getMenuItems(user.type);
 
   const isActive = (path) => {
-    if (path === '/dashboard') {
+    if (path === "/dashboard") {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
@@ -39,7 +39,7 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -49,17 +49,17 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#6679C0] rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
               <img
                 src="/images/wiz_logo.png"
                 alt="Wiz Logo"
-                className="w-7 h-7 object-contain"
+                className="w-8 h-8 object-contain"
               />
             </div>
             <div>
               <h2 className="text-[#131A34] font-bold text-lg">Wiz</h2>
               <p className="text-[#717685] text-sm">
-                {isAdmin ? 'Admin Portal' : 'Support Portal'}
+                {isAdmin ? "Admin Portal" : "Support Portal"}
               </p>
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function Layout({ children }) {
                   {user?.name || user?.username}
                 </p>
                 <p className="text-xs text-[#717685]">
-                  {isAdmin ? 'Administrator' : 'Customer Support'}
+                  {isAdmin ? "Administrator" : "Customer Support"}
                 </p>
               </div>
             </div>

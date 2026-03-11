@@ -6,6 +6,7 @@ import { hasPermission } from "../../utils/permissions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReviewList from "../../components/common/ReviewList";
 import { useVehicles, useReviews } from "../../hooks";
+import defaultCar from "../../assets/car.png";
 
 export default function CarDetail() {
   const { id } = useParams();
@@ -132,6 +133,14 @@ export default function CarDetail() {
 
   const carImages = car.images || [car.image];
 
+  const imageSrc =
+    carImages &&
+    carImages.length > 0 &&
+    carImages[currentImageIndex] &&
+    carImages[currentImageIndex].trim() !== ""
+      ? carImages[currentImageIndex]
+      : defaultCar;
+
   return (
     <div>
       {/* Header */}
@@ -160,10 +169,27 @@ export default function CarDetail() {
           {/* Car Images */}
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="aspect-video bg-gray-200 relative group">
-              <img
+              {/* <img
                 src={carImages[currentImageIndex]}
                 alt={car.name}
                 className="w-full h-full object-cover"
+              /> */}
+
+              {/* <img
+                src={
+                  carImages && carImages.length > 0
+                    ? carImages[currentImageIndex]
+                    : defaultCar
+                }
+                alt={car.name}
+                className="w-full h-full object-cover"
+              /> */}
+
+              <img
+                src={imageSrc}
+                alt={car.name}
+                className="w-full h-full object-cover"
+                onError={(e) => (e.target.src = defaultCar)}
               />
 
               {carImages.length > 1 && (
