@@ -904,7 +904,8 @@ const handleDenySubmit = async () => {
           )}
 
           {/* actions - Show for pending requests if user has permission */}
-          {request.status === "pending" && canHandleRequests && (
+        {(request.status === "pending" || request.status === "dispute_opened") && canHandleRequests && (
+
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-lg font-bold text-[#131A34] mb-4">Actions</h2>
               <div className="space-y-3">
