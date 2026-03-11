@@ -581,6 +581,28 @@ class OwnerBookingController {
         }
       }
 
+      if (action === "dispute") {
+        try {
+          const customerInfo = await userGrpcClient.getUserProfile(
+            booking.customer_id,
+          );
+          await eventPublisher.disputeOpened(
+            {
+              ...booking,
+              status: "dispute_opened",
+            },
+            conditionPhotos,
+            damagesReported,
+          );
+          console.log(`✅ Dispute opened event published for booking: ${id}`);
+        } catch (err) {
+          console.warn(
+            "⚠️ Could not publish dispute.opened event:",
+            err.message,
+          );
+        }
+      }
+
       console.log(
         `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`,
       );

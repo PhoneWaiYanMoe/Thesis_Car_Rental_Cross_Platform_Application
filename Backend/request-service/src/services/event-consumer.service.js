@@ -6,7 +6,6 @@ class EventConsumer {
     try {
       await this._subscribe();
 
-      // ✅ Re-subscribe automatically after reconnect
       rabbitmqConnection.onReconnect(async () => {
         console.log("🔄 Re-subscribing to events after RabbitMQ reconnect...");
         await this._subscribe();
@@ -38,6 +37,7 @@ class EventConsumer {
       "review.response_posted",
       "vehicle.created",
       "chat.message_received",
+      "booking.dispute_opened", // ✅ NEW
     ];
 
     for (const key of routingKeys) {
@@ -94,10 +94,13 @@ class EventConsumer {
             ownerEmail: data.ownerEmail,
             description: `New vehicle registered: ${data.name} (ID: ${data.vehicleId})`,
           });
-
           console.log(
             `✓ Created vehicle registration confirmation request for new vehicle: ${data.vehicleId}`,
           );
+          break;
+
+        case "booking.dispute_opened": // ✅ NEW
+          await this.handleDisputeOpened(data);
           break;
 
         default:
@@ -176,6 +179,23 @@ class EventConsumer {
     console.log(
       `✓ Created booking confirmation request for booking: ${data.bookingId}`,
     );
+  }
+
+  // ✅ NEW
+  async handleDisputeOpened(data) {
+    await requestService.createRequest(data.ownerId, {
+      userEmail: data.ownerEmail,
+      ownerId: data.ownerId,
+      customerId: data.customerId,
+      vehicleId: data.vehicleId,
+      bookingId: data.bookingId,
+      category: "damage_report",
+      title: `Dispute Opened - Booking #${data.bookingId}`,
+      description: `Owner reported damages for booking ID: ${data.bookingId}.\n\nDamages reported: ${data.damagesReported || "No details provided"}`,
+      priority: "high",
+    });
+
+    console.log(`✓ Created dispute request for booking: ${data.bookingId}`);
   }
 }
 
