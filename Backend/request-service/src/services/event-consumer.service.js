@@ -4,66 +4,70 @@ const requestService = require("./request.service");
 class EventConsumer {
   async startConsuming() {
     try {
-      const channel = rabbitmqConnection.getChannel();
+      await this._subscribe();
 
-      if (!channel) {
-        console.error("❌ RabbitMQ channel not available for consuming");
-        return;
-      }
-
-      const exchangeName = "wiz.events";
-      const queueName = "request-service-queue";
-
-      // assert queue
-      await channel.assertQueue(queueName, { durable: true });
-
-      // bind queue to exchange with routing keys
-      const routingKeys = [
-        "vehicle.updated",
-        "vehicle.status_changed",
-        "contract.signed",
-        "review.created",
-        "review.owner_reviewed",
-        "review.response_posted",
-        "vehicle.created",
-        "chat.message_received",
-      ];
-
-      for (const key of routingKeys) {
-        await channel.bindQueue(queueName, exchangeName, key);
-      }
-
-      console.log(
-        `✓ Request service listening for events: ${routingKeys.join(", ")}`,
-      );
-
-      // consume messages
-      channel.consume(
-        queueName,
-        async (msg) => {
-          if (msg) {
-            try {
-              const event = JSON.parse(msg.content.toString());
-              console.log(`📨 Received event: ${event.eventType}`, {
-                eventId: event.eventId,
-              });
-
-              await this.handleEvent(event);
-
-              // acknowledge message
-              channel.ack(msg);
-            } catch (error) {
-              console.error("❌ Error processing event:", error);
-              // reject and requeue if there's an error
-              channel.nack(msg, false, true);
-            }
-          }
-        },
-        { noAck: false },
-      );
+      rabbitmqConnection.onReconnect(async () => {
+        console.log("🔄 Re-subscribing to events after RabbitMQ reconnect...");
+        await this._subscribe();
+      });
     } catch (error) {
       console.error("❌ Error starting event consumer:", error);
     }
+  }
+
+  async _subscribe() {
+    const channel = rabbitmqConnection.getChannel();
+
+    if (!channel) {
+      console.error("❌ RabbitMQ channel not available for consuming");
+      return;
+    }
+
+    const exchangeName = "wiz.events";
+    const queueName = "request-service-queue";
+
+    await channel.assertQueue(queueName, { durable: true });
+
+    const routingKeys = [
+      "vehicle.updated",
+      "vehicle.status_changed",
+      "contract.signed",
+      "review.created",
+      "review.owner_reviewed",
+      "review.response_posted",
+      "vehicle.created",
+      "chat.message_received",
+      "booking.dispute_opened", // ✅ NEW
+    ];
+
+    for (const key of routingKeys) {
+      await channel.bindQueue(queueName, exchangeName, key);
+    }
+
+    console.log(
+      `✓ Request service listening for events: ${routingKeys.join(", ")}`,
+    );
+
+    channel.consume(
+      queueName,
+      async (msg) => {
+        if (msg) {
+          try {
+            const event = JSON.parse(msg.content.toString());
+            console.log(`📨 Received event: ${event.eventType}`, {
+              eventId: event.eventId,
+            });
+
+            await this.handleEvent(event);
+            channel.ack(msg);
+          } catch (error) {
+            console.error("❌ Error processing event:", error);
+            channel.nack(msg, false, true);
+          }
+        }
+      },
+      { noAck: false },
+    );
   }
 
   async handleEvent(event) {
@@ -90,13 +94,15 @@ class EventConsumer {
             ownerEmail: data.ownerEmail,
             description: `New vehicle registered: ${data.name} (ID: ${data.vehicleId})`,
           });
-
           console.log(
             `✓ Created vehicle registration confirmation request for new vehicle: ${data.vehicleId}`,
           );
-          break; 
+          break;
 
-        // Add more event handlers as needed
+        case "booking.dispute_opened": // ✅ NEW
+          await this.handleDisputeOpened(data);
+          break;
+
         default:
           console.log(`ℹ️ No handler for event type: ${eventType}`);
       }
@@ -107,7 +113,6 @@ class EventConsumer {
   }
 
   async handleVehicleUpdated(data) {
-    // Check if this is a yearly confirmation or regular update
     if (data.isYearlyConfirmation) {
       await requestService.createYearlyVehicleConfirmationRequest({
         vehicleId: data.vehicleId,
@@ -135,7 +140,6 @@ class EventConsumer {
   }
 
   async handleVehicleStatusChanged(data) {
-    // Create appropriate request based on status change
     let category = "vehicle_listing";
     let title = `Vehicle Status Changed - Vehicle #${data.vehicleId}`;
 
@@ -163,7 +167,6 @@ class EventConsumer {
   }
 
   async handleContractSigned(data) {
-    // Create booking confirmation request when contract is signed
     await requestService.createBookingConfirmationRequest({
       bookingId: data.bookingId,
       vehicleId: data.vehicleId,
@@ -176,6 +179,23 @@ class EventConsumer {
     console.log(
       `✓ Created booking confirmation request for booking: ${data.bookingId}`,
     );
+  }
+
+  // ✅ NEW
+  async handleDisputeOpened(data) {
+    await requestService.createRequest(data.ownerId, {
+      userEmail: data.ownerEmail,
+      ownerId: data.ownerId,
+      customerId: data.customerId,
+      vehicleId: data.vehicleId,
+      bookingId: data.bookingId,
+      category: "damage_report",
+      title: `Dispute Opened - Booking #${data.bookingId}`,
+      description: `Owner reported damages for booking ID: ${data.bookingId}.\n\nDamages reported: ${data.damagesReported || "No details provided"}`,
+      priority: "high",
+    });
+
+    console.log(`✓ Created dispute request for booking: ${data.bookingId}`);
   }
 }
 
