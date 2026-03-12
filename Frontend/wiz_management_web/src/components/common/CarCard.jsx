@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import defaultCar from "../../assets/car.png";
+import defaultCar from "../../assets/Car.png";
 
 export default function CarCard({ car, showOwner = true, onClickPath = null }) {
   const navigate = useNavigate();

@@ -10,7 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useBookings, useUsers, useVehicles } from "../../hooks";
-import defaultCar from "../../assets/car.png";
+import defaultCar from "../../assets/Car.png";
 
 export default function BookingDetail() {
   const { id } = useParams();

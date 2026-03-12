@@ -6,7 +6,7 @@ import { hasPermission } from "../../utils/permissions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReviewList from "../../components/common/ReviewList";
 import { useVehicles, useReviews } from "../../hooks";
-import defaultCar from "../../assets/car.png";
+import defaultCar from "../../assets/Car.png";
 
 export default function CarDetail() {
   const { id } = useParams();

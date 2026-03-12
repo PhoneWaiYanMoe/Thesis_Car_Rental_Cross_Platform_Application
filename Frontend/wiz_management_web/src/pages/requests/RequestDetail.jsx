@@ -18,7 +18,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useRequests, useBookings, useUsers, useVehicles } from "../../hooks";
 import { hasPermission } from "../../utils/permissions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import defaultCar from "../../assets/car.png";
+import defaultCar from "../../assets/Car.png";
 
 export default function RequestDetail() {
   const { id } = useParams();
