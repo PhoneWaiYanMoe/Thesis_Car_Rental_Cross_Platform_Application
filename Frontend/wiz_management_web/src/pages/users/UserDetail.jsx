@@ -51,6 +51,13 @@ export default function UserDetail() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState("");
 
+  const [sumOfFetchedBookings, setSumOfFetchedBookings] = useState(0);
+  const [sumOfFetchedTotalBookings, setSumOfFetchedTotalBookings] = useState(0);
+  const [sumOfFetchedCancelledBookings, setSumOfFetchedCancelledBookings] =
+    useState(0);
+  const [sumOfFetchedCompletedBookings, setSumOfFetchedCompletedBookings] =
+    useState(0);
+
   const canUpdateStatus = hasPermission(
     currentUser?.type,
     "UPDATE_USER_STATUS",
@@ -74,8 +81,34 @@ export default function UserDetail() {
 
       // Fetch bookings
       try {
-        fetchedBookings = await getBookingsByUser(id) || [];
+        fetchedBookings = (await getBookingsByUser(id)) || [];
         setBookings(fetchedBookings);
+
+        // Sum total booking value
+        const total = fetchedBookings.reduce(
+          (sum, booking) => sum + (booking.total || 0),
+          0,
+        );
+
+        setSumOfFetchedBookings(total);
+
+        // Total bookings
+        const totalBookings = fetchedBookings.length;
+
+        // Completed bookings
+        const completedBookings = fetchedBookings.filter(
+          (booking) => booking.status === "completed",
+        ).length;
+
+        // Cancelled bookings
+        const cancelledBookings = fetchedBookings.filter(
+          (booking) => booking.status === "cancelled",
+        ).length;
+
+        setSumOfFetchedTotalBookings(totalBookings);
+        setSumOfFetchedCompletedBookings(completedBookings);
+        setSumOfFetchedCancelledBookings(cancelledBookings);
+
       } catch (err) {
         console.error("Failed to load bookings:", err);
         setBookings([]);
@@ -84,7 +117,7 @@ export default function UserDetail() {
       // If owner, fetch their vehicles
       if (userData.type === "owner" || userData.role === "owner") {
         try {
-          fetchedVehicles = await getVehiclesByOwner(id) || [];
+          fetchedVehicles = (await getVehiclesByOwner(id)) || [];
           setVehicles(fetchedVehicles);
         } catch (err) {
           console.error("Failed to load vehicles:", err);
@@ -105,16 +138,29 @@ export default function UserDetail() {
       // Compute stats from fetched data
       setStats({
         totalBookings: fetchedBookings.length,
-        completedBookings: fetchedBookings.filter(b => b.status === 'completed').length,
-        cancelledBookings: fetchedBookings.filter(b => b.status === 'cancelled').length,
+        completedBookings: fetchedBookings.filter(
+          (b) => b.status === "completed",
+        ).length,
+        cancelledBookings: fetchedBookings.filter(
+          (b) => b.status === "cancelled",
+        ).length,
         totalCars: fetchedVehicles.length,
-        totalRentals: fetchedVehicles.reduce((sum, v) => sum + (v.totalRentals || 0), 0),
-        totalEarnings: fetchedVehicles.reduce((sum, v) => sum + (v.totalEarnings || 0), 0),
-        rating: fetchedReviews.length > 0
-          ? (fetchedReviews.reduce((sum, r) => sum + r.rating, 0) / fetchedReviews.length).toFixed(1)
-          : 0,
+        totalRentals: fetchedVehicles.reduce(
+          (sum, v) => sum + (v.totalRentals || 0),
+          0,
+        ),
+        totalEarnings: fetchedVehicles.reduce(
+          (sum, v) => sum + (v.totalEarnings || 0),
+          0,
+        ),
+        rating:
+          fetchedReviews.length > 0
+            ? (
+                fetchedReviews.reduce((sum, r) => sum + r.rating, 0) /
+                fetchedReviews.length
+              ).toFixed(1)
+            : 0,
       });
-
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load user");
       console.error("Failed to load user:", err);
@@ -158,13 +204,19 @@ export default function UserDetail() {
     const badges = {
       normal: { bg: "bg-green-50", text: "text-green-700", label: "Normal" },
       active: { bg: "bg-green-50", text: "text-green-700", label: "Active" },
-      suspended: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Suspended" },
+      suspended: {
+        bg: "bg-yellow-50",
+        text: "text-yellow-700",
+        label: "Suspended",
+      },
       banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
       deleted: { bg: "bg-red-50", text: "text-red-700", label: "Deleted" },
     };
     const badge = badges[status] || badges.normal;
     return (
-      <div className={`inline-flex items-center ${badge.bg} ${badge.text} px-4 py-2 rounded-xl font-semibold`}>
+      <div
+        className={`inline-flex items-center ${badge.bg} ${badge.text} px-4 py-2 rounded-xl font-semibold`}
+      >
         {badge.label}
       </div>
     );
@@ -173,13 +225,23 @@ export default function UserDetail() {
   const getRoleBadge = (role) => {
     const badges = {
       customer: { bg: "bg-blue-50", text: "text-blue-700", label: "Customer" },
-      owner: { bg: "bg-purple-50", text: "text-purple-700", label: "Car Owner" },
-      support: { bg: "bg-orange-50", text: "text-orange-700", label: "Support" },
+      owner: {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        label: "Car Owner",
+      },
+      support: {
+        bg: "bg-orange-50",
+        text: "text-orange-700",
+        label: "Support",
+      },
       admin: { bg: "bg-red-50", text: "text-red-700", label: "Admin" },
     };
     const badge = badges[role] || badges.customer;
     return (
-      <div className={`inline-flex items-center ${badge.bg} ${badge.text} px-4 py-2 rounded-xl font-semibold`}>
+      <div
+        className={`inline-flex items-center ${badge.bg} ${badge.text} px-4 py-2 rounded-xl font-semibold`}
+      >
         {badge.label}
       </div>
     );
@@ -201,8 +263,12 @@ export default function UserDetail() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-[#B2BCE0] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#131A34] mb-2">{error || "User Not Found"}</h2>
-          <p className="text-[#717685] mb-6">{error || "The user you're looking for doesn't exist"}</p>
+          <h2 className="text-2xl font-bold text-[#131A34] mb-2">
+            {error || "User Not Found"}
+          </h2>
+          <p className="text-[#717685] mb-6">
+            {error || "The user you're looking for doesn't exist"}
+          </p>
           <button
             onClick={() => navigate("/users")}
             className="px-6 py-3 bg-[#6679C0] text-white rounded-xl font-semibold hover:bg-[#131A34] transition-all"
@@ -233,7 +299,9 @@ export default function UserDetail() {
               </span>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#131A34] mb-2">{user.full_name}</h1>
+              <h1 className="text-3xl font-bold text-[#131A34] mb-2">
+                {user.full_name}
+              </h1>
               <p className="text-[#717685]">User ID: {user.id}</p>
             </div>
           </div>
@@ -246,7 +314,9 @@ export default function UserDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">Personal Information</h2>
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Personal Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-[#F8F9FF] rounded-xl flex items-center justify-center flex-shrink-0">
@@ -254,7 +324,9 @@ export default function UserDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-[#717685]">Full Name</p>
-                  <p className="font-semibold text-[#131A34]">{user.full_name}</p>
+                  <p className="font-semibold text-[#131A34]">
+                    {user.full_name}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -263,7 +335,9 @@ export default function UserDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-[#717685]">Email</p>
-                  <p className="font-semibold text-[#131A34] break-all">{user.email}</p>
+                  <p className="font-semibold text-[#131A34] break-all">
+                    {user.email}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -281,7 +355,9 @@ export default function UserDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-[#717685]">Location</p>
-                  <p className="font-semibold text-[#131A34]">{user.location}</p>
+                  <p className="font-semibold text-[#131A34]">
+                    {user.location}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -314,19 +390,53 @@ export default function UserDetail() {
           </div>
 
           {/* Activity Statistics */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">Activity Statistics</h2>
+          {/* <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Activity Statistics
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                <p className="text-3xl font-bold text-[#6679C0] mb-1">{stats.totalBookings}</p>
+                <p className="text-3xl font-bold text-[#6679C0] mb-1">
+                  {stats.totalBookings}
+                </p>
                 <p className="text-sm text-[#717685]">Total Bookings</p>
               </div>
               <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                <p className="text-3xl font-bold text-[#6679C0] mb-1">{stats.completedBookings}</p>
+                <p className="text-3xl font-bold text-[#6679C0] mb-1">
+                  {stats.completedBookings}
+                </p>
                 <p className="text-sm text-[#717685]">Completed</p>
               </div>
               <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                <p className="text-3xl font-bold text-[#6679C0] mb-1">{stats.cancelledBookings}</p>
+                <p className="text-3xl font-bold text-[#6679C0] mb-1">
+                  {stats.cancelledBookings}
+                </p>
+                <p className="text-sm text-[#717685]">Cancelled</p>
+              </div>
+            </div>
+          </div> */}
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Activity Statistics
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
+                <p className="text-xl font-bold text-[#6679C0] mb-1">
+                  {sumOfFetchedTotalBookings}
+                </p>
+                <p className="text-sm text-[#717685]">Total Bookings</p>
+              </div>
+              <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
+                <p className="text-xl font-bold text-[#6679C0] mb-1">
+                  {sumOfFetchedCompletedBookings}
+                </p>
+                <p className="text-sm text-[#717685]">Completed</p>
+              </div>
+              <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
+                <p className="text-xl font-bold text-[#6679C0] mb-1">
+                  {sumOfFetchedCancelledBookings}
+                </p>
                 <p className="text-sm text-[#717685]">Cancelled</p>
               </div>
             </div>
@@ -335,24 +445,33 @@ export default function UserDetail() {
           {/* Car Owner Statistics */}
           {(user.type === "owner" || user.role === "owner") && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="text-lg font-bold text-[#131A34] mb-4">Car Owner Statistics</h2>
+              <h2 className="text-lg font-bold text-[#131A34] mb-4">
+                Car Owner Statistics
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                  <p className="text-3xl font-bold text-[#6679C0] mb-1">{stats.totalCars}</p>
+                  <p className="text-xl font-bold text-[#6679C0] mb-1">
+                    {stats.totalCars}
+                  </p>
                   <p className="text-sm text-[#717685]">Total Cars</p>
                 </div>
                 <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                  <p className="text-3xl font-bold text-[#6679C0] mb-1">{stats.totalRentals}</p>
+                  <p className="text-xl font-bold text-[#6679C0] mb-1">
+                    {stats.totalRentals}
+                  </p>
                   <p className="text-sm text-[#717685]">Total Rentals</p>
                 </div>
                 <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                  <p className="text-3xl font-bold text-[#6679C0] mb-1">
-                    {new Intl.NumberFormat("vi-VN").format(stats.totalEarnings)} đ
+                  <p className="text-xl font-bold text-[#6679C0] mb-1">
+                    {new Intl.NumberFormat("vi-VN").format(
+                      sumOfFetchedBookings,
+                    )}{" "}
+                    đ
                   </p>
                   <p className="text-sm text-[#717685]">Total Earnings</p>
                 </div>
                 <div className="text-center p-4 bg-[#F8F9FF] rounded-xl">
-                  <p className="text-3xl font-bold text-[#6679C0] mb-1">
+                  <p className="text-xl font-bold text-[#6679C0] mb-1">
                     ★ {stats.rating || 0}
                   </p>
                   <p className="text-sm text-[#717685]">Rating</p>
@@ -364,7 +483,9 @@ export default function UserDetail() {
           {/* Recent Bookings */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#131A34]">Recent Bookings</h2>
+              <h2 className="text-lg font-bold text-[#131A34]">
+                Recent Bookings
+              </h2>
               {bookings.length > 3 && (
                 <button
                   onClick={() => navigate(`/bookings?userId=${user.id}`)}
@@ -393,13 +514,21 @@ export default function UserDetail() {
                     >
                       {car && (
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                          <img src={car.image} alt={car.name} className="w-full h-full object-cover" />
+                          <img
+                            src={car.image}
+                            alt={car.name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       )}
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-semibold text-[#131A34]">{car?.name || "Unknown Car"}</p>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[booking.status]}`}>
+                          <p className="font-semibold text-xs text-[#131A34]">
+                            ${booking.id}
+                          </p>
+                          <span
+                            className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[booking.status]}`}
+                          >
                             {booking.status}
                           </span>
                         </div>
@@ -407,14 +536,19 @@ export default function UserDetail() {
                           {new Date(booking.createdDate).toLocaleDateString()}
                         </p>
                         <p className="text-sm font-bold text-[#6679C0] mt-1">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(booking.total)}
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(booking.total)}
                         </p>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-center text-[#717685] py-8">No bookings yet</p>
+                <p className="text-center text-[#717685] py-8">
+                  No bookings yet
+                </p>
               )}
             </div>
           </div>
@@ -434,21 +568,29 @@ export default function UserDetail() {
         <div className="space-y-6">
           {/* Account Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">Account Status</h2>
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Account Status
+            </h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[#717685]">Status</span>
-                <span className={`font-semibold ${
-                  (user.status === "normal" || user.status === "active") ? "text-green-700"
-                  : user.status === "suspended" ? "text-yellow-700"
-                  : "text-red-700"
-                }`}>
+                <span
+                  className={`font-semibold ${
+                    user.status === "normal" || user.status === "active"
+                      ? "text-green-700"
+                      : user.status === "suspended"
+                        ? "text-yellow-700"
+                        : "text-red-700"
+                  }`}
+                >
                   {user.status?.charAt(0).toUpperCase() + user.status?.slice(1)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#717685]">License Verified</span>
-                <span className="font-semibold text-[#131A34]">{user.verified ? "Yes" : "No"}</span>
+                <span className="font-semibold text-[#131A34]">
+                  {user.verified ? "Yes" : "No"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#717685]">Member Since</span>
@@ -521,7 +663,9 @@ export default function UserDetail() {
 
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-[#131A34] mb-4">Quick Actions</h2>
+            <h2 className="text-lg font-bold text-[#131A34] mb-4">
+              Quick Actions
+            </h2>
             <div className="space-y-3">
               <button
                 onClick={() => navigate(`/bookings?userId=${user.id}`)}

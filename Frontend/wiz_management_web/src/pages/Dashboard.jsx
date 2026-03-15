@@ -289,7 +289,7 @@ export default function Dashboard() {
               </p>
               <Calendar className="w-5 h-5 text-[#6679C0]" />
             </div>
-            <p className="text-2xl font-bold text-[#131A34]">
+            <p className="text-xl font-bold text-[#131A34]">
               {bookingStats.active || 0}
             </p>
           </div>
@@ -301,7 +301,7 @@ export default function Dashboard() {
               </p>
               <Clock className="w-5 h-5 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-[#131A34]">
+            <p className="text-xl font-bold text-[#131A34]">
               {requestStats.pending || 0}
             </p>
           </div>
@@ -313,7 +313,7 @@ export default function Dashboard() {
               </p>
               <Car className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-[#131A34]">
+            <p className="text-xl font-bold text-[#131A34]">
               {vehicleStats.available || 0}
             </p>
           </div>
@@ -323,7 +323,7 @@ export default function Dashboard() {
               <p className="text-sm text-[#717685] font-medium">New Users</p>
               <Users className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-[#131A34]">
+            <p className="text-xl font-bold text-[#131A34]">
               {userStats.newUsers || 0}
             </p>
           </div>

@@ -77,7 +77,7 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-6 text-center">
+        {/* <div className="flex items-center gap-6 text-center">
           <div>
             <p className="text-sm text-[#717685]">Bookings</p>
             <p className="font-bold text-[#131A34]">{user.totalBookings}</p>
@@ -89,7 +89,7 @@ export default function UserCard({ user, basePath = "/admin/users" }) {
             </div>
           )}
           <Eye className="w-5 h-5 text-[#B2BCE0] group-hover:text-[#6679C0] transition-colors" />
-        </div>
+        </div> */}
       </div>
     </div>
   );

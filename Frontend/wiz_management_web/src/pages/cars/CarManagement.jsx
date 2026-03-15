@@ -27,7 +27,7 @@ export default function CarManagement() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 9;
 
   const vehicleTypes = ["all", "sedan", "suv", "hatchback", "truck", "van"];
 

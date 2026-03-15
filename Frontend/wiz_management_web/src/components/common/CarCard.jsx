@@ -1,5 +1,5 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
+import defaultCar from "../../assets/Car.png";
 
 export default function CarCard({ car, showOwner = true, onClickPath = null }) {
   const navigate = useNavigate();
@@ -13,8 +13,16 @@ export default function CarCard({ car, showOwner = true, onClickPath = null }) {
         label: "Stopped",
       },
       banned: { bg: "bg-red-50", text: "text-red-700", label: "Banned" },
-      deactivated: { bg: "bg-red-50", text: "text-red-700", label: "Deactivated" },
-      pending: { bg: "bg-yellow-50", text: "text-yellow-700", label: "Pending" },
+      deactivated: {
+        bg: "bg-red-50",
+        text: "text-red-700",
+        label: "Deactivated",
+      },
+      pending: {
+        bg: "bg-yellow-50",
+        text: "text-yellow-700",
+        label: "Pending",
+      },
     };
     return badges[status];
   };
@@ -28,11 +36,14 @@ export default function CarCard({ car, showOwner = true, onClickPath = null }) {
       className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
     >
       <div className="aspect-video bg-gray-200 overflow-hidden">
+
         <img
-          src={car.primaryPhoto}
+          src={car.primaryPhoto?.trim() ? car.primaryPhoto : defaultCar}
           alt={car.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+          onError={(e) => (e.target.src = defaultCar)}
         />
+
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">

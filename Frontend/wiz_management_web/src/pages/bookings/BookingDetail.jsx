@@ -10,6 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useBookings, useUsers, useVehicles } from "../../hooks";
+import defaultCar from "../../assets/Car.png";
 
 export default function BookingDetail() {
   const { id } = useParams();
@@ -144,7 +145,11 @@ export default function BookingDetail() {
         text: "text-green-700",
         label: "Completed with Charge",
       },
-      picked_up: { bg: "bg-blue-50", text: "text-blue-700", label: "Picked Up" },
+      picked_up: {
+        bg: "bg-blue-50",
+        text: "text-blue-700",
+        label: "Picked Up",
+      },
       returned_submitted: {
         bg: "bg-blue-50",
         text: "text-blue-700",
@@ -263,9 +268,10 @@ export default function BookingDetail() {
               <div className="flex items-start gap-4">
                 <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
                   <img
-                    src={car.image}
-                    alt={car.name}
+                    src={car?.image?.trim() ? car.image : defaultCar}
+                    alt={car?.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => (e.target.src = defaultCar)}
                   />
                 </div>
                 <div className="flex-1">
@@ -492,7 +498,9 @@ export default function BookingDetail() {
                   </div>
                   <div>
                     <p className="text-sm text-[#717685]">Name</p>
-                    <p className="font-semibold text-sm text-[#131A34]">{user.name}</p>
+                    <p className="font-semibold text-sm text-[#131A34]">
+                      {user.name}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -512,9 +520,7 @@ export default function BookingDetail() {
                   </div> */}
                   <div>
                     <p className="text-sm text-[#717685]">Phone no : </p>
-                    <p className="font-semibold text-[#131A34]">
-                      {user.phone}
-                    </p>
+                    <p className="font-semibold text-[#131A34]">{user.phone}</p>
                   </div>
                 </div>
                 <button
@@ -540,7 +546,9 @@ export default function BookingDetail() {
                   </div>
                   <div>
                     <p className="text-sm text-[#717685]">Name</p>
-                    <p className="font-semibold text-sm text-[#131A34]">{owner.name}</p>
+                    <p className="font-semibold text-sm text-[#131A34]">
+                      {owner.name}
+                    </p>
                   </div>
                 </div>
                 <button

@@ -17,12 +17,22 @@ import RequestList from "./pages/requests/RequestList";
 import RequestDetail from "./pages/requests/RequestDetail";
 import StaffManagement from "./pages/staff/StaffManagement";
 import StaffRequests from "./pages/staff/StaffRequests";
+import TermsConditions from "./pages/articles/TermsAndConditions";
+import PrivacyPolicy from "./pages/articles/PrivacyPolicy";
+import CancellationPolicy from "./pages/articles/CancellationPolicy";
+import HelpSupport from "./pages/articles/HelpAndSupport";
 
 function AppContent() {
   return (
     <Routes>
       {/* Public Route */}
       <Route path="/login" element={<Login />} />
+
+      {/* article pages */}
+      <Route path="/terms" element={<TermsConditions />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+      <Route path="/help-support" element={<HelpSupport />} />
 
       {/* Protected Routes with Layout */}
       <Route
