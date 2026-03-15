@@ -1,4 +1,3 @@
-// lib/screens/Profile/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/local_storage_service.dart';
@@ -7,6 +6,7 @@ import 'package:wiz/services/user_role_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
 import 'package:wiz/screens/Chat/services/chat_service.dart';
+import 'package:wiz/screens/WebView/webview_screen.dart'; // ← ADD THIS
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -551,21 +551,41 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                   Text('Settings', style: AppStyles.h3(context)),
                   const SizedBox(height: 12),
 
+                  // ✅ CHANGED: Privacy Policy
                   _buildMenuItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    subtitle: 'Manage notification preferences',
+                    icon: Icons.privacy_tip,
+                    title: 'Privacy Policy',
+                    subtitle: 'Read our privacy policy',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                      // Navigate to Privacy Policy WebView
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WebViewScreen(
+                            url: 'https://www.wizrental.online/privacy-policy',
+                            title: 'Privacy Policy',
+                          ),
+                        ),
+                      );
                     },
                   ),
 
+                  // ✅ CHANGED: Help & Support (opens WebView now)
                   _buildMenuItem(
                     icon: Icons.help,
                     title: 'Help & Support',
-                    subtitle: 'Get help with the app',
+                    subtitle: 'Get help and contact support',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+                      // Navigate to Help & Support WebView
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WebViewScreen(
+                            url: 'https://www.wizrental.online/help-support',
+                            title: 'Help & Support',
+                          ),
+                        ),
+                      );
                     },
                   ),
 

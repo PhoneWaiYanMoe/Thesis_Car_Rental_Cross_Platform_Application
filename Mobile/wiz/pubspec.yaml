@@ -63,6 +63,7 @@ dependencies:
   socket_io_client: ^2.0.3+1
   intl: ^0.18.0
 
+  flutter_launcher_icons: ^0.13.1
 
 
 dev_dependencies:
@@ -95,7 +96,13 @@ flutter:
    - assets/logo/momo.png
    - assets/logo/bank.png
    
-
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/logo.png"
+  adaptive_icon_background: "#FFFFFF"  # purple color
+  adaptive_icon_foreground: "assets/icon/logo.png"
+  remove_alpha_ios: true
   
 
   #   - images/a_dot_ham.jpeg

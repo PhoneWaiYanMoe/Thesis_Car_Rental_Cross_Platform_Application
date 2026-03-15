@@ -5,6 +5,7 @@ import 'package:wiz/screens/Booking/views/contract_signing_screen.dart';
 import 'package:wiz/screens/Payment/views/stripe_payment_screen.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/services/media_api_service.dart';
+import 'package:wiz/screens/WebView/webview_screen.dart';
 
 class RentalDetailsScreen extends StatefulWidget {
   final String bookingId;
@@ -39,7 +40,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     });
 
     try {
-      final details = await _bookingApiService.getBookingDetails(widget.bookingId);
+      final details = await _bookingApiService.getBookingDetails(
+        widget.bookingId,
+      );
       setState(() {
         _bookingDetails = details;
         _isLoading = false;
@@ -67,10 +70,14 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       Map<String, String> urls = {};
 
       // ✅ FIX: Use signedContractUrl instead of url (old field no longer exists)
-      final contractFileId = booking.contract?.signedContractUrl ?? booking.contract?.platformContractUrl;
+      final contractFileId =
+          booking.contract?.signedContractUrl ??
+          booking.contract?.platformContractUrl;
       if (contractFileId != null && contractFileId.isNotEmpty) {
         try {
-          final contractFile = await _mediaApiService.getFileById(contractFileId);
+          final contractFile = await _mediaApiService.getFileById(
+            contractFileId,
+          );
           urls['contract'] = contractFile.url;
           print('✅ Contract URL loaded: ${contractFile.url}');
         } catch (e) {
@@ -151,7 +158,11 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             const SizedBox(height: 16),
             Text('Error loading booking details', style: AppStyles.h3(context)),
             const SizedBox(height: 8),
-            Text(_errorMessage ?? 'Unknown error', style: AppStyles.caption(context), textAlign: TextAlign.center),
+            Text(
+              _errorMessage ?? 'Unknown error',
+              style: AppStyles.caption(context),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               style: AppStyles.primaryButtonStyle(context),
@@ -166,7 +177,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
 
   Widget _buildDetailsView() {
     final booking = _bookingDetails!;
-    final isCancelled = booking.status == 'cancelled' || booking.status == 'rejected';
+    final isCancelled =
+        booking.status == 'cancelled' || booking.status == 'rejected';
     final isCompleted = booking.status == 'completed';
     final isReturnSubmitted = booking.status == 'return_submitted';
 
@@ -181,7 +193,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             _buildStatusCard(booking),
             const SizedBox(height: 16),
 
-            if (isCancelled) ...[_buildCancellationReasonCard(booking), const SizedBox(height: 16)],
+            if (isCancelled) ...[
+              _buildCancellationReasonCard(booking),
+              const SizedBox(height: 16),
+            ],
 
             _buildVehicleCard(booking),
             const SizedBox(height: 16),
@@ -198,7 +213,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               _buildActionButtons(booking),
             ],
 
-            if ((isReturnSubmitted || isCompleted) && !isCancelled && booking.actions.canReview) ...[
+            if ((isReturnSubmitted || isCompleted) &&
+                !isCancelled &&
+                booking.actions.canReview) ...[
               const SizedBox(height: 16),
               _buildRateReviewSection(booking),
             ],
@@ -223,7 +240,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Icon(Icons.receipt_long, color: statusColor, size: 28),
             ),
             const SizedBox(width: 16),
@@ -233,7 +253,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 children: [
                   Text('Booking ID', style: AppStyles.caption(context)),
                   const SizedBox(height: 4),
-                  Text(booking.id.substring(0, 8).toUpperCase(), style: AppStyles.h3(context)),
+                  Text(
+                    booking.id.substring(0, 8).toUpperCase(),
+                    style: AppStyles.h3(context),
+                  ),
                 ],
               ),
             ),
@@ -246,7 +269,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               ),
               child: Text(
                 statusText,
-                style: AppStyles.caption(context).copyWith(color: statusColor, fontWeight: FontWeight.w600),
+                style: AppStyles.caption(
+                  context,
+                ).copyWith(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -274,14 +299,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         color = Colors.red;
         icon = Icons.block;
       } else {
-        title = booking.status == 'cancelled' ? 'Cancellation Reason' : 'Rejection Reason';
+        title = booking.status == 'cancelled'
+            ? 'Cancellation Reason'
+            : 'Rejection Reason';
         color = booking.status == 'cancelled' ? Colors.orange : Colors.red;
         icon = booking.status == 'cancelled' ? Icons.cancel : Icons.block;
         reason = 'No reason provided';
       }
 
       if (booking.refundAmount != null && booking.refundAmount! > 0) {
-        refundInfo = 'Refund: ${_formatPrice(booking.refundAmount!)} ₫ (${booking.refundStatus ?? 'processing'})';
+        refundInfo =
+            'Refund: ${_formatPrice(booking.refundAmount!)} ₫ (${booking.refundStatus ?? 'processing'})';
       }
     } else {
       return const SizedBox.shrink();
@@ -302,15 +330,24 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               children: [
                 Icon(icon, color: color, size: 24),
                 const SizedBox(width: 12),
-                Text(title, style: AppStyles.h3(context).copyWith(color: color)),
+                Text(
+                  title,
+                  style: AppStyles.h3(context).copyWith(color: color),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppStyles.background(context), borderRadius: BorderRadius.circular(8)),
-              child: Text(reason ?? 'No reason provided', style: AppStyles.body(context)),
+              decoration: BoxDecoration(
+                color: AppStyles.background(context),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                reason ?? 'No reason provided',
+                style: AppStyles.body(context),
+              ),
             ),
             if (refundInfo != null) ...[
               const SizedBox(height: 12),
@@ -327,7 +364,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                     Icon(Icons.attach_money, color: Colors.green, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(refundInfo, style: AppStyles.body(context).copyWith(color: Colors.green.shade700)),
+                      child: Text(
+                        refundInfo,
+                        style: AppStyles.body(
+                          context,
+                        ).copyWith(color: Colors.green.shade700),
+                      ),
                     ),
                   ],
                 ),
@@ -335,7 +377,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             ],
             if (booking.cancellationDate != null) ...[
               const SizedBox(height: 8),
-              Text('Cancelled on: ${_formatDateTime(booking.cancellationDate!)}', style: AppStyles.caption(context)),
+              Text(
+                'Cancelled on: ${_formatDateTime(booking.cancellationDate!)}',
+                style: AppStyles.caption(context),
+              ),
             ],
           ],
         ),
@@ -357,7 +402,11 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 color: AppStyles.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.directions_car, color: AppStyles.primary, size: 28),
+              child: Icon(
+                Icons.directions_car,
+                color: AppStyles.primary,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -392,9 +441,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Text('Rental Period', style: AppStyles.h3(context)),
             const SizedBox(height: 16),
-            _buildTimelineRow(Icons.event, 'Start Date', _formatDateTime(startDate)),
+            _buildTimelineRow(
+              Icons.event,
+              'Start Date',
+              _formatDateTime(startDate),
+            ),
             const SizedBox(height: 12),
-            _buildTimelineRow(Icons.event, 'End Date', _formatDateTime(endDate)),
+            _buildTimelineRow(
+              Icons.event,
+              'End Date',
+              _formatDateTime(endDate),
+            ),
             const SizedBox(height: 12),
             _buildTimelineRow(Icons.access_time, 'Duration', duration),
           ],
@@ -410,7 +467,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         const SizedBox(width: 12),
         Text('$label:', style: AppStyles.caption(context)),
         const Spacer(),
-        Text(value, style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -426,9 +486,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           children: [
             Text('Location Details', style: AppStyles.h3(context)),
             const SizedBox(height: 16),
-            _buildLocationRow(Icons.location_on, 'Pickup', booking.pickup['address'] ?? 'Not specified'),
+            _buildLocationRow(
+              Icons.location_on,
+              'Pickup',
+              booking.pickup['address'] ?? 'Not specified',
+            ),
             const SizedBox(height: 12),
-            _buildLocationRow(Icons.flag, 'Drop-off', booking.dropoff['address'] ?? 'Not specified'),
+            _buildLocationRow(
+              Icons.flag,
+              'Drop-off',
+              booking.dropoff['address'] ?? 'Not specified',
+            ),
           ],
         ),
       ),
@@ -474,16 +542,29 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             const Divider(height: 24),
             _buildBillingRow('Total', billing.total, isTotal: true),
             const SizedBox(height: 16),
-            _buildBillingRow('Deposit (30%)', billing.deposit, isPaid: billing.depositPaid),
+            _buildBillingRow(
+              'Deposit (30%)',
+              billing.deposit,
+              isPaid: billing.depositPaid,
+            ),
             const SizedBox(height: 8),
-            _buildBillingRow('Remaining Payment', billing.remainingPayment, isPaid: billing.finalPaymentPaid),
+            _buildBillingRow(
+              'Remaining Payment',
+              billing.remainingPayment,
+              isPaid: billing.finalPaymentPaid,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBillingRow(String label, int amount, {bool isTotal = false, bool? isPaid}) {
+  Widget _buildBillingRow(
+    String label,
+    int amount, {
+    bool isTotal = false,
+    bool? isPaid,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -492,12 +573,18 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             Text(
               label,
               style: isTotal
-                  ? AppStyles.body(context).copyWith(fontWeight: FontWeight.bold)
+                  ? AppStyles.body(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.bold)
                   : AppStyles.caption(context),
             ),
             if (isPaid != null) ...[
               const SizedBox(width: 8),
-              Icon(isPaid ? Icons.check_circle : Icons.pending, size: 16, color: isPaid ? Colors.green : Colors.orange),
+              Icon(
+                isPaid ? Icons.check_circle : Icons.pending,
+                size: 16,
+                color: isPaid ? Colors.green : Colors.orange,
+              ),
             ],
           ],
         ),
@@ -535,7 +622,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               step: 2,
               title: 'Owner Approval',
               description: 'Waiting for owner confirmation',
-              isCompleted: booking.status != 'pending' && booking.status != 'pending_payment',
+              isCompleted:
+                  booking.status != 'pending' &&
+                  booking.status != 'pending_payment',
               isCurrent: booking.actions.needsOwnerApproval,
             ),
 
@@ -545,7 +634,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               description: 'Sign rental agreement',
               isCompleted: booking.contract != null,
               isCurrent: booking.actions.canSignContract,
-              mediaWidget: booking.contract != null ? _buildContractMedia() : null,
+              mediaWidget: booking.contract != null
+                  ? _buildContractMedia()
+                  : null,
             ),
 
             _buildPaymentStep(
@@ -560,9 +651,13 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               step: 5,
               title: 'Pickup Photos',
               description: 'Submit vehicle condition',
-              isCompleted: booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty,
+              isCompleted:
+                  booking.pickupPhotos != null &&
+                  booking.pickupPhotos!.isNotEmpty,
               isCurrent: booking.actions.canSubmitPickupPhotos,
-              mediaWidget: booking.pickupPhotos != null && booking.pickupPhotos!.isNotEmpty
+              mediaWidget:
+                  booking.pickupPhotos != null &&
+                      booking.pickupPhotos!.isNotEmpty
                   ? _buildPhotoGallery(booking.pickupPhotos!, 'pickup')
                   : null,
             ),
@@ -571,9 +666,13 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               step: 6,
               title: 'Return Photos',
               description: 'Submit return condition',
-              isCompleted: booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty,
+              isCompleted:
+                  booking.returnPhotos != null &&
+                  booking.returnPhotos!.isNotEmpty,
               isCurrent: booking.actions.canSubmitReturnPhotos,
-              mediaWidget: booking.returnPhotos != null && booking.returnPhotos!.isNotEmpty
+              mediaWidget:
+                  booking.returnPhotos != null &&
+                      booking.returnPhotos!.isNotEmpty
                   ? _buildPhotoGallery(booking.returnPhotos!, 'return')
                   : null,
               isLast: true,
@@ -635,7 +734,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                     ? Icon(Icons.check, color: stepColor, size: 20)
                     : Text(
                         '$step',
-                        style: TextStyle(color: stepColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: stepColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ),
@@ -646,9 +748,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                 children: [
                   Text(
                     title,
-                    style: AppStyles.body(
-                      context,
-                    ).copyWith(fontWeight: FontWeight.w600, color: isCurrent ? AppStyles.primary : null),
+                    style: AppStyles.body(context).copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isCurrent ? AppStyles.primary : null,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(description, style: AppStyles.caption(context)),
@@ -658,7 +761,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ],
         ),
         if (isCompleted && mediaWidget != null) ...[
-          Padding(padding: const EdgeInsets.only(left: 56, top: 12, bottom: 8), child: mediaWidget),
+          Padding(
+            padding: const EdgeInsets.only(left: 56, top: 12, bottom: 8),
+            child: mediaWidget,
+          ),
         ],
         if (!isLast)
           Padding(
@@ -679,10 +785,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     if (_isLoadingMedia) {
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(
           children: [
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
             const SizedBox(width: 12),
             Text('Loading contract...', style: AppStyles.caption(context)),
           ],
@@ -707,10 +820,16 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               children: [
                 Text(
                   'Contract Signed ✓',
-                  style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                  style: AppStyles.body(context).copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade700,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(_formatDateTime(_bookingDetails!.contract!.signedAt), style: AppStyles.caption(context)),
+                Text(
+                  _formatDateTime(_bookingDetails!.contract!.signedAt),
+                  style: AppStyles.caption(context),
+                ),
               ],
             ),
           ),
@@ -728,10 +847,17 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     if (_isLoadingMedia) {
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(
           children: [
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
             const SizedBox(width: 12),
             Text('Loading photos...', style: AppStyles.caption(context)),
           ],
@@ -759,7 +885,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             const SizedBox(width: 8),
             Text(
               '${photoIds.length} photo(s) submitted',
-              style: AppStyles.caption(context).copyWith(color: Colors.green.shade700),
+              style: AppStyles.caption(
+                context,
+              ).copyWith(color: Colors.green.shade700),
             ),
           ],
         ),
@@ -775,7 +903,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
             const SizedBox(width: 6),
             Text(
               '${availableUrls.length} photo(s) submitted',
-              style: AppStyles.caption(context).copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
+              style: AppStyles.caption(context).copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade700,
+              ),
             ),
           ],
         ),
@@ -811,7 +942,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                         child: Center(
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                             strokeWidth: 2,
                           ),
@@ -850,9 +982,16 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, color: Colors.white, size: 48),
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.white,
+                            size: 48,
+                          ),
                           SizedBox(height: 16),
-                          Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                          Text(
+                            'Failed to load image',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ],
                       ),
                     ),
@@ -861,7 +1000,8 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
                       return Center(
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                           color: Colors.white,
                         ),
@@ -883,11 +1023,20 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               top: 40,
               left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Text(
                   '${initialIndex + 1}/${urls.length}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -898,45 +1047,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   void _showContractDialog(String contractUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            AppBar(
-              title: const Text('Contract Document'),
-              backgroundColor: AppStyles.primary,
-              leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-            ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Contract PDF', style: AppStyles.h3(context)),
-                    const SizedBox(height: 8),
-                    Text('PDF viewer coming soon', style: AppStyles.caption(context)),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      style: AppStyles.primaryButtonStyle(context),
-                      onPressed: () {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Contract URL: $contractUrl')));
-                      },
-                      icon: const Icon(Icons.open_in_browser, color: Colors.white),
-                      label: Text('Open in Browser', style: AppStyles.button),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    // Open contract PDF in WebView
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            WebViewScreen(url: contractUrl, title: 'Rental Contract'),
       ),
     );
   }
@@ -957,7 +1073,12 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               children: [
                 const Icon(Icons.star, color: Colors.amber, size: 24),
                 const SizedBox(width: 12),
-                Text('Share Your Experience', style: AppStyles.h3(context).copyWith(color: AppStyles.primary)),
+                Text(
+                  'Share Your Experience',
+                  style: AppStyles.h3(
+                    context,
+                  ).copyWith(color: AppStyles.primary),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -991,7 +1112,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               style: AppStyles.primaryButtonStyle(context),
               onPressed: () => _handleDepositPayment(booking),
               icon: const Icon(Icons.payment, color: Colors.white),
-              label: Text('Pay Deposit (${_formatPrice(booking.billing.deposit)} ₫)', style: AppStyles.button),
+              label: Text(
+                'Pay Deposit (${_formatPrice(booking.billing.deposit)} ₫)',
+                style: AppStyles.button,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1057,7 +1181,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
               ),
               onPressed: () => _handleCancelBooking(booking),
               icon: const Icon(Icons.cancel, color: Colors.red),
-              label: const Text('Cancel Booking', style: TextStyle(color: Colors.red)),
+              label: const Text(
+                'Cancel Booking',
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ),
         ],
@@ -1069,8 +1196,11 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            StripePaymentScreen(bookingId: booking.id, paymentType: 'deposit', amount: booking.billing.deposit),
+        builder: (context) => StripePaymentScreen(
+          bookingId: booking.id,
+          paymentType: 'deposit',
+          amount: booking.billing.deposit,
+        ),
       ),
     );
     if (result != null && result['success'] == true) _loadBookingDetails();
@@ -1108,16 +1238,21 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         Navigator.pop(context);
         final result = await Navigator.push<bool>(
           context,
-          MaterialPageRoute(builder: (context) => ContractSigningScreen(bookingId: booking.id)),
+          MaterialPageRoute(
+            builder: (context) => ContractSigningScreen(bookingId: booking.id),
+          ),
         );
         if (result == true) _loadBookingDetails();
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load contract: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load contract: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -1126,8 +1261,11 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            StripePaymentScreen(bookingId: booking.id, paymentType: 'final', amount: booking.billing.remainingPayment),
+        builder: (context) => StripePaymentScreen(
+          bookingId: booking.id,
+          paymentType: 'final',
+          amount: booking.billing.remainingPayment,
+        ),
       ),
     );
     if (result != null && result['success'] == true) _loadBookingDetails();
@@ -1175,14 +1313,19 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Are you sure you want to cancel this booking?', style: AppStyles.body(context)),
+            Text(
+              'Are you sure you want to cancel this booking?',
+              style: AppStyles.body(context),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Reason for cancellation',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -1195,7 +1338,10 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Yes, Cancel',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -1205,19 +1351,27 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
       try {
         await _bookingApiService.cancelBooking(
           bookingId: booking.id,
-          reason: reasonController.text.isEmpty ? 'No reason provided' : reasonController.text,
+          reason: reasonController.text.isEmpty
+              ? 'No reason provided'
+              : reasonController.text,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Booking cancelled successfully'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Booking cancelled successfully'),
+              backgroundColor: Colors.green,
+            ),
           );
           _loadBookingDetails();
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to cancel: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -1274,6 +1428,9 @@ class _RentalDetailsScreenState extends State<RentalDetailsScreen> {
   }
 
   String _formatPrice(int price) {
-    return price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return price.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 }
