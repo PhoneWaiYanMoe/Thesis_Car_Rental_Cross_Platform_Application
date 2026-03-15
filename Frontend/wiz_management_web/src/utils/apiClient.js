@@ -33,8 +33,7 @@ apiClient.interceptors.response.use(
       // Server responded with error status
       const { status } = error.response;
 
-      if (status === 401) {
-        // Unauthorized - clear auth and redirect to login
+      if (status === 401 && !error.config?.url?.includes("/login")) {
         authService.logout();
         window.location.href = "/login";
       } else if (status === 403) {

@@ -44,13 +44,21 @@ export default function Login() {
     <div className="min-h-screen bg-[#131A34] flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-[#6679C0] rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+          <div className="w-20 h-20 bg-white border border-gray rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl">
             <img
               src="/images/wiz_logo.png"
               alt="Wiz Logo"
-              className="w-12 h-12 object-contain"
+              className="w-14 h-14 object-contain"
             />
           </div>
+
+          {/* <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+              <img
+                src="/images/wiz_logo.png"
+                alt="Wiz Logo"
+                className="w-12 h-12 object-contain"
+              />
+            </div> */}
           <h1 className="text-3xl font-bold text-[#131A34] mb-2">Welcome!</h1>
           <p className="text-[#717685]">Sign in to Wiz Management</p>
         </div>
@@ -169,7 +177,7 @@ export default function Login() {
         </form>
 
         <div className="mt-8 text-center">
-          <div className="inline-block bg-[#F8F9FF] rounded-xl px-6 py-4">
+          {/* <div className="inline-block bg-[#F8F9FF] rounded-xl px-6 py-4">
             <p className="text-xs text-[#717685] mb-2 font-semibold">
               Demo Credentials
             </p>
@@ -181,6 +189,17 @@ export default function Login() {
               <p className="text-[#131A34]">
                 <span className="font-semibold">Support:</span> support@wiz.com
                 / Support123!
+              </p>
+            </div>
+          </div> */}
+
+          <div className="inline-block bg-[#F8F9FF] rounded-xl px-6 py-4">
+            <p className="text-xs text-[#717685] mb-2 font-semibold">
+              Yours Wiz Rental
+            </p>
+            <div className="space-y-1 text-xs">
+              <p className="text-[#131A34]">
+                This is wiz rental, car rental management system. Hope you have a great experience using our system! ^^
               </p>
             </div>
           </div>
