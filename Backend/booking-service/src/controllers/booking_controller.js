@@ -1053,6 +1053,112 @@ class BookingController {
     }
   }
 
+  // async confirmReturn(req, res, next) {
+  //   const client = await pool.connect();
+
+  //   try {
+  //     await client.query("BEGIN");
+
+  //     const userId = req.user.userId;
+  //     const { id } = req.params;
+  //     const { returnPhotos, odometerReading, notes } = req.body;
+
+  //     console.log(`📸 Received return photos:`, returnPhotos);
+
+  //     if (
+  //       !returnPhotos ||
+  //       !Array.isArray(returnPhotos) ||
+  //       returnPhotos.length < 3
+  //     ) {
+  //       return res.status(400).json({
+  //         error: "Please provide at least 3 return photos as an array",
+  //       });
+  //     }
+
+  //     if (!odometerReading) {
+  //       return res.status(400).json({
+  //         error: "Odometer reading is required",
+  //       });
+  //     }
+
+  //     const bookingResult = await client.query(
+  //       "SELECT * FROM bookings WHERE booking_id = $1 AND customer_id = $2",
+  //       [id, userId],
+  //     );
+
+  //     if (bookingResult.rows.length === 0) {
+  //       return res.status(404).json({ error: "Booking not found" });
+  //     }
+
+  //     const booking = bookingResult.rows[0];
+
+  //     if (booking.status !== "picked_up") {
+  //       return res.status(400).json({
+  //         error: `Cannot confirm return. Current status: ${booking.status}. Expected status: picked_up`,
+  //       });
+  //     }
+
+  //     const dateCheck = this.isActionAllowedByDate(booking, "return");
+  //     if (!dateCheck.allowed) {
+  //       return res.status(400).json({ error: dateCheck.reason });
+  //     }
+
+  //     console.log(
+  //       `✅ Storing ${returnPhotos.length} return photo IDs from media service`,
+  //     );
+
+  //     await client.query(
+  //       `UPDATE bookings
+  //      SET return_photos = $1,
+  //          return_odometer_reading = $2,
+  //          return_notes = $3,
+  //          return_confirmed_at = NOW(),
+  //          status = 'return_submitted',
+  //          updated_at = NOW()
+  //      WHERE booking_id = $4`,
+  //       [JSON.stringify(returnPhotos), odometerReading, notes, id],
+  //     );
+
+  //     await client.query("COMMIT");
+
+  //     console.log(
+  //       `✅ Return submitted for booking: ${id} (status: return_submitted)`,
+  //     );
+  //     console.log(`✅ Stored return photo IDs: ${returnPhotos.join(", ")}`);
+
+  //     // ✅ Publish booking.created event (notification will be sent)
+  //       const bookingForEvent = await client.query(
+  //         "SELECT * FROM bookings WHERE booking_id = $1",
+  //         [id],
+  //       );
+
+  //       if (bookingForEvent.rows.length > 0) {
+  //         await eventPublisher.bookingCompleted(
+  //           bookingForEvent.rows[0],
+  //           vehicle,
+  //           customerInfo,
+  //         );
+  //         console.log(
+  //           `📧 Booking completed notification sent to ${customerInfo.email}`,
+  //         );
+  //       }
+
+  //     res.json({
+  //       message:
+  //         "Return submitted successfully. Waiting for owner confirmation.",
+  //       bookingStatus: "return_submitted",
+  //       photoIds: returnPhotos,
+  //       nextStep: "Owner will review and confirm the return",
+  //     });
+  //   } catch (error) {
+  //     await client.query("ROLLBACK");
+  //     console.error("Confirm return error:", error);
+  //     next(error);
+  //   } finally {
+  //     client.release();
+  //   }
+  // }
+
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -1103,9 +1209,7 @@ class BookingController {
         return res.status(400).json({ error: dateCheck.reason });
       }
 
-      console.log(
-        `✅ Storing ${returnPhotos.length} return photo IDs from media service`,
-      );
+      console.log(`✅ Storing ${returnPhotos.length} return photo IDs`);
 
       await client.query(
         `UPDATE bookings 
@@ -1121,27 +1225,8 @@ class BookingController {
 
       await client.query("COMMIT");
 
-      console.log(
-        `✅ Return submitted for booking: ${id} (status: return_submitted)`,
-      );
-      console.log(`✅ Stored return photo IDs: ${returnPhotos.join(", ")}`);
-
-      // ✅ Publish booking.created event (notification will be sent)
-        const bookingForEvent = await client.query(
-          "SELECT * FROM bookings WHERE booking_id = $1",
-          [id],
-        );
-
-        if (bookingForEvent.rows.length > 0) {
-          await eventPublisher.bookingCompleted(
-            bookingForEvent.rows[0],
-            vehicle,
-            customerInfo,
-          );
-          console.log(
-            `📧 Booking completed notification sent to ${customerInfo.email}`,
-          );
-        }
+      console.log(`✅ Return submitted for booking: ${id}`);
+      
 
       res.json({
         message:

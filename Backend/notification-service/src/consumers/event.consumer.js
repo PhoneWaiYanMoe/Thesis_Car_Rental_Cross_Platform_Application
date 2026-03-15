@@ -178,7 +178,7 @@ class EventConsumer {
         // booking events
         case "booking.created":
           await notificationService.sendNotification(
-            "booking",
+            "bookingCreated",
             "Booking Created",
             `Your booking for ${data.vehicleName} has been created.`,
             {
@@ -198,7 +198,7 @@ class EventConsumer {
 
         case "booking.accepted_by_owner":
           await notificationService.sendNotification(
-            "booking",
+            "bookingAccepted",
             "Booking Accepted by Owner!",
             `Your booking for ${data.vehicleName} has been accepted by the owner and it's now confirmed.`,
             {
@@ -218,7 +218,7 @@ class EventConsumer {
 
         case "booking.rejected_by_owner":
           await notificationService.sendNotification(
-            "booking",
+            "bookingRejected",
             "Booking Rejected",
             `Your booking for ${data.vehicleName} was not accepted.`,
             {
@@ -236,7 +236,7 @@ class EventConsumer {
 
         case "booking.pickup_confirmed":
           await notificationService.sendNotification(
-            "booking",
+            "bookingPickupConfirmed",
             "Vehicle Picked Up",
             `${data.customerName} has picked up your vehicle.`,
             {
@@ -255,7 +255,7 @@ class EventConsumer {
 
         case "booking.completed":
           await notificationService.sendNotification(
-            "booking",
+            "bookingCompleted",
             "Rental Completed",
             "Thank you for renting! Please rate your experience.",
             {
@@ -277,7 +277,7 @@ class EventConsumer {
           // send to customer
           if (data.customerEmail) {
             await notificationService.sendNotification(
-              "booking",
+              "bookingCancelled",
               "Booking Cancelled",
               `Booking ${data.bookingId} has been cancelled.`,
               {
@@ -294,7 +294,7 @@ class EventConsumer {
           // send to owner
           if (data.ownerEmail) {
             await notificationService.sendNotification(
-              "booking",
+              "bookingCancelled",
               "Booking Cancelled",
               `Booking ${data.bookingId} has been cancelled.`,
               {

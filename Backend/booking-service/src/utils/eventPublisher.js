@@ -139,34 +139,42 @@ class EventPublisher {
   // }
 
   /**
-   * Publish booking created event
+   * Publish booking completed event
    */
   async bookingCompleted(booking, vehicleInfo, customerInfo) {
     await this.publishEvent("booking.completed", {
       bookingId: booking.booking_id,
       customerId: booking.customer_id,
       vehicleId: booking.vehicle_id,
+
       customerEmail: customerInfo.email,
       customerName: customerInfo.full_name,
       vehicleName: vehicleInfo.name,
+
       startDate: new Date(booking.start_date).toLocaleString("en-US", {
         timeZone: "Asia/Ho_Chi_Minh",
         dateStyle: "medium",
         timeStyle: "short",
       }),
+
       endDate: new Date(booking.end_date).toLocaleString("en-US", {
         timeZone: "Asia/Ho_Chi_Minh",
         dateStyle: "medium",
         timeStyle: "short",
       }),
+
       totalAmount: booking.total_amount.toLocaleString("vi-VN"),
-      depositAmount: booking.deposit_amount,
+      depositAmount: booking.deposit_amount.toLocaleString("vi-VN"),
+
       status: booking.status,
-      completedAt: new Date(booking.start_date).toLocaleString("en-US", {
-        timeZone: "Asia/Ho_Chi_Minh",
-        dateStyle: "medium",
-        timeStyle: "short",
-      }),
+
+      completedAt: booking.return_confirmed_at
+        ? new Date(booking.return_confirmed_at).toLocaleString("en-US", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            dateStyle: "medium",
+            timeStyle: "short",
+          })
+        : null,
     });
   }
 
