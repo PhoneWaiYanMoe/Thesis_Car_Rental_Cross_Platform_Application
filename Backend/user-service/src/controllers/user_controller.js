@@ -1,7 +1,10 @@
 // Backend/user-service/src/controllers/user_controller.js
 const pool = require("../config/database");
 const eventPublisher = require("../services/event_publisher");
-const { fetchStaffPerformance } = require("../clients/request_service_client");
+const {
+  fetchStaffPerformance,
+  createRequest,
+} = require("../clients/request_service_client");
 
 class UserController {
   /**
@@ -540,7 +543,10 @@ class UserController {
         return res.status(404).json({ error: "User not found" });
       }
 
-      res.json({ message: "Logged in as updated successfully", logged_in_as: result.rows[0].logged_in_as });
+      res.json({
+        message: "Logged in as updated successfully",
+        logged_in_as: result.rows[0].logged_in_as,
+      });
     } catch (error) {
       console.error("Update user's logged in as status by ID error:", error);
       next(error);
@@ -565,7 +571,7 @@ class UserController {
 
       // Get current user
       const userResult = await pool.query(
-        "SELECT role, email FROM users WHERE user_id = $1",
+        "SELECT role, email, full_name FROM users WHERE user_id = $1",
         [userId],
       );
 
@@ -574,6 +580,8 @@ class UserController {
       }
 
       const currentRole = userResult.rows[0].role;
+      const userEmail = userResult.rows[0].email;
+      const fullName = userResult.rows[0].full_name;
 
       // Don't allow changing admin/support roles
       if (["admin", "support"].includes(currentRole)) {
@@ -599,6 +607,29 @@ class UserController {
       console.log(
         `✅ User ${userId} role changed from ${currentRole} to ${newRole}`,
       );
+
+      // ✅ If upgrading to owner, auto-create verification request
+      if (newRole === "owner" && currentRole !== "owner") {
+        try {
+          const authToken = req.headers.authorization || `Bearer system-token`;
+
+          await createRequest(authToken, {
+            category: "owner_verification",
+            title: `Owner Verification Request - ${fullName}`,
+            description: `User ${fullName} (${userEmail}) has upgraded their account to Owner and requires verification.`,
+            priority: "high",
+          });
+
+          console.log(
+            `✅ Owner verification request created for user ${userId}`,
+          );
+        } catch (error) {
+          console.error(
+            `⚠️ Failed to create owner verification request: ${error.message}`,
+          );
+          // Don't fail the role change if request creation fails
+        }
+      }
 
       res.json({
         message: "Role updated successfully",
