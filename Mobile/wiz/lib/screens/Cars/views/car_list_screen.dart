@@ -417,7 +417,26 @@ class _CarListScreenState extends State<CarListScreen> {
 
   // ... rest of the filter methods remain the same
   void _showFilterSheet() {
-    // Keep existing filter sheet implementation
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.85,
+          builder: (context, scrollController) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSheetHandle(),
+              _buildSheetHeader(setSheetState),
+              const Divider(),
+              Expanded(child: _buildFilterList(scrollController, setSheetState)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildSheetHandle() {
@@ -515,7 +534,7 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   void _resetFilters() {
-    RangeValues _priceRange = const RangeValues(0, 2000000);
+    _priceRange = const RangeValues(300000, 2000000);
     _selectedSeats = null;
     _selectedFuel = null;
     _selectedType = null;

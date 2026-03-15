@@ -22,6 +22,7 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
 
   bool _isLoading = false;
   String? _error;
+  String? _intentId; // ✅ Store intent ID for verification
 
   @override
   void initState() {
@@ -69,6 +70,9 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
       print('✅ Payment intent created: ${paymentIntent.intentId}');
       print('   Client Secret: ${paymentIntent.clientSecret}');
       print('   Amount: ${paymentIntent.amount} ${paymentIntent.currency}');
+
+      // ✅ Store intent ID for verification later
+      _intentId = paymentIntent.intentId;
 
       if (paymentIntent.clientSecret == null || paymentIntent.clientSecret!.isEmpty) {
         throw Exception('No client secret received from server');
@@ -206,6 +210,50 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
   }
 
   void _handlePaymentSuccess() {
+    // ✅ NEW: Verify payment with backend (fallback if webhook failed)
+    _verifyPaymentWithBackend();
+  }
+
+  Future<void> _verifyPaymentWithBackend() async {
+    if (_intentId == null || _intentId!.isEmpty) {
+      print('❌ Intent ID not available for verification');
+      _showSuccessDialog();
+      return;
+    }
+
+    try {
+      print('🔍 Verifying payment with backend...');
+      final verificationResult = await _paymentApi.verifyDepositPayment(_intentId!);
+
+      final status = verificationResult['status'];
+      print('✅ Verification result: $status');
+
+      if (status == 'succeeded' || status == 'processing') {
+        // Payment is confirmed or being processed
+        print('✅ Payment verified successfully');
+        _showSuccessDialog();
+      } else if (status == 'requires_payment_method') {
+        // Payment requires additional action
+        if (mounted) {
+          _showErrorDialog('Payment requires additional payment method confirmation');
+        }
+      } else {
+        // Payment failed or cancelled
+        if (mounted) {
+          _showErrorDialog('Payment verification failed: $status');
+        }
+      }
+    } catch (e) {
+      print('⚠️  Payment verification error (will show success anyway): $e');
+      // Don't fail if verification fails - webhook might succeed later
+      // Just show success dialog
+      _showSuccessDialog();
+    }
+  }
+
+  void _showSuccessDialog() {
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

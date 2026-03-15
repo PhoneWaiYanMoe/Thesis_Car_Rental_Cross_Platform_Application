@@ -25,6 +25,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   int _totalUnreadCount = 0;
   StreamSubscription? _messageSubscription;
   StreamSubscription? _unreadCountSubscription;
+  StreamSubscription? _conversationUpdatedSubscription;
 
   @override
   void initState() {
@@ -51,6 +52,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _messageSubscription = _chatService.messageStream.listen((data) {
       print('📩 New message received in list');
       // Refresh conversation list when new message arrives
+      _loadConversations();
+    });
+
+    // ✅ Listen for conversation updates (moves conversation to top)
+    _conversationUpdatedSubscription = _chatService.conversationUpdatedStream.listen((data) {
+      print('🔄 Conversation updated: ${data['conversationId']}');
+      // Refresh conversation list to reorder conversations
       _loadConversations();
     });
 
@@ -126,17 +134,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(12)),
                 child: Text(
                   '$_totalUnreadCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -154,11 +155,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               final isConnected = snapshot.data ?? false;
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: Icon(
-                  Icons.circle,
-                  color: isConnected ? Colors.green : Colors.grey,
-                  size: 12,
-                ),
+                child: Icon(Icons.circle, color: isConnected ? Colors.green : Colors.grey, size: 12),
               );
             },
           ),
@@ -171,11 +168,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
-              decoration: AppStyles.inputDecoration(
-                hint: 'Search conversations',
-                icon: Icons.search,
-                context: context,
-              ),
+              decoration: AppStyles.inputDecoration(hint: 'Search conversations', icon: Icons.search, context: context),
               onChanged: (value) {
                 // TODO: Implement search
               },
@@ -212,11 +205,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return GestureDetector(
       onTap: () async {
         // Navigate to chat detail
-        await Navigator.pushNamed(
-          context,
-          AppRoutes.chatDetail,
-          arguments: conversation,
-        );
+        await Navigator.pushNamed(context, AppRoutes.chatDetail, arguments: conversation);
 
         // Refresh list when coming back
         _loadConversations();
@@ -224,26 +213,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppStyles.surface(context),
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(16)),
         child: Row(
           children: [
             // Avatar
             Stack(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage: AssetImage(conversation.displayAvatar),
-                ),
+                CircleAvatar(radius: 28, backgroundImage: AssetImage(conversation.displayAvatar)),
                 // Online indicator
                 StreamBuilder<Map<String, dynamic>>(
                   stream: _chatService.onlineStatusStream,
                   builder: (context, snapshot) {
                     final isOnline =
-                        snapshot.data?['userId'] == conversation.otherUserId &&
-                        snapshot.data?['status'] == 'online';
+                        snapshot.data?['userId'] == conversation.otherUserId && snapshot.data?['status'] == 'online';
 
                     if (!isOnline) return const SizedBox.shrink();
 
@@ -256,10 +238,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         decoration: BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppStyles.surface(context),
-                            width: 2,
-                          ),
+                          border: Border.all(color: AppStyles.surface(context), width: 2),
                         ),
                       ),
                     );
@@ -285,10 +264,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        _formatTime(conversation.lastMessageAt),
-                        style: AppStyles.caption(context),
-                      ),
+                      Text(_formatTime(conversation.lastMessageAt), style: AppStyles.caption(context)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -296,13 +272,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.lastMessage?.content ??
-                              'No messages yet',
-                          style: AppStyles.caption(context).copyWith(
-                            fontWeight: conversation.unreadCount > 0
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
+                          conversation.lastMessage?.content ?? 'No messages yet',
+                          style: AppStyles.caption(
+                            context,
+                          ).copyWith(fontWeight: conversation.unreadCount > 0 ? FontWeight.w600 : FontWeight.normal),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -310,21 +283,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       if (conversation.unreadCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppStyles.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: AppStyles.primary, borderRadius: BorderRadius.circular(12)),
                           child: Text(
                             '${conversation.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -344,11 +307,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 64,
-            color: AppStyles.textSecondary(context),
-          ),
+          Icon(Icons.chat_bubble_outline, size: 64, color: AppStyles.textSecondary(context)),
           const SizedBox(height: 16),
           Text('No conversations yet', style: AppStyles.h3(context)),
           const SizedBox(height: 8),
@@ -371,11 +330,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           const SizedBox(height: 16),
           Text('Failed to load conversations', style: AppStyles.h3(context)),
           const SizedBox(height: 8),
-          Text(
-            _errorMessage ?? 'Unknown error',
-            style: AppStyles.caption(context),
-            textAlign: TextAlign.center,
-          ),
+          Text(_errorMessage ?? 'Unknown error', style: AppStyles.caption(context), textAlign: TextAlign.center),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadConversations,
@@ -392,6 +347,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _searchController.dispose();
     _messageSubscription?.cancel();
     _unreadCountSubscription?.cancel();
+    _conversationUpdatedSubscription?.cancel();
     super.dispose();
   }
 }

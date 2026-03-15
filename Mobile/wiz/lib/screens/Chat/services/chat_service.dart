@@ -24,6 +24,7 @@ class ChatService {
   Stream<Map<String, dynamic>> get messageReadStream => _socketService.messageReadStream;
   Stream<Map<String, dynamic>> get unreadCountStream => _socketService.unreadCountStream;
   Stream<bool> get connectionStream => _socketService.connectionStream;
+  Stream<Map<String, dynamic>> get conversationUpdatedStream => _socketService.conversationUpdatedStream;
   bool get isConnected => _socketService.isConnected;
 
   /// Initialize chat — always reconnects with the CURRENT user's token.

@@ -5,7 +5,7 @@ import 'package:wiz/services/local_storage_service.dart';
 class PaymentApiService {
   // static const String baseUrl = 'http://10.0.2.2:3006'; // payment-service
   // static const String baseUrl = 'http://localhost:3006'; // payment-service
-   static const String baseUrl = 'http://206.189.147.242'; 
+  static const String baseUrl = 'http://206.189.147.242';
   final _localStorageService = LocalStorageService();
 
   Future<String?> _getAuthToken() async {
@@ -160,6 +160,34 @@ class PaymentApiService {
       }
     } catch (e) {
       print('❌ Get booking transactions error: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NEW: Verify payment status with backend (fallback if webhook fails)
+  Future<Map<String, dynamic>> verifyDepositPayment(String intentId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final headers = {'Authorization': 'Bearer $token'};
+
+      print('🔍 Verifying deposit payment: $intentId');
+
+      final response = await http.get(Uri.parse('$baseUrl/payment/deposit/$intentId/verify'), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Payment verification response: ${data['status']}');
+        return data;
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to verify payment');
+      }
+    } catch (e) {
+      print('❌ Verify payment error: $e');
       rethrow;
     }
   }

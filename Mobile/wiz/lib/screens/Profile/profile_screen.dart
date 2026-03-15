@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:wiz/constants/app_styles.dart';
 import 'package:wiz/services/local_storage_service.dart';
 import 'package:wiz/services/logged_in_as_service.dart';
+import 'package:wiz/services/user_role_service.dart';
 import 'package:wiz/utils/app_routes.dart';
 import 'package:wiz/utils/bottom_nav_bar.dart';
 import 'package:wiz/screens/Chat/services/chat_service.dart';
@@ -14,9 +15,10 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final LocalStorageService _localStorage = LocalStorageService();
   final LoggedInAsService _loggedInAsService = LoggedInAsService();
+  final UserRoleService _roleService = UserRoleService();
 
   bool _isLoading = true;
   bool _isUpdatingToggle = false;
@@ -31,6 +33,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadUserInfo();
+    // Also refresh when app comes to foreground
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('📄 App resumed - refreshing user profile...');
+      _refreshUserProfile();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadUserInfo() async {
@@ -78,6 +96,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _activeRole = 'customer';
         _isLoading = false;
       });
+    }
+  }
+
+  /// ✅ Refresh user profile from backend to get latest role/status
+  Future<void> _refreshUserProfile() async {
+    if (_userId.isEmpty) return;
+
+    try {
+      print('🔄 Refreshing user profile...');
+      final profileResult = await _roleService.getUserProfile(_userId);
+
+      if (profileResult['success'] && profileResult['user'] != null) {
+        final updatedUser = profileResult['user'];
+        final updatedRole = updatedUser['role'] ?? 'customer';
+
+        print('✅ Profile refreshed: role=$updatedRole, owner_status=${updatedUser['owner_status']}');
+
+        // Update local storage and UI if role changed
+        if (updatedRole != _userRole) {
+          final token = await _localStorage.getToken();
+          await _localStorage.saveAuthData(
+            token: token ?? '',
+            refreshToken: token ?? '',
+            user: {
+              'id': updatedUser['user_id'] ?? _userId,
+              'fullName': _userName,
+              'email': updatedUser['email'] ?? _userEmail,
+              'role': updatedRole,
+            },
+          );
+
+          if (mounted) {
+            setState(() => _userRole = updatedRole);
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error refreshing profile: $e');
+      // Silently fail - don't show error to user
     }
   }
 
@@ -182,31 +239,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.info_outline, color: AppStyles.primary),
             const SizedBox(width: 12),
-            const Text('Owner Mode Unavailable'),
+            const Text('Become a Vehicle Owner'),
           ],
         ),
         content: const Text(
-          'You need to upgrade your account to Owner to access Owner mode.\n\n'
-          'Would you like to become a vehicle owner?',
+          'To access Owner mode, you need to upgrade your account to Vehicle Owner.\n\n'
+          'A verification request will be automatically created for our support team to review.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Contact support to upgrade your account to Owner'),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              await _performUpgradeToOwner();
             },
             style: AppStyles.primaryButtonStyle(context),
-            child: const Text('Learn More'),
+            child: const Text('Upgrade to Owner'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _performUpgradeToOwner() async {
+    setState(() => _isUpdatingToggle = true);
+
+    try {
+      final userId = _userId;
+      if (userId == null || userId.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Error: User ID not found'), backgroundColor: Colors.red));
+        setState(() => _isUpdatingToggle = false);
+        return;
+      }
+
+      print('📤 Upgrading user to Owner...');
+
+      final result = await _roleService.upgradeToOwner(userId);
+
+      if (mounted) {
+        if (result['success']) {
+          print('✅ Successfully upgraded to Owner');
+
+          // ✅ Fetch fresh user data from backend to get updated owner_status
+          print('📥 Fetching fresh user profile...');
+          final profileResult = await _roleService.getUserProfile(userId);
+
+          if (profileResult['success'] && profileResult['user'] != null) {
+            final updatedUser = profileResult['user'];
+            print('✅ Fresh profile loaded: role=${updatedUser['role']}, owner_status=${updatedUser['owner_status']}');
+
+            // Update local storage with complete user data
+            final token = await _localStorage.getToken();
+            await _localStorage.saveAuthData(
+              token: token ?? '',
+              refreshToken: token ?? '',
+              user: {
+                'id': updatedUser['user_id'] ?? userId,
+                'fullName': _userName,
+                'email': updatedUser['email'] ?? _userEmail,
+                'role': updatedUser['role'] ?? 'owner',
+              },
+            );
+          }
+
+          setState(() {
+            _userRole = 'owner';
+            _isUpdatingToggle = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('✅ Upgraded to Owner! Verification pending review.'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          setState(() => _isUpdatingToggle = false);
+
+          print('❌ Upgrade failed: ${result['error']}');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Failed to upgrade'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Upgrade error: $e');
+
+      if (mounted) {
+        setState(() => _isUpdatingToggle = false);
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   @override

@@ -18,6 +18,7 @@ class ChatSocketService {
   final _messageReadStreamController = StreamController<Map<String, dynamic>>.broadcast();
   final _unreadCountStreamController = StreamController<Map<String, dynamic>>.broadcast();
   final _connectionStreamController = StreamController<bool>.broadcast();
+  final _conversationUpdatedStreamController = StreamController<Map<String, dynamic>>.broadcast();
 
   // Getters for streams
   Stream<Map<String, dynamic>> get messageStream => _messageStreamController.stream;
@@ -26,6 +27,7 @@ class ChatSocketService {
   Stream<Map<String, dynamic>> get messageReadStream => _messageReadStreamController.stream;
   Stream<Map<String, dynamic>> get unreadCountStream => _unreadCountStreamController.stream;
   Stream<bool> get connectionStream => _connectionStreamController.stream;
+  Stream<Map<String, dynamic>> get conversationUpdatedStream => _conversationUpdatedStreamController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -105,6 +107,11 @@ class ChatSocketService {
     _socket!.on('unread_count_updated', (data) {
       print('🔔 Unread count updated: ${data['totalUnreadCount']}');
       _unreadCountStreamController.add(data);
+    });
+
+    _socket!.on('conversation_updated', (data) {
+      print('💬 Conversation updated: ${data['conversationId']}');
+      _conversationUpdatedStreamController.add(data);
     });
 
     _socket!.on('joined_conversation', (data) {
@@ -195,5 +202,6 @@ class ChatSocketService {
     _messageReadStreamController.close();
     _unreadCountStreamController.close();
     _connectionStreamController.close();
+    _conversationUpdatedStreamController.close();
   }
 }
