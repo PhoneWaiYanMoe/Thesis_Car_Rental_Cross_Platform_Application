@@ -134,6 +134,7 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - LOCATION_SERVICE_GRPC_URL=location-service:50051
       - VEHICLE_SERVICE_GRPC_URL=vehicle-service:50055
+      - REQUEST_SERVICE_URL=http://request-service:3010
       - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - wiz-network

@@ -613,6 +613,8 @@ class UserController {
         try {
           const authToken = req.headers.authorization || `Bearer system-token`;
 
+          console.log(`📝 Creating owner verification request for ${userId}...`);
+
           await createRequest(authToken, {
             category: "owner_verification",
             title: `Owner Verification Request - ${fullName}`,
@@ -625,9 +627,11 @@ class UserController {
           );
         } catch (error) {
           console.error(
-            `⚠️ Failed to create owner verification request: ${error.message}`,
+            `⚠️ Failed to create owner verification request for ${userId}`
           );
+          console.error(`   Error details: ${error.message}`);
           // Don't fail the role change if request creation fails
+          // The role has already been updated successfully
         }
       }
 

@@ -1,7 +1,8 @@
 const axios = require("axios");
 
+// ✅ Use Docker service name when in container, fallback to localhost for development
 const REQUEST_SERVICE_URL =
-  process.env.REQUEST_SERVICE_URL || "http://localhost:3010";
+  process.env.REQUEST_SERVICE_URL || "http://request-service:3010";
 
 async function fetchStaffPerformance(authToken) {
   try {
