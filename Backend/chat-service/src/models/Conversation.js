@@ -11,8 +11,7 @@ const Conversation = sequelize.define(
     },
     bookingId: {
       type: DataTypes.UUID,
-      allowNull: false,
-      unique: true,
+      allowNull: true,
       field: "booking_id",
     },
     customerId: {
@@ -69,7 +68,7 @@ const Conversation = sequelize.define(
       { fields: ["owner_id"] },
       { fields: ["status"] },
     ],
-  }
+  },
 );
 
 module.exports = Conversation;

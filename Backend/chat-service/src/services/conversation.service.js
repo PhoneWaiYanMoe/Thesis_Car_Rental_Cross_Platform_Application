@@ -7,13 +7,28 @@ const { Op } = require("sequelize");
 class ConversationService {
   async createConversation(bookingId, customerId, ownerId, vehicleId) {
     try {
-      // check if conversation already exists
-      const existing = await Conversation.findOne({ where: { bookingId } });
-      if (existing) {
-        return existing;
+      // ✅ Check if conversation already exists between these two users
+      const existingConversation = await Conversation.findOne({
+        where: {
+          [Op.or]: [
+            { customerId, ownerId },
+            { customerId: ownerId, ownerId: customerId },
+          ],
+        },
+      });
+
+      if (existingConversation) {
+        console.log(
+          `Conversation already exists: ${existingConversation.id} for users ${customerId} and ${ownerId}`
+        );
+        // Update vehicleId if it's different (for new booking)
+        if (existingConversation.vehicleId !== vehicleId) {
+          await existingConversation.update({ vehicleId });
+        }
+        return existingConversation;
       }
 
-      // create conversation
+      // create new conversation only if none exists between these users
       const conversation = await Conversation.create({
         id: uuidv4(),
         bookingId,
@@ -42,7 +57,7 @@ class ConversationService {
       ]);
 
       console.log(
-        `Conversation created: ${conversation.id} for booking ${bookingId}`
+        `New conversation created: ${conversation.id} for booking ${bookingId}`
       );
       return conversation;
     } catch (error) {

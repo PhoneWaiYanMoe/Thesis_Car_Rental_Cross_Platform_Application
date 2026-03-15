@@ -27,14 +27,14 @@ const setupChatSocket = (io) => {
         // verify user is participant
         const conversation = await conversationService.getConversationById(
           conversationId,
-          socket.userId
+          socket.userId,
         );
 
         // join conversation room
         socket.join(socketService.getConversationRoom(conversationId));
 
         console.log(
-          `User ${socket.userId} joined conversation ${conversationId}`
+          `User ${socket.userId} joined conversation ${conversationId}`,
         );
 
         socket.emit("joined_conversation", {
@@ -56,7 +56,7 @@ const setupChatSocket = (io) => {
         socket.leave(socketService.getConversationRoom(conversationId));
 
         console.log(
-          `User ${socket.userId} left conversation ${conversationId}`
+          `User ${socket.userId} left conversation ${conversationId}`,
         );
 
         socket.emit("left_conversation", {
@@ -77,7 +77,13 @@ const setupChatSocket = (io) => {
         const message = await messageService.sendMessage(
           conversationId,
           socket.userId,
-          { messageType, content, mediaFileId }
+          { messageType, content, mediaFileId },
+        );
+
+        // get conversation to send updated data
+        const conversation = await conversationService.getConversationById(
+          conversationId,
+          socket.userId,
         );
 
         // emit to conversation room
@@ -94,15 +100,28 @@ const setupChatSocket = (io) => {
           },
         });
 
+        // ✅ Emit conversation updated event to both users so it moves to top
+        socketService.emitToUser(socket.userId, "conversation_updated", {
+          conversationId,
+          lastMessageAt: conversation.lastMessageAt,
+          lastMessageContent: conversation.lastMessageContent,
+        });
+
         // update unread count for receiver
         const receiverId = message.receiverId;
-        const unreadData = await conversationService.getTotalUnreadCount(
-          receiverId
-        );
+        const unreadData =
+          await conversationService.getTotalUnreadCount(receiverId);
 
         socketService.emitToUser(receiverId, "unread_count_updated", {
           conversationId,
           totalUnreadCount: unreadData.totalUnreadCount,
+        });
+
+        // ✅ Also notify receiver that conversation was updated
+        socketService.emitToUser(receiverId, "conversation_updated", {
+          conversationId,
+          lastMessageAt: conversation.lastMessageAt,
+          lastMessageContent: conversation.lastMessageContent,
         });
 
         console.log(`Message sent: ${message.id}`);
@@ -129,11 +148,11 @@ const setupChatSocket = (io) => {
             conversationId,
             userId: socket.userId,
             isTyping: true,
-          }
+          },
         );
 
         console.log(
-          `User ${socket.userId} started typing in ${conversationId}`
+          `User ${socket.userId} started typing in ${conversationId}`,
         );
       } catch (error) {
         console.error("Typing start error:", error);
@@ -157,11 +176,11 @@ const setupChatSocket = (io) => {
             conversationId,
             userId: socket.userId,
             isTyping: false,
-          }
+          },
         );
 
         console.log(
-          `User ${socket.userId} stopped typing in ${conversationId}`
+          `User ${socket.userId} stopped typing in ${conversationId}`,
         );
       } catch (error) {
         console.error("Typing stop error:", error);
@@ -175,7 +194,7 @@ const setupChatSocket = (io) => {
 
         const message = await messageService.markMessageAsRead(
           messageId,
-          socket.userId
+          socket.userId,
         );
 
         // emit to sender that message was read
@@ -195,9 +214,7 @@ const setupChatSocket = (io) => {
 
     // DISCONNECT
     socket.on("disconnect", async () => {
-      console.log(
-        `Socket disconnected: ${socket.id} (User: ${socket.userId})`
-      );
+      console.log(`Socket disconnected: ${socket.id} (User: ${socket.userId})`);
 
       // set user offline
       await socketService.setUserOffline(socket.userId);
