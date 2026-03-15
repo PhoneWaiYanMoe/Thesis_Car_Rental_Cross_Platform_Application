@@ -89,8 +89,8 @@ class EventPublisher {
     await this.publishEvent("booking.accepted_by_owner", {
       bookingId: booking.booking_id,
       customerId: booking.customer_id,
-      ownerId: booking.owner_id, 
-      vehicleId: booking.vehicle_id, 
+      ownerId: booking.owner_id,
+      vehicleId: booking.vehicle_id,
       customerEmail: customerInfo.email,
       customerName: customerInfo.full_name,
       vehicleName: vehicleInfo.name,
@@ -123,18 +123,58 @@ class EventPublisher {
     });
   }
 
+  // /**
+  //  * Publish booking completed event
+  //  */
+  // async bookingCompleted(booking, customerInfo) {
+  //   await this.publishEvent("booking.completed", {
+  //     bookingId: booking.booking_id,
+  //     customerId: booking.customer_id,
+  //     vehicleId: booking.vehicle_id,
+  //     customerEmail: customerInfo.email,
+  //     customerName: customerInfo.full_name,
+  //     totalAmount: booking.total_amount,
+  //     completedAt: new Date().toISOString(),
+  //   });
+  // }
+
   /**
    * Publish booking completed event
    */
-  async bookingCompleted(booking, customerInfo) {
+  async bookingCompleted(booking, vehicleInfo, customerInfo) {
     await this.publishEvent("booking.completed", {
       bookingId: booking.booking_id,
       customerId: booking.customer_id,
       vehicleId: booking.vehicle_id,
+
       customerEmail: customerInfo.email,
       customerName: customerInfo.full_name,
-      totalAmount: booking.total_amount,
-      completedAt: new Date().toISOString(),
+      vehicleName: vehicleInfo.name,
+
+      startDate: new Date(booking.start_date).toLocaleString("en-US", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+
+      endDate: new Date(booking.end_date).toLocaleString("en-US", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+
+      totalAmount: booking.total_amount.toLocaleString("vi-VN"),
+      depositAmount: booking.deposit_amount.toLocaleString("vi-VN"),
+
+      status: booking.status,
+
+      completedAt: booking.return_confirmed_at
+        ? new Date(booking.return_confirmed_at).toLocaleString("en-US", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            dateStyle: "medium",
+            timeStyle: "short",
+          })
+        : null,
     });
   }
 

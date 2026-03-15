@@ -42,11 +42,45 @@ class NotificationService {
 
     // choose appropriate email template based on type
     switch (type) {
-      case "booking":
+      case "bookingCreated":
         if (data.bookingData) {
           await emailService.sendBookingConfirmation(
             userEmail,
-            data.bookingData
+            data.bookingData,
+          );
+        }
+        break;
+      case "bookingAccepted":
+        if (data.bookingData) {
+          await emailService.sendBookingAccepted(
+            userEmail,
+            data.bookingData,
+          );
+        }
+        break;
+      case "bookingRejected":
+        if (data.bookingData) {
+          await emailService.sendBookingRejected(userEmail, data.bookingData);
+        }
+        break;
+      case "bookingCancelled":
+        if (data.bookingData) {
+          await emailService.sendBookingCancellation(
+            userEmail,
+            data.bookingData,
+          );
+        }
+        break;
+      case "bookingCompleted":
+        if (data.bookingData) {
+          await emailService.sendBookingCompletion(userEmail, data.bookingData);
+        }
+        break;
+      case "bookingPickupConfirmed":
+        if (data.bookingData) {
+          await emailService.sendPickupConfirmation(
+            userEmail,
+            data.bookingData,
           );
         }
         break;
@@ -60,7 +94,7 @@ class NotificationService {
           userEmail,
           title,
           message,
-          data.actionUrl
+          data.actionUrl,
         );
     }
   }
@@ -83,7 +117,7 @@ class NotificationService {
     }
 
     console.log(
-      `Sending push to ${devices.length} device(s) for user ${userId}`
+      `Sending push to ${devices.length} device(s) for user ${userId}`,
     );
 
     // send to all devices
@@ -91,13 +125,13 @@ class NotificationService {
       devices,
       title,
       message,
-      data
+      data,
     );
 
     // handle invalid tokens
     if (result.invalidDevices && result.invalidDevices.length > 0) {
       console.log(
-        `Cleaning up ${result.invalidDevices.length} invalid device(s)`
+        `Cleaning up ${result.invalidDevices.length} invalid device(s)`,
       );
 
       for (const deviceId of result.invalidDevices) {

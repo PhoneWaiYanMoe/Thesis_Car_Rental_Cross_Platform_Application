@@ -428,6 +428,201 @@ class OwnerBookingController {
     }
   }
 
+  // async confirmReturn(req, res, next) {
+  //   const client = await pool.connect();
+
+  //   try {
+  //     await client.query("BEGIN");
+
+  //     const userId = req.user.userId;
+  //     const userRole = req.user.role;
+  //     const { id } = req.params;
+  //     const {
+  //       conditionPhotos,
+  //       conditionNotes,
+  //       damagesReported,
+  //       odometerReading,
+  //       action,
+  //     } = req.body;
+
+  //     if (userRole !== "owner") {
+  //       return res.status(403).json({
+  //         error: "Access denied. Only vehicle owners can confirm returns.",
+  //         requiredRole: "owner",
+  //       });
+  //     }
+
+  //     if (
+  //       !conditionPhotos ||
+  //       !Array.isArray(conditionPhotos) ||
+  //       conditionPhotos.length < 3
+  //     ) {
+  //       return res.status(400).json({
+  //         error: "Please provide at least 3 condition photos as an array",
+  //       });
+  //     }
+
+  //     if (!action || !["complete", "dispute"].includes(action)) {
+  //       return res.status(400).json({
+  //         error: "Action must be either 'complete' or 'dispute'",
+  //       });
+  //     }
+
+  //     const bookingResult = await client.query(
+  //       `SELECT * FROM bookings WHERE booking_id = $1`,
+  //       [id],
+  //     );
+
+  //     if (bookingResult.rows.length === 0) {
+  //       return res.status(404).json({
+  //         error: "Booking not found",
+  //       });
+  //     }
+
+  //     const booking = bookingResult.rows[0];
+
+  //     // Verify ownership via gRPC
+  //     try {
+  //       const ownershipCheck = await vehicleGrpcClient.checkVehicleOwnership(
+  //         booking.vehicle_id,
+  //         userId,
+  //       );
+
+  //       if (!ownershipCheck.is_owner) {
+  //         return res.status(403).json({
+  //           error: "You don't own this vehicle",
+  //         });
+  //       }
+  //     } catch (error) {
+  //       return res.status(503).json({
+  //         error: "Could not verify vehicle ownership",
+  //       });
+  //     }
+
+  //     if (booking.status !== "return_submitted") {
+  //       return res.status(400).json({
+  //         error: `Cannot confirm return. Current status: ${booking.status}. Expected: return_submitted`,
+  //       });
+  //     }
+
+  //     const newStatus = action === "complete" ? "completed" : "dispute_opened";
+
+  //     await client.query(
+  //       `UPDATE bookings
+  //        SET owner_return_photos = $1,
+  //            owner_return_notes = $2,
+  //            damages_reported = $3,
+  //            owner_return_odometer_reading = $4,
+  //            owner_confirmed_return_at = NOW(),
+  //            status = $5,
+  //            updated_at = NOW()
+  //        WHERE booking_id = $6`,
+  //       [
+  //         JSON.stringify(conditionPhotos),
+  //         conditionNotes,
+  //         damagesReported,
+  //         odometerReading,
+  //         newStatus,
+  //         id,
+  //       ],
+  //     );
+
+  //     await client.query("COMMIT");
+
+  //     // Increment total rentals when completed
+  //     if (action === "complete") {
+  //       try {
+  //         await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
+  //         console.log(
+  //           `✅ Incremented total rentals for vehicle: ${booking.vehicle_id}`,
+  //         );
+  //       } catch (error) {
+  //         console.error(
+  //           `⚠️  Could not increment total rentals: ${error.message}`,
+  //         );
+  //       }
+
+  //       // Remove from unavailability
+  //       try {
+  //         await vehicleGrpcClient.syncUnavailability(
+  //           booking.vehicle_id,
+  //           booking.start_date,
+  //           booking.end_date,
+  //           id,
+  //           "remove",
+  //         );
+  //         console.log(`✅ Removed completed booking from unavailability`);
+  //       } catch (error) {
+  //         console.error(`⚠️  Could not sync unavailability: ${error.message}`);
+  //       }
+
+  //       // ✅ Fetch info for notification
+  //       let customerInfo;
+  //       try {
+  //         customerInfo = await userGrpcClient.getUserProfile(
+  //           booking.customer_id,
+  //         );
+
+  //         // ✅ Publish booking completed event
+  //         const updatedBooking = {
+  //           ...booking,
+  //           status: "completed",
+  //           owner_confirmed_return_at: new Date(),
+  //         };
+  //         await eventPublisher.bookingCompleted(updatedBooking, customerInfo);
+  //         console.log(
+  //           `📧 Booking completed notification sent to ${customerInfo.email}`,
+  //         );
+  //       } catch (error) {
+  //         console.warn(
+  //           "⚠️  Could not send completion notification:",
+  //           error.message,
+  //         );
+  //       }
+  //     }
+
+  //     if (action === "dispute") {
+  //       try {
+  //         const customerInfo = await userGrpcClient.getUserProfile(
+  //           booking.customer_id,
+  //         );
+  //         await eventPublisher.disputeOpened(
+  //           {
+  //             ...booking,
+  //             status: "dispute_opened",
+  //           },
+  //           conditionPhotos,
+  //           damagesReported,
+  //         );
+  //         console.log(`✅ Dispute opened event published for booking: ${id}`);
+  //       } catch (err) {
+  //         console.warn(
+  //           "⚠️ Could not publish dispute.opened event:",
+  //           err.message,
+  //         );
+  //       }
+  //     }
+
+  //     console.log(
+  //       `✅ Owner ${userId} confirmed return for booking: ${id} with action: ${action}`,
+  //     );
+
+  //     res.json({
+  //       message:
+  //         action === "complete"
+  //           ? "Return confirmed, booking completed"
+  //           : "Dispute opened, customer support will review",
+  //       bookingStatus: newStatus,
+  //     });
+  //   } catch (error) {
+  //     await client.query("ROLLBACK");
+  //     console.error("Confirm return error:", error);
+  //     next(error);
+  //   } finally {
+  //     client.release();
+  //   }
+  // }
+
   async confirmReturn(req, res, next) {
     const client = await pool.connect();
 
@@ -529,8 +724,8 @@ class OwnerBookingController {
 
       await client.query("COMMIT");
 
-      // Increment total rentals when completed
       if (action === "complete") {
+        // Increment total rentals
         try {
           await vehicleGrpcClient.incrementTotalRentals(booking.vehicle_id);
           console.log(
@@ -556,20 +751,24 @@ class OwnerBookingController {
           console.error(`⚠️  Could not sync unavailability: ${error.message}`);
         }
 
-        // ✅ Fetch info for notification
-        let customerInfo;
+        // Fetch customer + vehicle info, then publish notification
         try {
-          customerInfo = await userGrpcClient.getUserProfile(
-            booking.customer_id,
-          );
+          const [customerInfo, vehicleInfo] = await Promise.all([
+            userGrpcClient.getUserProfile(booking.customer_id),
+            vehicleGrpcClient.getVehicleInfo(booking.vehicle_id), // ✅ was missing
+          ]);
 
-          // ✅ Publish booking completed event
           const updatedBooking = {
             ...booking,
             status: "completed",
             owner_confirmed_return_at: new Date(),
           };
-          await eventPublisher.bookingCompleted(updatedBooking, customerInfo);
+
+          await eventPublisher.bookingCompleted(
+            updatedBooking,
+            vehicleInfo,
+            customerInfo,
+          ); // ✅ fixed argument order
           console.log(
             `📧 Booking completed notification sent to ${customerInfo.email}`,
           );
@@ -583,9 +782,6 @@ class OwnerBookingController {
 
       if (action === "dispute") {
         try {
-          const customerInfo = await userGrpcClient.getUserProfile(
-            booking.customer_id,
-          );
           await eventPublisher.disputeOpened(
             {
               ...booking,

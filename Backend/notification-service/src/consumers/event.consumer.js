@@ -59,9 +59,8 @@ class EventConsumer {
 
         "request.vehicle_verification_approved",
         "request.vehicle_verification_denied",
-        "request.vehicle_banned", 
+        "request.vehicle_banned",
         "request.vehicle_unbanned",
-
 
         "request.owner_verification_approved",
         "request.owner_verification_denied",
@@ -93,7 +92,7 @@ class EventConsumer {
               console.log(`📥 Received event: ${event.eventType}`);
               console.log(
                 `📄 Event data:`,
-                JSON.stringify(event.data, null, 2)
+                JSON.stringify(event.data, null, 2),
               );
 
               await this.handleEvent(event);
@@ -108,7 +107,7 @@ class EventConsumer {
             }
           }
         },
-        { noAck: false } // Require manual acknowledgment
+        { noAck: false }, // Require manual acknowledgment
       );
     } catch (error) {
       console.error("❌ Error setting up consumer:", error);
@@ -127,7 +126,7 @@ class EventConsumer {
           await emailService.sendOTPEmail(
             data.email,
             data.otp,
-            "Email Verification"
+            "Email Verification",
           );
           console.log(`✅ Registration OTP sent to: ${data.email}`);
           break;
@@ -137,21 +136,21 @@ class EventConsumer {
           await emailService.sendOTPEmail(
             data.email,
             data.otp,
-            "Password Reset"
+            "Password Reset",
           );
           console.log(`✅ Password reset OTP sent to: ${data.email}`);
           break;
 
         case "user.password_changed":
           console.log(
-            `📧 Sending password change confirmation to: ${data.email}`
+            `📧 Sending password change confirmation to: ${data.email}`,
           );
           await notificationService.sendNotification(
             "system",
             "Password Changed",
             "Your password has been changed successfully.",
             { email: data.email },
-            ["email"]
+            ["email"],
           );
           console.log(`✅ Password change confirmation sent to: ${data.email}`);
           break;
@@ -162,7 +161,7 @@ class EventConsumer {
             "License Submitted",
             "Your driver license has been submitted for verification.",
             { email: data.email },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -172,14 +171,14 @@ class EventConsumer {
             "Account Status Updated",
             `Your account status has been changed to: ${data.newStatus}`,
             { email: data.email },
-            ["email"]
+            ["email"],
           );
           break;
 
         // booking events
         case "booking.created":
           await notificationService.sendNotification(
-            "booking",
+            "bookingCreated",
             "Booking Created",
             `Your booking for ${data.vehicleName} has been created.`,
             {
@@ -193,15 +192,15 @@ class EventConsumer {
                 totalAmount: data.totalAmount,
               },
             },
-            ["email"]
+            ["email"],
           );
           break;
 
         case "booking.accepted_by_owner":
           await notificationService.sendNotification(
-            "booking",
-            "Booking Confirmed!",
-            `Your booking for ${data.vehicleName} has been confirmed.`,
+            "bookingAccepted",
+            "Booking Accepted by Owner!",
+            `Your booking for ${data.vehicleName} has been accepted by the owner and it's now confirmed.`,
             {
               email: data.customerEmail,
               bookingData: {
@@ -213,42 +212,64 @@ class EventConsumer {
                 totalAmount: data.totalAmount,
               },
             },
-            ["email"]
+            ["email"],
           );
           break;
 
         case "booking.rejected_by_owner":
           await notificationService.sendNotification(
-            "booking",
+            "bookingRejected",
             "Booking Rejected",
             `Your booking for ${data.vehicleName} was not accepted.`,
             {
               email: data.customerEmail,
-              reason: data.reason,
+              bookingData: {
+                customerName: data.customerName,
+                bookingId: data.bookingId,
+                vehicleName: data.vehicleName,
+                reason: data.reason,
+              },
             },
-            ["email"]
+            ["email"],
           );
           break;
 
         case "booking.pickup_confirmed":
           await notificationService.sendNotification(
-            "booking",
+            "bookingPickupConfirmed",
             "Vehicle Picked Up",
             `${data.customerName} has picked up your vehicle.`,
-            { email: data.ownerEmail },
-            ["email"]
+            {
+              email: data.ownerEmail,
+              bookingData: {
+                customerName: data.customerName,
+                bookingId: data.bookingId,
+                vehicleId: data.vehicleId,
+                vehicleName: data.vehicleName,
+
+              },
+            },
+            ["email"],
           );
           break;
 
         case "booking.completed":
           await notificationService.sendNotification(
-            "booking",
+            "bookingCompleted",
             "Rental Completed",
             "Thank you for renting! Please rate your experience.",
             {
               email: data.customerEmail,
+              bookingData: {
+                customerName: data.customerName,
+                bookingId: data.bookingId,
+                vehicleName: data.vehicleName,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                totalAmount: data.totalAmount,
+              },
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -256,25 +277,35 @@ class EventConsumer {
           // send to customer
           if (data.customerEmail) {
             await notificationService.sendNotification(
-              "booking",
+              "bookingCancelled",
               "Booking Cancelled",
               `Booking ${data.bookingId} has been cancelled.`,
               {
                 email: data.customerEmail,
+                bookingData: {
+                  bookingId: data.bookingId,
+                  vehicleId: data.vehicleId,
+                  cancellationReason: data.cancellationReason,
+                },
               },
-              ["email"]
+              ["email"],
             );
           }
           // send to owner
           if (data.ownerEmail) {
             await notificationService.sendNotification(
-              "booking",
+              "bookingCancelled",
               "Booking Cancelled",
               `Booking ${data.bookingId} has been cancelled.`,
               {
                 email: data.ownerEmail,
+                bookingData: {
+                  bookingId: data.bookingId,
+                  vehicleId: data.vehicleId,
+                  cancellationReason: data.cancellationReason,
+                },
               },
-              ["email"]
+              ["email"],
             );
           }
           break;
@@ -297,7 +328,7 @@ class EventConsumer {
                 paymentDate: new Date().toISOString(),
               },
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -309,7 +340,7 @@ class EventConsumer {
             {
               email: data.userEmail,
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -321,7 +352,7 @@ class EventConsumer {
             {
               email: data.userEmail,
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -333,7 +364,7 @@ class EventConsumer {
             {
               email: data.ownerEmail,
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -344,7 +375,7 @@ class EventConsumer {
             "New Review Received",
             `You received a ${data.rating}-star review for ${data.vehicleName}.`,
             { email: data.ownerEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -354,7 +385,7 @@ class EventConsumer {
             "New Owner Review",
             `You received a ${data.rating}-star rating from ${data.customerName}.`,
             { email: data.ownerEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -364,7 +395,7 @@ class EventConsumer {
             "Owner Responded",
             "The owner responded to your review.",
             { email: data.reviewerEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -377,7 +408,7 @@ class EventConsumer {
             {
               email: data.ownerEmail,
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -389,7 +420,7 @@ class EventConsumer {
             {
               email: data.ownerEmail,
             },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -400,7 +431,7 @@ class EventConsumer {
             "Request Created",
             `Your request "${data.title}" has been created.`,
             { email: data.userEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -410,7 +441,7 @@ class EventConsumer {
             "Request Approved",
             `Your request "${data.title}" has been approved.`,
             { email: data.userEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -420,7 +451,7 @@ class EventConsumer {
             "Request Denied",
             `Your request "${data.title}" was denied. Reason: ${data.reason}`,
             { email: data.userEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -431,7 +462,7 @@ class EventConsumer {
             "Contract Signed",
             `${data.customerName} has signed the rental contract.`,
             { email: data.ownerEmail },
-            ["email"]
+            ["email"],
           );
           break;
 
@@ -448,7 +479,7 @@ class EventConsumer {
               senderName: data.senderName,
               type: "chat_message",
             },
-            ["push"]
+            ["push"],
           );
           break;
 
