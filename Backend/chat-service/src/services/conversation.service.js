@@ -19,7 +19,7 @@ class ConversationService {
 
       if (existingConversation) {
         console.log(
-          `Conversation already exists: ${existingConversation.id} for users ${customerId} and ${ownerId}`
+          `Conversation already exists: ${existingConversation.id} for users ${customerId} and ${ownerId}`,
         );
         // Update vehicleId if it's different (for new booking)
         if (existingConversation.vehicleId !== vehicleId) {
@@ -57,7 +57,7 @@ class ConversationService {
       ]);
 
       console.log(
-        `New conversation created: ${conversation.id} for booking ${bookingId}`
+        `New conversation created: ${conversation.id} for booking ${bookingId}`,
       );
       return conversation;
     } catch (error) {
@@ -104,13 +104,13 @@ class ConversationService {
       // calculate total unread count
       const totalUnreadCount = participants.reduce(
         (sum, p) => sum + p.unreadCount,
-        0
+        0,
       );
 
       // format conversations (will be enhanced with user/vehicle details in real integration)
       const conversations = rows.map((conv) => {
         const participant = participants.find(
-          (p) => p.conversationId === conv.id
+          (p) => p.conversationId === conv.id,
         );
 
         return {
@@ -176,7 +176,7 @@ class ConversationService {
     try {
       const conversation = await this.getConversationById(
         conversationId,
-        userId
+        userId,
       );
 
       await conversation.update({ status: "blocked" });
@@ -195,7 +195,7 @@ class ConversationService {
           lastMessageContent: messageContent,
           lastMessageSenderId: senderId,
         },
-        { where: { id: conversationId } }
+        { where: { id: conversationId } },
       );
     } catch (error) {
       console.error("Update last message error:", error);
