@@ -110,6 +110,37 @@ class StripeService {
   }
 
   /**
+   * ✅ NEW: Get payment intent details from Stripe (for verification)
+   */
+  async getPaymentIntent(intentId) {
+    try {
+      console.log(`\n🔍 Retrieving payment intent from Stripe: ${intentId}`);
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(intentId);
+
+      console.log(`✅ Payment intent retrieved`);
+      console.log(`   Status: ${paymentIntent.status}`);
+      console.log(`   Amount: ${paymentIntent.amount}`);
+      console.log(`   Currency: ${paymentIntent.currency}`);
+
+      return {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        amount_received: paymentIntent.amount_received,
+        charges: paymentIntent.charges,
+        client_secret: paymentIntent.client_secret,
+        metadata: paymentIntent.metadata,
+        last_payment_error: paymentIntent.last_payment_error,
+      };
+    } catch (error) {
+      console.error("❌ Stripe getPaymentIntent error:", error);
+      throw new Error(`Failed to retrieve payment intent: ${error.message}`);
+    }
+  }
+
+  /**
    * Create refund
    */
   async createRefund(chargeId, amount, reason = "requested_by_customer") {
