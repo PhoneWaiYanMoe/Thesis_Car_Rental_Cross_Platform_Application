@@ -1126,6 +1126,23 @@ class BookingController {
       );
       console.log(`✅ Stored return photo IDs: ${returnPhotos.join(", ")}`);
 
+      // ✅ Publish booking.created event (notification will be sent)
+        const bookingForEvent = await client.query(
+          "SELECT * FROM bookings WHERE booking_id = $1",
+          [id],
+        );
+
+        if (bookingForEvent.rows.length > 0) {
+          await eventPublisher.bookingCompleted(
+            bookingForEvent.rows[0],
+            vehicle,
+            customerInfo,
+          );
+          console.log(
+            `📧 Booking completed notification sent to ${customerInfo.email}`,
+          );
+        }
+
       res.json({
         message:
           "Return submitted successfully. Waiting for owner confirmation.",
