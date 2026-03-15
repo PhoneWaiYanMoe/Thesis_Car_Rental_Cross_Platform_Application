@@ -206,21 +206,48 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
   }
 
   void _handlePaymentSuccess() {
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.paymentType == 'deposit'
-              ? 'Deposit paid successfully! Waiting for owner approval.'
-              : 'Payment completed! You can now pick up the car.',
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.grey[900], // or your theme's surface color
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 64),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              widget.paymentType == 'deposit' ? 'Deposit Paid Successfully!' : 'Payment Completed!',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.paymentType == 'deposit'
+                  ? 'Please kindly wait for owner approval.'
+                  : 'You can now pick up the car.',
+              style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
 
     // Return success result
-    Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
         Navigator.pop(context, {'success': true, 'bookingId': widget.bookingId, 'paymentType': widget.paymentType});
       }

@@ -267,7 +267,7 @@ class _FavoriteCarsScreenState extends State<FavoriteCarsScreen> {
               },
               style: AppStyles.primaryButtonStyle(context),
               icon: const Icon(Icons.search),
-              label: const Text('Browse Vehicles'),
+              label: const Text('Find a place to find your next ride'),
             ),
           ],
         ),

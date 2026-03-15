@@ -4,13 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:wiz/services/local_storage_service.dart';
 
 class AnalyticsApiService {
-  //static const String baseUrl = 'http://localhost:3009'; // analytics-service
-  // static const String baseUrl = 'http://10.0.2.2:3009'; // For Android emulator
-  static const String baseUrl = 'http://206.189.147.242'; // analytics-service
+  static const String baseUrl = 'http://206.189.147.242';
 
   final _localStorageService = LocalStorageService();
 
-  // Get auth token
   Future<String?> _getAuthToken() async {
     try {
       final token = await _localStorageService.getToken();
@@ -21,8 +18,6 @@ class AnalyticsApiService {
     }
   }
 
-  /// Get owner dashboard analytics
-  /// timeRange: 1d, 7d, 30d, 90d, 365d, all, custom
   Future<Map<String, dynamic>> getOwnerDashboard({
     String timeRange = '30d',
     DateTime? startDate,
@@ -70,7 +65,6 @@ class AnalyticsApiService {
     }
   }
 
-  /// Get customer analytics (for when user rents cars)
   Future<Map<String, dynamic>> getCustomerAnalytics({String timeRange = '30d'}) async {
     try {
       final token = await _getAuthToken();
@@ -149,13 +143,13 @@ class VehicleAnalytics {
 
   factory VehicleAnalytics.fromJson(Map<String, dynamic> json) {
     return VehicleAnalytics(
-      totalVehicles: json['totalVehicles'] ?? 0,
-      activeVehicles: json['activeVehicles'] ?? 0,
-      rentedVehicles: json['rentedVehicles'] ?? 0,
-      availableVehicles: json['availableVehicles'] ?? 0,
-      averageRating: (json['averageRating'] ?? 0).toDouble(),
-      totalRentals: json['totalRentals'] ?? 0,
-      utilizationRate: (json['utilizationRate'] ?? 0).toDouble(),
+      totalVehicles: (json['totalVehicles'] as num?)?.toInt() ?? 0,
+      activeVehicles: (json['activeVehicles'] as num?)?.toInt() ?? 0,
+      rentedVehicles: (json['rentedVehicles'] as num?)?.toInt() ?? 0,
+      availableVehicles: (json['availableVehicles'] as num?)?.toInt() ?? 0,
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      totalRentals: (json['totalRentals'] as num?)?.toInt() ?? 0,
+      utilizationRate: (json['utilizationRate'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -181,23 +175,23 @@ class BookingAnalytics {
 
   factory BookingAnalytics.fromJson(Map<String, dynamic> json) {
     return BookingAnalytics(
-      totalBookings: json['totalBookings'] ?? 0,
-      activeBookings: json['activeBookings'] ?? 0,
-      completedBookings: json['completedBookings'] ?? 0,
-      cancelledBookings: json['cancelledBookings'] ?? 0,
-      acceptanceRate: (json['acceptanceRate'] ?? 0).toDouble(),
-      averageDuration: (json['averageDuration'] ?? 0).toDouble(),
+      totalBookings: (json['totalBookings'] as num?)?.toInt() ?? 0,
+      activeBookings: (json['activeBookings'] as num?)?.toInt() ?? 0,
+      completedBookings: (json['completedBookings'] as num?)?.toInt() ?? 0,
+      cancelledBookings: (json['cancelledBookings'] as num?)?.toInt() ?? 0,
+      acceptanceRate: (json['acceptanceRate'] as num?)?.toDouble() ?? 0.0,
+      averageDuration: (json['averageDuration'] as num?)?.toDouble() ?? 0.0,
       trend: (json['trend'] as List<dynamic>?)?.map((t) => TrendData.fromJson(t)).toList() ?? [],
     );
   }
 }
 
 class RevenueAnalytics {
-  final int totalRevenue;
-  final int pendingRevenue;
-  final int completedRevenue;
-  final int refundedAmount;
-  final int averageBookingValue;
+  final double totalRevenue;
+  final double pendingRevenue;
+  final double completedRevenue;
+  final double refundedAmount;
+  final double averageBookingValue;
   final double growth;
   final List<TrendData> trend;
 
@@ -213,12 +207,12 @@ class RevenueAnalytics {
 
   factory RevenueAnalytics.fromJson(Map<String, dynamic> json) {
     return RevenueAnalytics(
-      totalRevenue: json['totalRevenue'] ?? 0,
-      pendingRevenue: json['pendingRevenue'] ?? 0,
-      completedRevenue: json['completedRevenue'] ?? 0,
-      refundedAmount: json['refundedAmount'] ?? 0,
-      averageBookingValue: json['averageBookingValue'] ?? 0,
-      growth: (json['growth'] ?? 0).toDouble(),
+      totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
+      pendingRevenue: (json['pendingRevenue'] as num?)?.toDouble() ?? 0.0,
+      completedRevenue: (json['completedRevenue'] as num?)?.toDouble() ?? 0.0,
+      refundedAmount: (json['refundedAmount'] as num?)?.toDouble() ?? 0.0,
+      averageBookingValue: (json['averageBookingValue'] as num?)?.toDouble() ?? 0.0,
+      growth: (json['growth'] as num?)?.toDouble() ?? 0.0,
       trend: (json['trend'] as List<dynamic>?)?.map((t) => TrendData.fromJson(t)).toList() ?? [],
     );
   }
@@ -245,15 +239,16 @@ class ReviewAnalytics {
 
     if (distribution != null) {
       distribution.forEach((key, value) {
-        ratingMap[key] = value as int? ?? 0;
+        // Safe cast: API may return double here too
+        ratingMap[key] = (value as num?)?.toInt() ?? 0;
       });
     }
 
     return ReviewAnalytics(
-      averageRating: (json['averageRating'] ?? 0).toDouble(),
-      totalReviews: json['totalReviews'] ?? 0,
-      vehicleReviews: json['vehicleReviews'] ?? 0,
-      ownerReviews: json['ownerReviews'] ?? 0,
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
+      vehicleReviews: (json['vehicleReviews'] as num?)?.toInt() ?? 0,
+      ownerReviews: (json['ownerReviews'] as num?)?.toInt() ?? 0,
       ratingDistribution: ratingMap,
     );
   }
@@ -261,14 +256,12 @@ class ReviewAnalytics {
 
 class TrendData {
   final String period;
-  final int value;
+  final double value; // changed to double to safely handle both int and double
 
   TrendData({required this.period, required this.value});
 
   factory TrendData.fromJson(Map<String, dynamic> json) {
-    return TrendData(
-      period: json['period'] ?? json['date'] ?? '', // API returns 'date' not 'period'
-      value: (json['value'] ?? json['total'] ?? json['count'] ?? json['revenue'] ?? 0) as int,
-    );
+    final raw = json['value'] ?? json['total'] ?? json['count'] ?? json['revenue'] ?? 0;
+    return TrendData(period: json['period'] ?? json['date'] ?? '', value: (raw as num).toDouble());
   }
 }

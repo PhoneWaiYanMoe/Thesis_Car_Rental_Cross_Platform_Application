@@ -15,17 +15,13 @@ class AnalyticsHomeScreen extends StatefulWidget {
 class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   final AnalyticsApiService _analyticsApi = AnalyticsApiService();
 
-  String _selectedPeriod = '30d'; // 1d, 7d, 30d, 90d, 365d, all, custom
+  String _selectedPeriod = '30d';
   DateTime? _customStartDate;
   DateTime? _customEndDate;
 
   bool _isLoading = false;
   String? _errorMessage;
   AnalyticsDashboard? _dashboardData;
-
-  // bool _isLoading = false;
-  // String? _errorMessage;
-  // AnalyticsDashboard? _dashboardData;
 
   @override
   void initState() {
@@ -58,10 +54,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_errorMessage ?? 'Failed to load analytics'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(_errorMessage ?? 'Failed to load analytics'), backgroundColor: Colors.red),
         );
       }
     }
@@ -70,7 +63,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   Map<String, dynamic> get _currentData {
     if (_dashboardData == null) {
       return {
-        'totalRevenue': 0,
+        'totalRevenue': 0.0,
         'numberOfVehicles': 0,
         'totalBookingsAsOwner': 0,
         'totalBookingsAsCustomer': 0,
@@ -81,12 +74,11 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
       };
     }
 
-    // Map API data to UI format
     return {
-      'totalRevenue': _dashboardData!.revenue.totalRevenue,
+      'totalRevenue': _dashboardData!.revenue.totalRevenue, // double
       'numberOfVehicles': _dashboardData!.vehicles.totalVehicles,
       'totalBookingsAsOwner': _dashboardData!.bookings.completedBookings,
-      'totalBookingsAsCustomer': 0, // TODO: Add customer analytics
+      'totalBookingsAsCustomer': 0,
       'activeBookings': _dashboardData!.bookings.activeBookings,
       'bookingsToAccept':
           _dashboardData!.bookings.totalBookings -
@@ -95,7 +87,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
           _dashboardData!.bookings.cancelledBookings,
       'canceledBookings': _dashboardData!.bookings.cancelledBookings,
       'chartData': _dashboardData!.revenue.trend
-          .map((t) => {'date': _formatPeriodLabel(t.period), 'amount': t.value})
+          .map((t) => {'date': _formatPeriodLabel(t.period), 'amount': t.value}) // double
           .toList(),
     };
   }
@@ -123,29 +115,20 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Period Selector
                     _buildPeriodSelector(),
                     const SizedBox(height: 24),
-
-                    // Summary Cards
                     Text('Overview', style: AppStyles.h3(context)),
                     const SizedBox(height: 12),
                     _buildSummaryCards(),
                     const SizedBox(height: 24),
-
-                    // Booking Status
                     Text('Booking Status', style: AppStyles.h3(context)),
                     const SizedBox(height: 12),
                     _buildBookingStatus(),
                     const SizedBox(height: 24),
-
-                    // Revenue Chart
                     Text('Revenue Trend', style: AppStyles.h3(context)),
                     const SizedBox(height: 12),
                     _buildRevenueChart(),
                     const SizedBox(height: 24),
-
-                    // Quick Actions
                     Text('Quick Actions', style: AppStyles.h3(context)),
                     const SizedBox(height: 12),
                     _buildQuickActions(),
@@ -204,17 +187,15 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   }
 
   Widget _buildSummaryCards() {
+    // FIX: safely read totalRevenue as num, then format
+    final totalRevenue = (_currentData['totalRevenue'] as num).toDouble();
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _summaryCard(
-                'Total Revenue',
-                _formatCurrency(_currentData['totalRevenue']),
-                Icons.attach_money,
-                Colors.green,
-              ),
+              child: _summaryCard('Total Revenue', _formatCurrency(totalRevenue), Icons.attach_money, Colors.green),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -268,10 +249,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Icon(icon, color: color, size: 20),
               ),
               const Spacer(),
@@ -294,29 +272,11 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   Widget _buildBookingStatus() {
     return Row(
       children: [
-        Expanded(
-          child: _statusCard(
-            'Active',
-            _currentData['activeBookings'],
-            Colors.blue,
-          ),
-        ),
+        Expanded(child: _statusCard('Active', _currentData['activeBookings'] as int, Colors.blue)),
         const SizedBox(width: 12),
-        Expanded(
-          child: _statusCard(
-            'To Accept',
-            _currentData['bookingsToAccept'],
-            Colors.orange,
-          ),
-        ),
+        Expanded(child: _statusCard('To Accept', _currentData['bookingsToAccept'] as int, Colors.orange)),
         const SizedBox(width: 12),
-        Expanded(
-          child: _statusCard(
-            'Canceled',
-            _currentData['canceledBookings'],
-            Colors.red,
-          ),
-        ),
+        Expanded(child: _statusCard('Canceled', _currentData['canceledBookings'] as int, Colors.red)),
       ],
     );
   }
@@ -324,19 +284,12 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   Widget _statusCard(String label, int count, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppStyles.surface(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           Text('$count', style: AppStyles.h2(context).copyWith(color: color)),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: AppStyles.caption(context),
-            textAlign: TextAlign.center,
-          ),
+          Text(label, style: AppStyles.caption(context), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -344,22 +297,18 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
 
   Widget _buildRevenueChart() {
     final chartData = _currentData['chartData'] as List;
+    final totalRevenue = (_currentData['totalRevenue'] as num).toDouble();
 
     return Container(
       height: 280,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppStyles.surface(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: AppStyles.surface(context), borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Total: ${_formatCurrency(_currentData['totalRevenue'])}',
-            style: AppStyles.body(
-              context,
-            ).copyWith(fontWeight: FontWeight.w600),
+            'Total: ${_formatCurrency(totalRevenue)}',
+            style: AppStyles.body(context).copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -370,10 +319,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                   drawVerticalLine: false,
                   horizontalInterval: 5000000,
                   getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: AppStyles.textSecondary(context).withOpacity(0.1),
-                      strokeWidth: 1,
-                    );
+                    return FlLine(color: AppStyles.textSecondary(context).withOpacity(0.1), strokeWidth: 1);
                   },
                 ),
                 titlesData: FlTitlesData(
@@ -382,21 +328,12 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                       showTitles: true,
                       reservedSize: 50,
                       getTitlesWidget: (value, meta) {
-                        return Text(
-                          _formatChartValue(value),
-                          style: AppStyles.caption(
-                            context,
-                          ).copyWith(fontSize: 10),
-                        );
+                        return Text(_formatChartValue(value), style: AppStyles.caption(context).copyWith(fontSize: 10));
                       },
                     ),
                   ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -408,9 +345,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               chartData[index]['date'],
-                              style: AppStyles.caption(
-                                context,
-                              ).copyWith(fontSize: 10),
+                              style: AppStyles.caption(context).copyWith(fontSize: 10),
                             ),
                           );
                         }
@@ -422,15 +357,11 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
+                    // FIX: amount is already double, no cast needed
                     spots: chartData
                         .asMap()
                         .entries
-                        .map(
-                          (e) => FlSpot(
-                            e.key.toDouble(),
-                            (e.value['amount'] as int).toDouble(),
-                          ),
-                        )
+                        .map((e) => FlSpot(e.key.toDouble(), (e.value['amount'] as num).toDouble()))
                         .toList(),
                     isCurved: true,
                     color: AppStyles.primary,
@@ -447,23 +378,17 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
                         );
                       },
                     ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: AppStyles.primary.withOpacity(0.1),
-                    ),
+                    belowBarData: BarAreaData(show: true, color: AppStyles.primary.withOpacity(0.1)),
                   ),
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
+                        // FIX: spot.y is already a double
                         return LineTooltipItem(
-                          _formatCurrency(spot.y as int),
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          _formatCurrency(spot.y),
+                          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                         );
                       }).toList();
                     },
@@ -481,38 +406,21 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
     return Row(
       children: [
         Expanded(
-          child: _actionButton(
-            'View Bookings',
-            Icons.list_alt,
-            Colors.blue,
-            () {
-              // Navigate to bookings
-              Navigator.pushNamed(context, '/owner/bookings');
-            },
-          ),
+          child: _actionButton('View Bookings', Icons.list_alt, Colors.blue, () {
+            Navigator.pushNamed(context, '/owner/bookings');
+          }),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _actionButton(
-            'My Vehicles',
-            Icons.directions_car,
-            Colors.green,
-            () {
-              // Navigate to vehicles
-              Navigator.pushNamed(context, '/owner/vehicles');
-            },
-          ),
+          child: _actionButton('My Vehicles', Icons.directions_car, Colors.green, () {
+            Navigator.pushNamed(context, '/owner/vehicles');
+          }),
         ),
       ],
     );
   }
 
-  Widget _actionButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+  Widget _actionButton(String label, IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -530,9 +438,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: AppStyles.body(
-                context,
-              ).copyWith(color: color, fontWeight: FontWeight.w600),
+              style: AppStyles.body(context).copyWith(color: color, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -551,10 +457,7 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppStyles.primary,
-              onPrimary: Colors.white,
-            ),
+            colorScheme: const ColorScheme.light(primary: AppStyles.primary, onPrimary: Colors.white),
           ),
           child: child!,
         );
@@ -567,16 +470,12 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
         _customEndDate = picked.end;
         _selectedPeriod = 'custom';
       });
-
-      // Load data for custom range
       _loadAnalytics();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Custom range: ${_formatDate(_customStartDate!)} - ${_formatDate(_customEndDate!)}',
-            ),
+            content: Text('Custom range: ${_formatDate(_customStartDate!)} - ${_formatDate(_customEndDate!)}'),
             backgroundColor: AppStyles.primary,
           ),
         );
@@ -586,7 +485,6 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
 
   Future<void> _refreshData() async {
     await _loadAnalytics();
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -598,8 +496,9 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
     }
   }
 
-  String _formatCurrency(int amount) {
-    final formatted = amount.toString().replaceAllMapped(
+  // FIX: changed parameter from int to double
+  String _formatCurrency(double amount) {
+    final formatted = amount.toInt().toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
@@ -620,7 +519,6 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
   }
 
   String _formatPeriodLabel(String period) {
-    // Format period from API (e.g., "2026-02-05" -> "5/2")
     try {
       final date = DateTime.parse(period);
       return '${date.day}/${date.month}';
@@ -636,23 +534,11 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppStyles.textSecondary(context),
-            ),
+            Icon(Icons.error_outline, size: 64, color: AppStyles.textSecondary(context)),
             const SizedBox(height: 16),
-            Text(
-              'Failed to Load Analytics',
-              style: AppStyles.h2(context),
-              textAlign: TextAlign.center,
-            ),
+            Text('Failed to Load Analytics', style: AppStyles.h2(context), textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            Text(
-              _errorMessage ?? 'Please try again',
-              style: AppStyles.body(context),
-              textAlign: TextAlign.center,
-            ),
+            Text(_errorMessage ?? 'Please try again', style: AppStyles.body(context), textAlign: TextAlign.center),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _loadAnalytics,
@@ -671,12 +557,10 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
       decoration: BoxDecoration(
         color: AppStyles.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: BottomNavigationBar(
-        currentIndex: 0, // Not selected since we're on Analytics
+        currentIndex: 0,
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppStyles.surface(context),
         selectedItemColor: AppStyles.primary,
@@ -694,18 +578,9 @@ class _AnalyticsHomeScreenState extends State<AnalyticsHomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car),
-            label: 'Trips',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
       ),
     );

@@ -297,13 +297,46 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     );
 
     if (result == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Custom contract uploaded successfully!'), backgroundColor: Colors.green),
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Theme.of(context).colorScheme.surface, // or Colors.grey[900]
+          title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 12),
+              Text(
+                'Custom contract uploaded successfully!',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16),
+              Text('The booking has been updated.', style: TextStyle(fontSize: 16), textAlign: TextAlign.center),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                // Reload logic after dialog is closed
+                setState(() {
+                  _bookingDetails.remove(booking.id);
+                  _loadBookingDetails(booking.id);
+                  _loadBookings();
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.green,
+                textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
       );
-      // Reload details for this booking to reflect the new contract
-      _bookingDetails.remove(booking.id);
-      _loadBookingDetails(booking.id);
-      _loadBookings();
     }
   }
 
@@ -315,10 +348,14 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
         content: const Text('Are you sure you want to accept this booking request?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Accept'),
+          SizedBox(
+            width: 100,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Accept'),
+            ),
           ),
         ],
       ),
@@ -328,17 +365,88 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
 
     try {
       await _bookingApi.acceptBooking(booking.id);
+
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Booking accepted successfully!'), backgroundColor: Colors.green));
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface, // adapts to light/dark mode
+            title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 12),
+                Text(
+                  'Booking Accepted Successfully!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'The booking status has been updated.',
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+
+        // Reload immediately after success (UI feels responsive)
         _loadBookings();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to accept booking: $e'), backgroundColor: Colors.red));
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Icon(Icons.error_outline_rounded, color: Colors.red, size: 64),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                const Text(
+                  'Failed to Accept Booking',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: $e',
+                  style: const TextStyle(fontSize: 16, color: Colors.redAccent),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
@@ -379,18 +487,57 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final reason = reasonCtrl.text.trim();
-              final refund = int.tryParse(refundCtrl.text) ?? 0;
-              if (reason.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please provide a reason')));
-                return;
-              }
-              Navigator.pop(context, {'reason': reason, 'refundAmount': refund});
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reject'),
+          SizedBox(
+            width: 100,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: () {
+                final reason = reasonCtrl.text.trim();
+                final refund = int.tryParse(refundCtrl.text) ?? 0;
+                if (reason.isEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: Theme.of(context).colorScheme.surface, // light/dark mode friendly
+                      title: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 64),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: 12),
+                          Text(
+                            'Missing Reason',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Please provide a reason to continue.',
+                            style: TextStyle(fontSize: 16),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                      actionsAlignment: MainAxisAlignment.center,
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                            textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                          ),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {'reason': reason, 'refundAmount': refund});
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Reject'),
+            ),
           ),
         ],
       ),
@@ -404,17 +551,90 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
         reason: result['reason'],
         refundAmount: result['refundAmount'],
       );
+
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Booking rejected'), backgroundColor: Colors.orange));
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Icon(
+              Icons.block_rounded, // or Icons.cancel_rounded / Icons.warning_amber_rounded
+              color: Colors.orange,
+              size: 64,
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 12),
+                Text(
+                  'Booking Rejected',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'The booking has been successfully rejected.\nRelevant parties have been notified.',
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+
+        // Refresh list immediately after success
         _loadBookings();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to reject booking: $e'), backgroundColor: Colors.red));
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Icon(Icons.error_outline_rounded, color: Colors.red, size: 64),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                const Text(
+                  'Failed to Reject Booking',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: $e',
+                  style: const TextStyle(fontSize: 16, color: Colors.redAccent),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
@@ -508,8 +728,41 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     if (signatureController.isEmpty) {
       signatureController.dispose();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please draw your signature first'), backgroundColor: Colors.orange),
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface, // light/dark mode friendly
+            title: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 64),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 12),
+                Text(
+                  'Signature Required',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Please draw your signature first to continue.',
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         );
       }
       return;
@@ -531,9 +784,21 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     if (signatureBytes == null) {
       if (mounted) Navigator.pop(context); // dismiss loading
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to export signature'), backgroundColor: Colors.red));
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Export Failed'),
+            content: const Text('Failed to export signature.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
       return;
     }
@@ -566,9 +831,46 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
 
       if (mounted) {
         Navigator.pop(context); // dismiss loading
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contract signed successfully!'), backgroundColor: Colors.green));
+
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 12),
+                Text(
+                  'Contract Signed Successfully!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Your signature has been recorded.\nThe booking is now confirmed.',
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+
         setState(() => _ownerSignedBookings.add(booking.id));
         _bookingDetails.remove(booking.id);
         _loadBookings();
@@ -576,9 +878,43 @@ class _VehicleBookingsDetailScreenState extends State<VehicleBookingsDetailScree
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // dismiss loading
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to sign contract: $e'), backgroundColor: Colors.red));
+
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Icon(Icons.error_outline_rounded, color: Colors.red, size: 64),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                const Text(
+                  'Failed to Sign Contract',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: $e',
+                  style: const TextStyle(fontSize: 16, color: Colors.redAccent),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
