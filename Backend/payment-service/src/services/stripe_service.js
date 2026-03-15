@@ -13,7 +13,7 @@ class StripeService {
     amount,
     currency,
     metadata,
-    paymentMethodId = null
+    paymentMethodId = null,
   ) {
     try {
       // ✅ Convert VND to USD (Stripe doesn't support VND)
@@ -55,7 +55,7 @@ class StripeService {
       } else {
         // ✅ No payment method provided - Stripe will collect it in the payment sheet
         console.log(
-          `💳 No payment method provided - will be collected by Stripe`
+          `💳 No payment method provided - will be collected by Stripe`,
         );
       }
 
@@ -63,7 +63,7 @@ class StripeService {
 
       console.log(`✅ Stripe PaymentIntent created: ${paymentIntent.id}`);
       console.log(
-        `   Amount: ${finalAmount / 100} ${finalCurrency.toUpperCase()}`
+        `   Amount: ${finalAmount / 100} ${finalCurrency.toUpperCase()}`,
       );
       console.log(`   Status: ${paymentIntent.status}`);
 
@@ -81,7 +81,7 @@ class StripeService {
       // ✅ Provide more helpful error messages
       if (error.code === "resource_missing") {
         throw new Error(
-          `Invalid payment method ID provided. Please use a valid Stripe payment method ID or omit this parameter to collect payment details from the user.`
+          `Invalid payment method ID provided. Please use a valid Stripe payment method ID or omit this parameter to collect payment details from the user.`,
         );
       }
 
@@ -181,7 +181,7 @@ class StripeService {
         paymentMethodId,
         {
           customer: customerId,
-        }
+        },
       );
 
       return paymentMethod;
@@ -229,7 +229,7 @@ class StripeService {
       const event = stripe.webhooks.constructEvent(
         payload,
         signature,
-        stripeConfig.webhookSecret
+        stripeConfig.webhookSecret,
       );
       return event;
     } catch (error) {
