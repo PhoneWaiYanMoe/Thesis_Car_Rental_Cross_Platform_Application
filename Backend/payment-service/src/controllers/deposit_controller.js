@@ -89,7 +89,7 @@ class DepositController {
 
       // Get transaction from database
       const txResult = await require("../config/database").query(
-        `SELECT transaction_id, booking_id, id_booking, type, status, provider 
+        `SELECT transaction_id, booking_id, type, status, provider 
          FROM transactions 
          WHERE intent_id = $1 
          LIMIT 1`,
