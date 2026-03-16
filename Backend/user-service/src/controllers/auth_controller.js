@@ -6,6 +6,9 @@ const otpService = require("../services/otp_service");
 const eventPublisher = require("../services/event_publisher");
 const oauthService = require("../services/oauth_service");
 
+const { OAuth2Client } = require("google-auth-library");
+const axios = require("axios");
+
 class AuthController {
   async register(req, res, next) {
     try {
@@ -16,7 +19,7 @@ class AuthController {
       // Check if user exists
       const userExists = await pool.query(
         "SELECT * FROM users WHERE email = $1",
-        [email]
+        [email],
       );
 
       if (userExists.rows.length > 0) {
@@ -34,7 +37,7 @@ class AuthController {
         `INSERT INTO users (user_id, email, password_hash, full_name, role, is_verified) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING user_id, email, full_name`,
-        [userId, email, passwordHash, fullName, role || "customer", false]
+        [userId, email, passwordHash, fullName, role || "customer", false],
       );
 
       console.log("User created:", result.rows[0]);
@@ -67,7 +70,7 @@ class AuthController {
       const isValid = await otpService.verifyOTP(
         email,
         code,
-        "email_verification"
+        "email_verification",
       );
 
       if (!isValid) {
@@ -80,7 +83,7 @@ class AuthController {
         `UPDATE users SET is_verified = true, updated_at = NOW() 
          WHERE email = $1 
          RETURNING user_id, email, full_name, phone, avatar_url, role, created_at`,
-        [email]
+        [email],
       );
 
       if (result.rows.length === 0) {
@@ -90,15 +93,22 @@ class AuthController {
       const user = result.rows[0];
 
       const token = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url},
+        {
+          userId: user.user_id,
+          email: user.email,
+          role: user.role,
+          fullName: user.full_name,
+          phone: user.phone,
+          avatarUrl: user.avatar_url,
+        },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
+        { expiresIn: process.env.JWT_EXPIRES_IN },
       );
 
       const refreshToken = jwt.sign(
         { userId: user.user_id },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN },
       );
 
       await otpService.deleteOTP(email, "email_verification");
@@ -163,7 +173,7 @@ class AuthController {
 
       const isPasswordValid = await bcrypt.compare(
         password,
-        user.password_hash
+        user.password_hash,
       );
 
       if (!isPasswordValid) {
@@ -178,15 +188,22 @@ class AuthController {
       }
 
       const token = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url },
+        {
+          userId: user.user_id,
+          email: user.email,
+          role: user.role,
+          fullName: user.full_name,
+          phone: user.phone,
+          avatarUrl: user.avatar_url,
+        },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
+        { expiresIn: process.env.JWT_EXPIRES_IN },
       );
 
       const refreshToken = jwt.sign(
         { userId: user.user_id },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN },
       );
 
       console.log(`✅ Login successful: ${email}`);
@@ -279,7 +296,7 @@ class AuthController {
 
       const isVerified = await otpService.checkVerified(
         email,
-        "password_reset"
+        "password_reset",
       );
 
       if (!isVerified) {
@@ -291,7 +308,7 @@ class AuthController {
 
       const userCheck = await pool.query(
         "SELECT user_id FROM users WHERE email = $1",
-        [email]
+        [email],
       );
 
       if (userCheck.rows.length === 0) {
@@ -305,7 +322,7 @@ class AuthController {
 
       await pool.query(
         "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2",
-        [passwordHash, email]
+        [passwordHash, email],
       );
 
       await otpService.deleteOTP(email, "password_reset");
@@ -336,7 +353,7 @@ class AuthController {
 
       const result = await pool.query(
         "SELECT user_id, email, role FROM users WHERE user_id = $1",
-        [decoded.userId]
+        [decoded.userId],
       );
 
       if (result.rows.length === 0) {
@@ -346,9 +363,16 @@ class AuthController {
       const user = result.rows[0];
 
       const newToken = jwt.sign(
-        { userId: user.user_id, email: user.email, role: user.role, fullName: user.full_name, phone: user.phone, avatarUrl: user.avatar_url},
+        {
+          userId: user.user_id,
+          email: user.email,
+          role: user.role,
+          fullName: user.full_name,
+          phone: user.phone,
+          avatarUrl: user.avatar_url,
+        },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
+        { expiresIn: process.env.JWT_EXPIRES_IN },
       );
 
       res.json({
@@ -375,15 +399,50 @@ class AuthController {
     }
   }
 
-  // ✅ Social login placeholder (now deprecated in favor of OAuth flow)
   async socialLogin(req, res, next) {
     try {
-      res.status(410).json({
-        error:
-          "This endpoint is deprecated. Use /auth/google or /auth/facebook instead",
-        hint: "Redirect users to GET /auth/google or GET /auth/facebook",
+      const { provider, accessToken, idToken } = req.body;
+
+      console.log(`📱 Social login: ${provider}`);
+
+      if (!["google", "facebook"].includes(provider)) {
+        return res.status(400).json({
+          error: 'Invalid provider. Use "google" or "facebook"',
+        });
+      }
+
+      let oauthData;
+
+      // ✅ CHANGED: No "this."
+      if (provider === "google") {
+        oauthData = await verifyGoogleToken(idToken);
+      } else if (provider === "facebook") {
+        oauthData = await verifyFacebookToken(accessToken);
+      }
+
+      if (!oauthData) {
+        return res.status(401).json({ error: "Invalid OAuth token" });
+      }
+
+      console.log(`✅ OAuth verified: ${oauthData.email}`);
+
+      const user = await oauthService.findOrCreateOAuthUser(oauthData);
+      const { accessToken: jwt, refreshToken } =
+        oauthService.generateTokens(user);
+
+      res.json({
+        success: true,
+        token: jwt,
+        refreshToken,
+        user: {
+          id: user.user_id,
+          email: user.email,
+          fullName: user.full_name,
+          role: user.role,
+        },
       });
     } catch (error) {
+      console.error("❌ Social login error:", error);
       next(error);
     }
   }
@@ -444,7 +503,7 @@ class AuthController {
       const redirectUrl = `${
         process.env.FRONTEND_URL
       }/settings/accounts?status=success&provider=google&message=${encodeURIComponent(
-        result.message
+        result.message,
       )}`;
       res.redirect(redirectUrl);
     } catch (error) {
@@ -452,7 +511,7 @@ class AuthController {
       const redirectUrl = `${
         process.env.FRONTEND_URL
       }/settings/accounts?status=error&provider=google&message=${encodeURIComponent(
-        error.message
+        error.message,
       )}`;
       res.redirect(redirectUrl);
     }
@@ -470,7 +529,7 @@ class AuthController {
       const redirectUrl = `${
         process.env.FRONTEND_URL
       }/settings/accounts?status=success&provider=facebook&message=${encodeURIComponent(
-        result.message
+        result.message,
       )}`;
       res.redirect(redirectUrl);
     } catch (error) {
@@ -478,7 +537,7 @@ class AuthController {
       const redirectUrl = `${
         process.env.FRONTEND_URL
       }/settings/accounts?status=error&provider=facebook&message=${encodeURIComponent(
-        error.message
+        error.message,
       )}`;
       res.redirect(redirectUrl);
     }
@@ -513,6 +572,49 @@ class AuthController {
     } catch (error) {
       next(error);
     }
+  }
+}
+
+async function verifyGoogleToken(idToken) {
+  try {
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    return {
+      provider: "google",
+      providerId: payload.sub,
+      email: payload.email,
+      fullName: payload.name,
+      avatarUrl: payload.picture,
+    };
+  } catch (error) {
+    console.error("Google verification failed:", error.message);
+    return null;
+  }
+}
+
+async function verifyFacebookToken(accessToken) {
+  try {
+    const url = `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${accessToken}`;
+    const response = await axios.get(url);
+    const data = response.data;
+
+    return {
+      provider: "facebook",
+      providerId: data.id,
+      email: data.email,
+      fullName: data.name,
+      avatarUrl: data.picture?.data?.url,
+    };
+  } catch (error) {
+    console.error("Facebook verification failed:", error.message);
+    return null;
   }
 }
 
