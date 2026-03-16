@@ -10,6 +10,9 @@ import '../controllers/auth_bloc.dart';
 import '../controllers/auth_event.dart';
 import '../controllers/auth_state.dart';
 
+import 'package:wiz/services/oauth_service.dart';
+import 'package:wiz/services/local_storage_service.dart';
+
 class LoginScreenBloc extends StatefulWidget {
   const LoginScreenBloc({super.key});
 
@@ -21,6 +24,79 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  final _oauthService = OAuthService();
+  final _localStorage = LocalStorageService();
+
+  // Add Google handler:
+  Future<void> _handleGoogleLogin() async {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Signing in with Google...')));
+
+    final result = await _oauthService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      await _localStorage.saveAuthData(
+        token: result['token'],
+        refreshToken: result['refreshToken'],
+        user: result['user'],
+      );
+
+      AppRoutes.navigateAndRemoveUntil(context, AppRoutes.home);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully logged in with Google!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed: ${result['error']}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Add Facebook handler:
+  Future<void> _handleFacebookLogin() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Signing in with Facebook...')),
+    );
+
+    final result = await _oauthService.signInWithFacebook();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      await _localStorage.saveAuthData(
+        token: result['token'],
+        refreshToken: result['refreshToken'],
+        user: result['user'],
+      );
+
+      AppRoutes.navigateAndRemoveUntil(context, AppRoutes.home);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully logged in with Facebook!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed: ${result['error']}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   // Validation
   String? _emailValidator(String? value) {
@@ -40,7 +116,10 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
     if (!_formKey.currentState!.validate()) return;
 
     context.read<AuthBloc>().add(
-      LoginRequested(email: _emailController.text.trim(), password: _passwordController.text),
+      LoginRequested(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      ),
     );
   }
 
@@ -62,9 +141,12 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
             AppRoutes.navigateAndRemoveUntil(context, AppRoutes.home);
           } else if (state is AuthError) {
             // Show error message
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         },
         child: SafeArea(
@@ -111,9 +193,15 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          AppRoutes.navigateTo(context, AppRoutes.forgotPassword);
+                          AppRoutes.navigateTo(
+                            context,
+                            AppRoutes.forgotPassword,
+                          );
                         },
-                        child: Text('Forgot password?', style: AppStyles.body(context)),
+                        child: Text(
+                          'Forgot password?',
+                          style: AppStyles.body(context),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -134,14 +222,20 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("First time here? ", style: AppStyles.body(context)),
+                        Text(
+                          "First time here? ",
+                          style: AppStyles.body(context),
+                        ),
                         GestureDetector(
                           onTap: () {
                             AppRoutes.navigateTo(context, AppRoutes.signup);
                           },
                           child: Text(
                             'Sign up',
-                            style: GoogleFonts.poppins(color: const Color(0xFF6C5CE7), fontWeight: FontWeight.bold),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF6C5CE7),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -155,20 +249,12 @@ class _LoginScreenBlocState extends State<LoginScreenBloc> {
                       children: [
                         SocialMediaWidget(
                           imagePath: 'assets/logo/google.png',
-                          onPressed: () {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(const SnackBar(content: Text('Google login not implemented yet')));
-                          },
+                          onPressed: _handleGoogleLogin,
                         ),
                         const SizedBox(width: 16),
                         SocialMediaWidget(
                           imagePath: 'assets/logo/facebook.png',
-                          onPressed: () {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(const SnackBar(content: Text('Facebook login not implemented yet')));
-                          },
+                          onPressed: _handleFacebookLogin,
                         ),
                       ],
                     ),

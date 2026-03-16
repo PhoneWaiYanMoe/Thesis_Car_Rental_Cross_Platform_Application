@@ -53,4 +53,6 @@ dependencies {
     
     // Multidex support
     implementation("androidx.multidex:multidex:2.0.1")
+
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 }

@@ -47,5 +47,33 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+
+		<!-- Google -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.YOUR_CLIENT_ID</string>
+					<string>fbYOUR_FACEBOOK_APP_ID</string>
+				</array>
+			</dict>
+		</array>
+		
+		<!-- Facebook -->
+		<key>FacebookAppID</key>
+		<string>YOUR_FACEBOOK_APP_ID</string>
+		<key>FacebookClientToken</key>
+		<string>YOUR_FACEBOOK_CLIENT_TOKEN</string>
+		<key>FacebookDisplayName</key>
+		<string>Wiz</string>
+		
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>fbapi</string>
+			<string>fb-messenger-share-api</string>
+			<string>fbauth2</string>
+			<string>fbshareextension</string>
+		</array>
 	</dict>
 </plist>

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "75426528796",
+    "project_id": "wiz-car-rental-d8c0e",
+    "storage_bucket": "wiz-car-rental-d8c0e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75426528796:android:82151de8bddaed5b4be9d9",
+        "android_client_info": {
+          "package_name": "com.example.wiz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "75426528796-m5d4g0rcrm95l114ear9bh1dj175n9bo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.wiz",
+            "certificate_hash": "e5d8dd774a2c3e52dd638a953158c47ad692dd4a"
+          }
+        },
+        {
+          "client_id": "75426528796-o0oco2frsc5gnaomdte5rdsm33ma1lod.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd_JlQjRyRNK_8XPM-Qts_CakXY7VNgC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "75426528796-o0oco2frsc5gnaomdte5rdsm33ma1lod.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
